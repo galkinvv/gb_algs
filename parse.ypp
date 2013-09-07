@@ -1,0 +1,317 @@
+%{
+#include <ctype.h>
+
+#include <istream>
+#include <algorithm>
+#include <stdexcept>
+#include <string>
+#include <map>
+#include <stack>
+
+#include "parse.tab.h" 
+#include "cmonomial.h"
+
+using namespace std;
+
+namespace F4MPIPolyParser{
+	using namespace F4MPI;
+	istream* ins;
+	int VarQ;
+
+	int yylex (void);
+	int yyerror (const char *s);
+
+	static CPolynomial degree(CPolynomial x, unsigned d){
+		CPolynomial res;
+		while(d){
+			if (d%2){
+				res=x;
+				d/=2;
+				x=x*x;
+				break;
+			}
+			d/=2;
+			x=x*x;
+		}
+		while(d){
+			if (d%2){
+				res=res*x;
+			}
+			d/=2;
+			x=x*x;
+		}
+		return res;
+	}
+
+
+	PolynomSet ParserPolynomialSet;
+	map<string,CPolynomial> varname2poly;
+	ParserVarNames varNames;
+	stack<CPolynomial*> tempVars;
+
+
+	%}
+	
+	%union {
+		CPolynomial* pl;
+		int num; 
+	}
+
+	%token <num> NUM
+	%token <num> END
+	%token <pl> VAR
+
+	%type  <pl> exp
+
+	%left '-' '+'
+	%left '*' 
+	%right '^'    
+
+	%%
+
+	input:
+		opt_separator core_input opt_separator |
+		opt_separator;
+		
+	core_input:
+		line |
+		core_input separator line;
+		
+	one_separator:
+		'\n'|'\r'|','|';'
+		;
+	separator:
+		one_separator|
+		separator one_separator
+	;
+
+	opt_separator:
+		|
+		separator;
+
+
+	line:
+			exp {
+			CPolynomial poly=*($1);
+			ParserPolynomialSet.push_back(poly);
+		}
+	;
+
+	exp:    NUM {
+				CPolynomial* poly=new CPolynomial;
+				vector<CMonomialBase::Deg> degs(VarQ,0);
+				CMonomial mon(degs);
+				CModular coeff($1);
+				poly->addTerm(coeff,mon);
+				$$ = poly;
+				tempVars.push($$);
+			}
+			| VAR 
+			| exp '+' exp {
+				$$=new CPolynomial(*($1)+*($3));
+				tempVars.push($$);
+			}
+		
+			| exp '-' exp { 
+				$$=new CPolynomial(*($1)-*($3));
+				tempVars.push($$);
+			}
+		
+			| exp '*' exp { 
+				$$=new CPolynomial(*($1)*(*($3)));
+				tempVars.push($$);
+			}
+		
+			| '-' exp {
+				$$=new CPolynomial(*($2));
+				CModular coeff(-1);
+				*($$)*=coeff;
+				tempVars.push($$);
+			}
+			| exp '^' NUM { 
+				unsigned int power = (unsigned int) $3;
+				$$=new CPolynomial(degree(*($1),power));
+				tempVars.push($$);			
+			}
+			| '(' exp ')'{ 
+				$$ = $2;  
+			}
+	;
+	%%
+
+	int yyerror (const char *s){
+		throw std::runtime_error(string(s));
+		return 0;
+	}
+
+	//-----------------------------
+
+	bool isvarname(char c){
+		return isalpha(c) || c=='_' || c=='[' || c==']';
+	}
+	int yylex (){
+		int ch;
+		do{
+			ch = ins->peek();
+			if (ch==' ' || ch=='\t'){
+				ins->get();
+			}else if (ch=='#'){
+				do{
+					ch=ins->get();
+					if (ins->eof()) return 0;
+				}while (ch!='\n' && ch!='\r');
+				return ch;
+			}else if (isvarname(ch)){
+				string varname;
+				do{
+					varname+=ch;
+					ins->get();
+					ch = ins->peek();
+					if (ins->eof()) break;
+				}while (isvarname(ch) || isdigit(ch));
+				CPolynomial& poly=varname2poly[varname];
+				if (poly.size()!=1) throw std::runtime_error(string("Unknown var:")+varname);
+				yylval.pl=&poly;
+				return VAR;
+			}else if (isdigit (ch)){
+				(*ins)>>yylval.num;
+				return NUM;
+			}else{
+				ins->get();
+				return ch;
+			}
+		}while (!ins->eof());
+		return 0;
+	}
+	void freeParseMem(){
+		while (tempVars.size()>0){
+			delete tempVars.top();
+			tempVars.pop();
+		}
+	}
+
+	void trimStr(std::string& s){
+		static const char* spaceChars="\t \n\r";
+		int first=s.find_first_not_of(spaceChars),last=s.find_last_not_of(spaceChars);
+		if (first==s.npos){//empty string
+			s="";
+		}else{
+			s=s.substr(first,last-first+1);
+		}
+	}
+	
+	void removeComment(std::string& s){
+		static const char* commentChars="#";
+		int last=s.find_first_of(commentChars);
+		if (last!=s.npos){
+			s=s.substr(0,last);
+		}
+	}
+	
+	
+	
+	int parseOptions(std::istream& in){ //counting quantity of variables
+		using namespace std;
+		in.exceptions(istream::badbit);
+		string cl;
+		typedef string::iterator Si;
+		do{
+			getline(in,cl);
+			trimStr(cl);
+			removeComment(cl);
+			if(!in) return -1;
+		}while (cl.size()==0);
+		int lastvar=0;
+		while(lastvar<cl.size()){
+			static const char* delimeters=" ,\t;:";
+			int nxt=cl.find_first_of(delimeters,lastvar);
+			string varname=cl.substr(lastvar,nxt-lastvar);
+			varNames.push_back(varname);
+			lastvar=cl.find_first_not_of(delimeters,nxt);
+			if (lastvar==cl.npos) break;
+		}
+		//reverse
+		varNames=ParserVarNames(varNames.rbegin(),varNames.rend());
+		do{
+			getline(in,cl);
+			trimStr(cl);
+			removeComment(cl);
+			if(!in) return -1;
+		}while (cl.size()==0);
+		string orderName=cl;
+	
+		globalF4MPI::globalOptions.monomOrderParam=0;
+		if (orderName=="lex"){
+			globalF4MPI::globalOptions.monomOrder=CMonomial::lexOrder;
+		}else if (orderName=="deglex"){
+			globalF4MPI::globalOptions.monomOrder=CMonomial::deglexOrder;
+		}else if (orderName=="degrevlex"){
+			globalF4MPI::globalOptions.monomOrder=CMonomial::degrevlexOrder;
+		}else if (orderName=="blklex"){
+			globalF4MPI::globalOptions.monomOrder=CMonomial::blklexOrder;
+			ParserVarNames::iterator delimpos = find(varNames.begin(), varNames.end(), "|");
+			//если разделитель не найден - это в точности соотвествует тому что все переменные в одной части
+			globalF4MPI::globalOptions.monomOrderParam = delimpos - varNames.begin();
+			//разделитель был обнаружен - удалим его из списка переменных
+			if (delimpos != varNames.end()){
+				varNames.erase(delimpos);
+			}
+		}else{
+			throw std::runtime_error(string("Unknown order: ")+orderName);
+		}
+		int var_quan = varNames.size();
+		int mod=-1;
+		in>>mod;
+		getline(in,cl);//read extra chars to newline
+		if (mod<=1){
+			throw std::runtime_error(string("Bad mod in input data"));
+		}
+		globalF4MPI::globalOptions.mod=mod;
+		globalF4MPI::globalOptions.numberOfVariables=var_quan;
+		globalF4MPI::InitializeGlobalOptions();
+		vector<CMonomialBase::Deg> degs(var_quan,0);
+		for (int i=0;i<var_quan;++i){
+			if (i-1>=0) degs[i-1]=0;
+			degs[i]=1;
+			CPolynomial p;
+			CMonomial mon(degs);
+			CModular coeff(1);
+			p.addTerm(coeff,mon);
+			
+			//reversed order
+			varname2poly[varNames[i]]=p;
+		}
+		return var_quan;
+	}
+}//namespace F4MPIPolyParser
+
+namespace F4MPI{
+int ParseInput (istream& ins, PolynomSet& readSet, ParserVarNames* varNames){
+	using F4MPIPolyParser::VarQ;
+	F4MPIPolyParser::ins=&ins;
+	F4MPIPolyParser::ParserPolynomialSet.clear();
+	F4MPIPolyParser::varname2poly.clear();
+	F4MPIPolyParser::varNames.clear();
+	try{
+		VarQ = F4MPIPolyParser::parseOptions(ins);
+		if (VarQ<0){
+			return -1;
+		}
+		F4MPIPolyParser::yyparse();
+	}catch(const std::exception& e){
+		fprintf(stderr, "Parse error: %s\n", e.what());
+		F4MPIPolyParser::freeParseMem();
+		return -1;
+	}catch(...){
+		fprintf(stderr, "Unknown parse error\n");
+		F4MPIPolyParser::freeParseMem();
+		return -1;
+	}
+	readSet=F4MPIPolyParser::ParserPolynomialSet;
+	F4MPIPolyParser::freeParseMem();
+	if (varNames){
+		*varNames=F4MPIPolyParser::varNames;
+	}
+	return 0;
+}
+}//namespace F4MPI
