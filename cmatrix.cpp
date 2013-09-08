@@ -3,7 +3,6 @@
 Реализация представления матриц и операций над ними*/
 
 #include "cmatrix.h"
-#include "mpimatrix.h"
 #include "cmodular.h"
 #include "f4main.h"
 #include "algs.h"
@@ -11,8 +10,13 @@
 #include <iostream>
 #include <algorithm>
 #include <limits>
+#if WITH_MPI
 #define MPICH_SKIP_MPICXX
 #include <mpi.h>
+#include "mpimatrix.h"
+#else
+struct MPI_Comm {/*dummy*/};
+#endif
 using namespace std;
 namespace F4MPI{
 /**
@@ -291,13 +295,19 @@ void CMatrix::reduceRangeByMatrix(MatrixIterator mfrom, MatrixIterator mto,CMatr
 
 ///Набор времён, замеренных разными способами
 struct MPITimeMesurement{
+#if WITH_MPI
 	double mw;///<Время, замеренное MPI_Wtime
+#endif
 	//AbsoluteTime cl;///<Время, замеренное системными функциями
 };
 
 ///Возвращает набор замеров текущего времени
 const MPITimeMesurement getMPITimeMesurement(){
-	MPITimeMesurement res={MPI_Wtime()/*,getTime()*/};
+	MPITimeMesurement res={
+#if WITH_MPI
+		MPI_Wtime()
+#endif
+		/*,getTime()*/};
 	return res;
 }
 
@@ -425,12 +435,14 @@ struct MPIDiagonalFormOptions{
 После этого остальные процессы также заходят в wakeUpSyncWithOtherProcesses() и происходит пересылка аргументов всем процессам.
 */
 void wakeUpSyncWithOtherProcesses(const F4AlgData* f4options, MPIDiagonalFormOptions& options){
-	if (!f4options->thisProcessRank){
+#if WITH_MPI
+	if (f4options->mpi_start_info.isMainProcess()){
 		//Нулевой процесс должен разбудить остальных
 		int finish=false;//флаг окончания не установлен
 		MPI_Bcast(&finish,1,MPI_INT,0,MPI_COMM_WORLD);//Выведем остальные процессы из ожидания
 	}
 	MPI_Bcast(&options,sizeof(options),MPI_CHAR,0,MPI_COMM_WORLD);//Раздадим всем опции
+#endif
 }
 
 /**
@@ -470,7 +482,7 @@ int forwardGaussElimination(
 	int getid;//Процессор на котором находится редуцирующая строка.
 	for(int step=0;step<totalSteps;++step){
 		getid=resid=resIdCalc.getNext();
-		if (f4options->thisProcessRank==getid){//Разобьём mymat на 2 матрицы:
+		if (f4options->mpi_start_info.thisProcessRank==getid){//Разобьём mymat на 2 матрицы:
 			//extramat - по которой будет происходить редукция
 			//myMatNew - оставшиеся строки. Попутно выкинем нулевые
 			extramat.reserve(rowBlockStarts[lastNotProcessedBlock+1]-rowBlockStarts[lastNotProcessedBlock]);
@@ -502,9 +514,11 @@ int forwardGaussElimination(
 			CMatrix::fullAutoReduce(extramat);
 			//PrintMatrix(extramat);
 		}
-		if (reduceOptions.usefulProcesses>1) bcastMat(getid,extramat,f4options->thisProcessRank,commUseful,f4options->MPIUseBigSends);//разослать extramat с getid на все процессоры
+#if WITH_MPI
+		if (reduceOptions.usefulProcesses>1) bcastMat(getid,extramat,f4options->mpi_start_info.thisProcessRank,commUseful,f4options->MPIUseBigSends);//разослать extramat с getid на все процессоры
+#endif
 
-		if (f4options->thisProcessRank==resid){
+		if (f4options->mpi_start_info.thisProcessRank==resid){
 			resultblocksizes.push_back(extramat.size());
 		}
 		if (extramat.size()==0){
@@ -514,7 +528,7 @@ int forwardGaussElimination(
 		CMatrix::reduceRangeByMatrix(mymat.begin()+rowBlockStarts[lastNotProcessedBlock],mymat.end(),extramat,f4options->innerGaussBlockSize);
 
 		totalLinesDone+=extramat.size();
-		if (f4options->thisProcessRank==resid){
+		if (f4options->mpi_start_info.thisProcessRank==resid){
 			//На этом процессоре положим результирующую строку в результаты
 			for (CMatrix::iterator i=extramat.begin();i!=extramat.end();++i){
 				resultmat.push_back(CMatrix::Row());
@@ -550,7 +564,7 @@ void backGaussElimination(
 	matrix.reserve(reduceOptions.matrixSize);
 	while(linesremains>0){
 		int bsize;
-		if (f4options->thisProcessRank==getid){//редуцирующий блок строк находится на данном процессоре
+		if (f4options->mpi_start_info.thisProcessRank==getid){//редуцирующий блок строк находится на данном процессоре
 			bsize=resultblocksizes.back();//размер этого блока
 			resultblocksizes.pop_back();
 			lastreducibleline-=bsize;//последний блок на данный момент авторредуцирован
@@ -565,13 +579,15 @@ void backGaussElimination(
 				//Возможно это и вообще не нужно, а даже если нужно, то не здесь...
 				//dest->normalize();
 			}
+#if WITH_MPI
 			//рассылка блока на все процессоры, если это необходимо
 			if (reduceOptions.usefulProcesses>1){
 				bcastSendSubMatrix(getid,matrix.end()-bsize,matrix.end(),commUseful,f4options->MPIUseBigSends);
 			}
 		}else{
 			//место под строки результата
-			bsize=bcastRecvToMatrix(getid,matrix,commUseful,f4options->MPIUseBigSends);			
+			bsize=bcastRecvToMatrix(getid,matrix,commUseful,f4options->MPIUseBigSends);
+#endif
 		}
 		//авторедукция строк с текущего процесса по блоку
 		CMatrix::backReduceRangeByRange(
@@ -580,7 +596,7 @@ void backGaussElimination(
 				matrix.end()-bsize,
 				matrix.end()
 				);
-		if (f4options->thisProcessRank!=0){
+		if (!f4options->mpi_start_info.isMainProcess()){
 			//результат больше не нужен на этом процессоре
 			matrix.clear();
 		}
@@ -595,7 +611,7 @@ void backGaussElimination(
 void CMatrix::MPIDiagonalForm(const F4AlgData* f4options,int doAutoReduce){
 	MPITimeMesurement ttt[4];
 	ttt[0]=getMPITimeMesurement();
-	int ID=f4options->thisProcessRank;
+	int ID=f4options->mpi_start_info.thisProcessRank;
 	CMatrix &matrix=*this;
 	MPIDiagonalFormOptions reduceOptions;
 	reduceOptions.doAutoReduce=doAutoReduce;
@@ -605,9 +621,9 @@ void CMatrix::MPIDiagonalForm(const F4AlgData* f4options,int doAutoReduce){
 	doAutoReduce=reduceOptions.doAutoReduce;
 	int& matrixSize = reduceOptions.matrixSize;
 	int& usefulProcesses=reduceOptions.usefulProcesses;//Число процессов, которые имеет смысл использовать при данном размере матрицы
-	if (matrixSize<200) usefulProcesses=min(1, f4options->numberOfProcs);//на маленьких матрицах лучше, чтоб вообще работал только 1 процесс
-	else if (matrixSize<2000) usefulProcesses=min(2, f4options->numberOfProcs);//на средних 2 процесса
-	else usefulProcesses=f4options->numberOfProcs;//иначе все
+	if (matrixSize<200) usefulProcesses=min(1, f4options->mpi_start_info.numberOfProcs);//на маленьких матрицах лучше, чтоб вообще работал только 1 процесс
+	else if (matrixSize<2000) usefulProcesses=min(2, f4options->mpi_start_info.numberOfProcs);//на средних 2 процесса
+	else usefulProcesses=f4options->mpi_start_info.numberOfProcs;//иначе все
 	ResIdCalculator resIdCalc(usefulProcesses);//отвечает за порядок циркулюции процессов
 	CMatrix mymat;//Содержит строки из matrix, относящиеся к текущему процессору
 	CMatrix resultmat;//Содержит готовые строки, относящиеся к текущему процессору
@@ -616,6 +632,7 @@ void CMatrix::MPIDiagonalForm(const F4AlgData* f4options,int doAutoReduce){
 	resultmat.reserve(mymat.capacity());
 	resultblocksizes.reserve(1+mymat.capacity()/f4options->MPIBlockSize);
 	MPI_Comm commUseful;
+#if WITH_MPI
 	MPI_Group groupWorld, groupUseful;
 	//Необходимость создания коммуникатора не по всем процессам
 	bool needNonTrivialCommUseful = usefulProcesses!=f4options->numberOfProcs && usefulProcesses!=1;
@@ -631,17 +648,22 @@ void CMatrix::MPIDiagonalForm(const F4AlgData* f4options,int doAutoReduce){
 	}else{
 		commUseful=MPI_COMM_WORLD;
 	}
+#endif
 	if (ID<usefulProcesses){ //на этом процессоре нужно проводить рассчёт
 		if (ID==0){
 			//Выборка и рассылка матриц на все процессоры
 			for (int id=1;id<usefulProcesses;++id){
 				selectRowsForProcessor(mymat,id,matrixSize,usefulProcesses,f4options);
+#if WITH_MPI
 				sendSubMatrix(id,mymat.begin(),mymat.end(),f4options->MPIUseBigSends);
+#endif
 			}
 			//Выборка своей матрицы
 			selectRowsForProcessor(mymat,0,matrixSize,usefulProcesses,f4options);
 		}else{
+#if WITH_MPI
 			recvToMatrix(0,mymat,f4options->MPIUseBigSends);
+#endif
 		}
 		matrix.clear();
 		ttt[1]=getMPITimeMesurement();
@@ -655,11 +677,15 @@ void CMatrix::MPIDiagonalForm(const F4AlgData* f4options,int doAutoReduce){
 			if (ID){
 				// Рассылаем матрицы 0му процессу
 				// Строки в полученной матрице идут в произвольном порядке
+#if WITH_MPI
 				sendSubMatrix(0,resultmat.begin(),resultmat.end(),f4options->MPIUseBigSends);
+#endif
 			}else{
 				matrix.reserve(reduceOptions.matrixSize);
 				for (int id=1;id<usefulProcesses;++id){
+#if WITH_MPI
 					recvToMatrix(id,matrix,f4options->MPIUseBigSends);
+#endif
 				}
 				int lastSize=matrix.size();
 				matrix.resize(reduceOptions.matrixSize);
@@ -671,11 +697,13 @@ void CMatrix::MPIDiagonalForm(const F4AlgData* f4options,int doAutoReduce){
 		}
 		ttt[3]=getMPITimeMesurement();
 	}
+#if WITH_MPI
 	if (needNonTrivialCommUseful){
 		MPI_Group_free(&groupUseful); 
 		MPI_Group_free(&groupWorld); 
 		if (commUseful!=MPI_COMM_NULL) MPI_Comm_free(&commUseful);
 	}
+#endif
 	/*if (!ID) {
 		matrix.PrintMatrixInfo("reduced");
 		fprintf(stats,"Detailed times:\n");

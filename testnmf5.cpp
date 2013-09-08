@@ -1,8 +1,8 @@
-#include <mpi.h>
 #include <cstdio>
 #include <cstdlib>
 #include <sstream>
 using namespace std;
+#include "mpi_start_info.h"
 #include "libf4mpi.h"
 
 struct ProgramOptions:F4AlgOptions{
@@ -51,20 +51,17 @@ void printUsage(const char* name){
 	}
 }
 
-int main(int argc, char * argv[]){	
-	MPI_Init(&argc,&argv);
+int main(int argc, char * argv[]){
+	MPIStartInfo mpi_info(argc, argv);
 	initDefaultF4Options(&localAlgOptions);
 	localAlgOptions.autoNameSuffix=0;
 	localAlgOptions.showInfoToStdout=1;
 	localAlgOptions.profileTime=1; //this is the default value for testf4mpi
-	int nProc,myRank;
-	MPI_Comm_size(MPI_COMM_WORLD,&nProc);
-	MPI_Comm_rank(MPI_COMM_WORLD,&myRank);
 	try{
 		string outputname;
 		string inputname;
 		if (argc < 2){
-			if (!myRank){
+			if (mpi_info.isMainProcess()){
 				printUsage(argv[0]);
 				fprintf(stderr, "Using input.dat by default...\n");
 			}
@@ -91,8 +88,6 @@ int main(int argc, char * argv[]){
 					if (oi<0){
 						fprintf(stderr, "\nERROR: Unknown option \"%s\"\n\n",argv[ci]);
 						printUsage(argv[0]);
-						MPI_Finalize();
-						return -1;
 					}
 					int *option=&(localAlgOptions.*cmdlineoptions[oi].value);
 					++ci;
@@ -102,13 +97,11 @@ int main(int argc, char * argv[]){
 					if (ci>=argc || *err || (cmdlineoptions[oi].kind==CMDLineOption::cmdopt_bool && (*option & ~1))){
 						fprintf(stderr, "\nERROR: Option value expected after \"%s\"\n\n",argv[ci-1]);
 						printUsage(argv[0]);
-						MPI_Finalize();
-						return -2;
 					}else ++ci;
 				}
 			}
 			ostringstream optionsstream;
-			if (nProc!=1) optionsstream<<".mpi"<<nProc;
+			if (!mpi_info.isSingleProcess()) optionsstream<<".mpi"<<mpi_info.numberOfProcs;
 			for	(int i=0; i<sizeof(cmdlineoptions)/sizeof(cmdlineoptions[0]);++i){
 				if (!cmdlineoptions[i].fname) continue;
 				optionsstream<<'.'<<cmdlineoptions[i].fname<<'_'<<localAlgOptions.*cmdlineoptions[i].value;
@@ -120,8 +113,8 @@ int main(int argc, char * argv[]){
 				}
 			}
 		}
-		int runningResult=runF4MPIFromFile(inputname.c_str(),outputname.c_str(),&localAlgOptions);
-		if (runningResult<0 && myRank==0){
+		int runningResult=runF4MPIFromFile(inputname.c_str(),outputname.c_str(),&localAlgOptions, mpi_info);
+		if (runningResult<0 && mpi_info.isMainProcess()){
 			const char* failReasons []={
 				"NO error",
 				"Parse failed",
@@ -133,6 +126,5 @@ int main(int argc, char * argv[]){
 	}catch(const std::exception& e){
 		fprintf(stderr,"Exception: %s\n",e.what());
 	}
-	MPI_Finalize();
 	return 0;
 }

@@ -126,7 +126,7 @@ void ReduceMatrix(CMatrix& m, const F4AlgData* f4options){
 	m.doMatrixStatsPre(f4options);
 	doReduceMatrix(m,f4options);
 	m.doMatrixStatsPost(f4options);
-	if (f4options->thisProcessRank==0 && f4options->showInfoToStdout){
+	if (f4options->mpi_start_info.isMainProcess() && f4options->showInfoToStdout){
 		printf("%d matrices complete\n", f4options->stats->totalNumberOfReducedMatr);
 		fflush(stdout);
 	}

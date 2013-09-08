@@ -5,7 +5,9 @@
 и вызывающие инициализизаторы глобальных переменных во всех процессах MPI.
 По завершении вывод статистики и вызов обратное преобразования в текст
 */
+#if WITH_MPI
 #include <mpi.h>
+#endif
 #include "gbimpl.h"
 #include "outputroutines.h"
 #include "matrixinfoimpl.h"
@@ -31,7 +33,7 @@ struct F4OptForStatsDescription{
 };
 
 F4OptForStatsDescription optionsDescription[]={
-	{"Number of processes         ", &F4AlgData::numberOfProcs},
+//	{"Number of processes         ", &F4AlgData::numberOfProcs},
 	{"Diagonal form each iteration", &F4AlgData::diagonalEachStep},
 	{"Inner loop block size       ", &F4AlgData::innerGaussBlockSize},
 	{"MPI block size              ", &F4AlgData::MPIBlockSize},
@@ -43,14 +45,10 @@ F4OptForStatsDescription optionsDescription[]={
 
 ///Сообщает о коде возврата \a result, возникшем в процессе \a root всем остальным процессам, возвращая его
 LibF4ReturnCode MPICheckResult(LibF4ReturnCode result=LIBF4_NO_ERROR, int root=0){
+#if WITH_MPI
 	MPI_Bcast(&result, sizeof(result), MPI_CHAR, root, MPI_COMM_WORLD);
+#endif	
 	return result;
-}
-
-///Записывает в \a f4data основные параметрв MPI - число процессов и ранг данного
-void initMPIData(F4AlgData &f4data){
-	MPI_Comm_rank(MPI_COMM_WORLD,&f4data.thisProcessRank);
-	MPI_Comm_size(MPI_COMM_WORLD,&f4data.numberOfProcs);
 }
 
 /**вычисление базиса из потока.
@@ -58,15 +56,14 @@ void initMPIData(F4AlgData &f4data){
 При ненулевых параметрах статистика по матрицам собирается в \a f4stats, а по времени записывается в файл \a stats.
 \retval успешность выполнения алгоритма в соответсвии со значениями кодов возврата
 */
-LibF4ReturnCode runF4FromStream(istream& input, ostream& output, F4AlgOptions& f4givenOptions, F4Stats* f4stats=0, FILE* stats=0, ostream* latexLog = 0){
+LibF4ReturnCode runF4FromStream(istream& input, ostream& output, F4AlgOptions& f4givenOptions, const MPIStartInfo &mpi_start_info, F4Stats* f4stats=0, FILE* stats=0, ostream* latexLog = 0){
 	F4Stats localf4stats;
 	if (f4stats==0) f4stats=&localf4stats;
-	F4AlgData f4data(f4givenOptions,f4stats, latexLog);
-	initMPIData(f4data);
+	F4AlgData f4data(f4givenOptions, f4stats, mpi_start_info, latexLog);
 	PolynomSet givenSet;
 	ParserVarNames varNames;
 	LibF4ReturnCode parseSuccess=LIBF4_NO_ERROR;
-	if (f4data.thisProcessRank==0){
+	if (mpi_start_info.isMainProcess()){
 		parseSuccess=LibF4ReturnCode(ParseInput(input, givenSet, &varNames));
 		if(f4data.showInfoToStdout){
 			if (parseSuccess>=0){
@@ -89,7 +86,7 @@ LibF4ReturnCode runF4FromStream(istream& input, ostream& output, F4AlgOptions& f
 				}
 				printf("\n");
 				printf("Using %d processes\n",
-						f4data.numberOfProcs
+						mpi_start_info.numberOfProcs
 					);
 			}
 			fflush(stdout);
@@ -98,17 +95,19 @@ LibF4ReturnCode runF4FromStream(istream& input, ostream& output, F4AlgOptions& f
 	//Разошлём всем успешность парсинга
 	parseSuccess=MPICheckResult(parseSuccess);
 	if (parseSuccess<0){
-		if (f4data.thisProcessRank==0){
+		if (mpi_start_info.isMainProcess()){
 			globalF4MPI::Finalize();
 		}
 		return LIBF4_ERR_PARSE_FAILED;//неудачное завершение разбора
 	}
+#if WITH_MPI
 	//Разошлём всем параметры, определённые в парсере
 	MPI_Bcast(&globalF4MPI::globalOptions, sizeof(globalF4MPI::globalOptions), MPI_CHAR, 0, MPI_COMM_WORLD);
-	if (f4data.thisProcessRank!=0){
+	if (!mpi_start_info.isMainProcess()){
 		//во всех процессах, кроме главного нужно провести инициализацию полученных параметров
 		globalF4MPI::InitializeGlobalOptions();
 	}
+#endif	
 	if (stats){
 		fprintf(stats, "\nOptions:\n");
 		for (int i=0; i<sizeof(optionsDescription)/sizeof(optionsDescription[0]);++i){
@@ -118,23 +117,26 @@ LibF4ReturnCode runF4FromStream(istream& input, ostream& output, F4AlgOptions& f
 	}
 
 	PolynomSet basis;
-	int finished=false;
+	
 	//Выполнение алгоритма F4
-	if (f4data.thisProcessRank==0){
+	if (mpi_start_info.isMainProcess()){
 		basis = GB(givenSet, &f4data);
-		finished=true;
+#if WITH_MPI
+		int finished=true;
 		MPI_Bcast(&finished,1,MPI_INT,0,MPI_COMM_WORLD);
 	}else{
 		CMatrix localmatrix;
 		//Цикл вызовов вычислительной части (MPIDiagonalForm) в остальных процессах MPI
 		for(;;){
+			int finished=false;
 			MPI_Bcast(&finished,1,MPI_INT,0,MPI_COMM_WORLD);
 			if (finished) break;
 			localmatrix.MPIDiagonalForm(&f4data);
 		}
+#endif
 	}
 	//Вывод результатов и сохранение статистики
-	if (f4data.thisProcessRank==0){
+	if (mpi_start_info.isMainProcess()){
 		if (f4data.showInfoToStdout){
 			printf("Computed basis - %d polynomials.\n", int(basis.size()));
 			fflush(stdout);
@@ -158,45 +160,43 @@ LibF4ReturnCode runF4FromStream(istream& input, ostream& output, F4AlgOptions& f
 \param givenF4Options параметры, переданные пользователем, возможно \c NULL (в таком случае используются значения по умолчанию).
 \param localF4Options результирующие параметры, которые следует использовать (в основном процессе копируются переданные пользователем, остальные получают от него)
 */
-void bcastF4OPtions(const F4AlgOptions* givenF4Options, F4AlgOptions& localF4Options){
-	int myRank;
-	MPI_Comm_rank(MPI_COMM_WORLD,&myRank);
-	if (myRank==0){
+void bcastF4Options(const F4AlgOptions* givenF4Options, F4AlgOptions& localF4Options, const MPIStartInfo &mpi_start_info){
+	if (mpi_start_info.isMainProcess()){
 		if (givenF4Options){
 			localF4Options=*givenF4Options;
 		}else{
 			initDefaultF4Options(&localF4Options);
 		}
 	}
+#if WITH_MPI
 	MPI_Bcast(&localF4Options,sizeof(localF4Options),MPI_CHAR,0,MPI_COMM_WORLD);
+#endif
 }
 } //namespace F4MPI
 using namespace F4MPI;
-LibF4ReturnCode runF4MPIFromString(const std::string& input, std::string& output, const F4AlgOptions* f4options){
+LibF4ReturnCode runF4MPIFromString(const std::string& input, std::string& output, const F4AlgOptions* f4options, const MPIStartInfo &mpi_start_info){
 	F4AlgOptions localF4Options;
-	bcastF4OPtions(f4options,localF4Options);
+	bcastF4Options(f4options, localF4Options, mpi_start_info);
 	istringstream inputStream;
 	ostringstream outputStream;
 	inputStream.str(input);
-	LibF4ReturnCode result=runF4FromStream(inputStream,outputStream,localF4Options);
+	LibF4ReturnCode result=runF4FromStream(inputStream,outputStream,localF4Options,mpi_start_info);
 	output=outputStream.str();
 	return result;
 }
 
-LibF4ReturnCode runF4MPIFromFile(const char* inputName, const char* outputName, const F4AlgOptions* f4options){
+LibF4ReturnCode runF4MPIFromFile(const char* inputName, const char* outputName, const F4AlgOptions* f4options, const MPIStartInfo &mpi_start_info){
 	F4AlgOptions localF4Options;
-	bcastF4OPtions(f4options,localF4Options);
+	bcastF4Options(f4options, localF4Options, mpi_start_info);
 	ifstream input;
 	ofstream outputFile;
 	ostream *outputPtr=&outputFile;
 	ofstream matrixInfo;
 	std::unique_ptr<ofstream> latexLog;
-	int myRank;
-	MPI_Comm_rank(MPI_COMM_WORLD,&myRank);
 	FILE *stats=0;
 	F4Stats f4stats;
 	LibF4ReturnCode successCode;
-	if (myRank==0){
+	if (mpi_start_info.isMainProcess()){
 		try{
 			input.open(inputName);
 			if (!input.is_open()){
@@ -255,7 +255,7 @@ LibF4ReturnCode runF4MPIFromFile(const char* inputName, const char* outputName, 
 		successCode=MPICheckResult();
 	}
 	if (successCode!=0) return successCode;
-	successCode=runF4FromStream(input,*outputPtr,localF4Options,&f4stats,stats,latexLog.get());
+	successCode=runF4FromStream(input,*outputPtr,localF4Options,mpi_start_info,&f4stats, stats,latexLog.get());
 	if (stats) fclose(stats);
 	return successCode;
 }

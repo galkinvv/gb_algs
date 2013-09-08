@@ -1,7 +1,8 @@
 #!/usr/bin/make -f
 
+WITH_MPI=0
 OPTIMIZE = 3
-CXXFLAGS = -O$(OPTIMIZE) -g -march=i686 -mtune=i686 -std=c++0x
+CXXFLAGS = -O$(OPTIMIZE) -g -march=i686 -mtune=i686 -std=c++0x -DWITH_MPI=$(WITH_MPI)
 #-ffunction-sections -fdata-sections
 #CXXFLAGS = -g -pg -O3 -march=i686 -mtune=i686
 
@@ -13,13 +14,19 @@ MAINTARGET = testnmf5
 
 BUILDDIR = build
 ifeq ($(OS),Windows_NT)
-CXX=g++
+ifeq ($(WITH_MPI),1)
 CXXFLAGS+=-I"$(ProgramFiles)\MPICH2\include"
 LDFLAGS+=-L"$(ProgramFiles)\MPICH2\lib" -lmpi
+endif
+CXX=g++
 RM=del
 MAINBIN=$(MAINTARGET).exe
 else
+ifeq ($(WITH_MPI),1)
 CXX=mpiCC
+else
+CXX=g++
+endif
 RM=rm -f
 MAINBIN=$(MAINTARGET)
 endif
@@ -40,12 +47,16 @@ LIBSOURCES = \
 	globalf4.cpp\
 	libf4mpi.cpp\
 	monomialmap.cpp\
-	mpimatrix.cpp\
 	outputroutines.cpp\
 	parse.tab.cpp\
 	f5c_plain.cpp\
 	f5_plain.cpp\
-	reducebyset.cpp\
+	reducebyset.cpp
+
+
+ifeq ($(WITH_MPI),1)
+	LIBSOURCES += mpimatrix.cpp
+endif
 
 
 ALLSOURCES=$(LIBSOURCES) $(MAINTARGET).cpp

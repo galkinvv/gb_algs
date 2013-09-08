@@ -227,9 +227,9 @@ struct SP
 
 void AddSPairs(const std::vector<SP>& sPairs, SortedSPairs& P)
 {
-	for(const SP& sPair:sPairs){
+	for(auto sPair = sPairs.begin(); sPair != sPairs.end(); ++sPair){
 		//cout<<"before insert "<<pairs.size()<<endl;
-		P.insert(make_pair(sPair.deg(), sPair));
+		P.insert(make_pair(sPair->deg(), *sPair));
 		//cout<<"after insert "<<pairs.size()<<endl;
 	}
 }
@@ -272,8 +272,9 @@ LPolyPtr F5IsReducible(LPolyPtr poly, const LabeledPolyVector& GWithTodo, const 
 	}
 	const CInternalMonomial& monomial = poly->poly.HM();
 	const Label& sig = poly->label;
-	for(auto& reductor : GWithTodo)
+	for(auto i_reductor = GWithTodo.begin(); i_reductor != GWithTodo.end(); ++i_reductor)
 	{
+		auto& reductor = *i_reductor;
 		const auto& hm = reductor->poly.HM();
 		CMonomial mulby;
 		if (!monomial.tryDivide(hm, mulby)) continue;
@@ -433,8 +434,9 @@ LabeledPolyVector F5Reduction(LabeledPolyVector &G, F5Globals& f5_globals, Reduc
 std::vector<SP> F5CritPairs(LPolyPtr r1, const LabeledPolyVector &r2_parts, int index_k, ReduceBySet& phi, F5Globals& f5_globals)
 {
 	std::vector<SP> result;
-	for(auto r2 : r2_parts)
+	for(auto i_r2 = r2_parts.begin(); i_r2 != r2_parts.end(); ++i_r2)
 	{
+		auto r2 = *i_r2;
 		SP sp;
 		sp.s[0].polyPtr = r1;
 		sp.s[1].polyPtr = r2;
@@ -477,8 +479,9 @@ std::vector<SP> F5CritPairs(LPolyPtr r1, const LabeledPolyVector &r2_parts, int 
 SortedSPols F5Spols(const vector<SP>& P, F5Globals& f5_globals)
 {
 	SortedSPols result;
-	for(const SP& sp : P)
+	for(auto i_sp = P.begin(); i_sp != P.end(); ++i_sp)
 	{
+		const SP& sp = *i_sp;
 		if (f5_globals.latex_log)
 		{
 			*f5_globals.latex_log << LatexNewLine << "Spol: S-многочлен $"
@@ -535,8 +538,9 @@ LabeledPolyVector AlgorithmF5(const LabeledPolyVector &Gprev, const LPolyPtr ith
 	LabeledPolyVector G = Gprev;
 	G.push_back(ith_poly);
 	PolynomSet oldBasisAsPlainSet;
-	for (auto labeled_poly : Gprev)
+	for (auto i_labeled_poly = Gprev.begin(); i_labeled_poly != Gprev.end(); ++ i_labeled_poly)
 	{
+		auto labeled_poly = *i_labeled_poly;
 		oldBasisAsPlainSet.push_back(labeled_poly->poly);
 	}
 	ReduceBySet phi(oldBasisAsPlainSet);
@@ -566,8 +570,9 @@ LabeledPolyVector AlgorithmF5(const LabeledPolyVector &Gprev, const LPolyPtr ith
 				
 		auto Rd = F5Reduction(G, f5_globals, phi, Fd);
 		//iterate over new polynomials added to G
-		for (auto& r : Rd)
+		for (auto ir = Rd.begin(); ir != Rd.end(); ++ir)
 		{
+			auto& r = *ir;
 			AddSPairs(F5CritPairs(r, G, index_i, phi, f5_globals), P);
 			G.push_back(r);
 		}
@@ -673,8 +678,9 @@ $R\\leftarrow[
 	{
 		*f5_globals.latex_log << LatexNewLine <<"После убирания сигнатур финальный нередуцированный базис принимает вид:";
 	}
-	for (auto labeled_poly : G)
+	for (auto i_labeled_poly = G.begin(); i_labeled_poly != G.end(); ++i_labeled_poly)
 	{
+		auto labeled_poly = *i_labeled_poly;
 		if (f5_globals.latex_log)
 		{
 			*f5_globals.latex_log << LatexNewLine << "$" <<LatexRI(labeled_poly, f5_globals)<<"="<<Latex(labeled_poly->poly)<< "$";

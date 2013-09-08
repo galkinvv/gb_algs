@@ -1,6 +1,7 @@
 #ifndef settings_h
 #define settings_h
 #include "libf4mpi.h"
+#include "mpi_start_info.h"
 #include "matrixinfoimpl.h"
 
 #include <iosfwd>
@@ -31,18 +32,14 @@ struct F4Stats{
 информации о MPI, место под статистику и передаются практически во все существенные шаги алгоритма.
 */
 struct F4AlgData:F4AlgOptions{
-	F4AlgData(const F4AlgOptions& options, F4Stats *f4stats, std::ostream*  a_latex_log):
+	F4AlgData(const F4AlgOptions& options, F4Stats *f4stats, const MPIStartInfo &a_mpi_start_info, std::ostream* a_latex_log):
 			F4AlgOptions(options),
-			numberOfProcs(0),
-			thisProcessRank(0),
+			mpi_start_info(a_mpi_start_info),
 			stats(f4stats),
 			latex_log(a_latex_log)
 	{}
-	///Число процессоров в MPI
-	int numberOfProcs;
 
-	///ранг текущего процесса в MPI
-	int thisProcessRank;
+	const MPIStartInfo &mpi_start_info;
 
 	///указатель на место под статистику по матрицам
 	F4Stats *stats;
