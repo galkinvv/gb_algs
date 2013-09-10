@@ -635,7 +635,7 @@ void CMatrix::MPIDiagonalForm(const F4AlgData* f4options,int doAutoReduce){
 #if WITH_MPI
 	MPI_Group groupWorld, groupUseful;
 	//Необходимость создания коммуникатора не по всем процессам
-	bool needNonTrivialCommUseful = usefulProcesses!=f4options->numberOfProcs && usefulProcesses!=1;
+	bool needNonTrivialCommUseful = (usefulProcesses != f4options->mpi_start_info.numberOfProcs) && (usefulProcesses != 1);
 	if (needNonTrivialCommUseful){
 		vector<int> usefulRanks(usefulProcesses);
 		for (int i=0;i<usefulRanks.size();++i){
