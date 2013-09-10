@@ -20,16 +20,17 @@ LDFLAGS+=-L"$(ProgramFiles)\MPICH2\lib" -lmpi
 endif
 CXX=g++
 RM=del
-MAINBIN=$(MAINTARGET).exe
+BINEXT=.exe
 else
 ifeq ($(WITH_MPI),1)
 CXX=mpiCC
 else
 CXX=g++
 endif
+BINEXT=
 RM=rm -f
-MAINBIN=$(MAINTARGET)
 endif
+MAINBIN=$(MAINTARGET)$(BINEXT)
 
 LD=$(CXX)
 
@@ -66,12 +67,32 @@ ALLOBJECTS = $(ALLSOURCES:%.cpp=build/%.o)
 $(MAINBIN): $(BUILDDIR)/$(MAINTARGET).o $(FULLLIBNAME)
 	$(LD) $(BUILDDIR)/$(MAINTARGET).o -L $(BUILDDIR) -l $(MAINLIB) -o $@ $(LDFLAGS)
 
+TEST_SOURCES=tst/run-gt.cpp\
+	tst/cmodular.cpp
+TEST_OBJECTS = $(TEST_SOURCES:tst/%.cpp=build/tst/%.o)
+
+run-gt$(BINEXT): $(TEST_OBJECTS) $(FULLLIBNAME)
+	$(LD) -pthread $^ -L $(BUILDDIR) -l $(MAINLIB) -o $@ $(LDFLAGS)
+
 $(FULLLIBNAME): $(LIBOBJECTS)
 	ar cr $@ $^
 
+$(BUILDDIR)/tst/run-gt.o: 3rd/gtest/src/gtest-all.cc
+
+$(BUILDDIR)/tst/%.o: tst/%.cpp
+	mkdir -p $(BUILDDIR)/tst
+	$(CXX) $(CXXFLAGS)  -I . -I 3rd/gtest -I 3rd/gtest/include -c $< -o $@
+
 $(BUILDDIR)/%.o: %.cpp
+	mkdir -p $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	$(RM) $(MAINTARGET) $(ALLOBJECTS) $(MAINBIN) $(FULLLIBNAME)
 
+3rd/gtest/src/gtest-all.cc:
+	rm -rf 3rd/gtest/ /tmp/gtest.zip /tmp/gtest_version
+	wget http://googletest.googlecode.com/files/gtest-1.7.0-rc1.zip -O /tmp/gtest.zip
+	unzip /tmp/gtest.zip -d /tmp/gtest_version
+	mkdir -p 3rd/
+	mv /tmp/gtest_version/gtest* 3rd/gtest
