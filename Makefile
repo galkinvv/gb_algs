@@ -10,7 +10,7 @@ LDFLAGS = -O$(OPTIMIZE) -g
 #-Wl,--gc-sections -Wl,--print-gc-sections
 #LDFLAGS = -O3 -g -pg
 
-MAINTARGET = testnmf5
+MAINTARGET = integrtest/runalgo
 
 BUILDDIR = build
 ifeq ($(OS),Windows_NT)
@@ -28,7 +28,7 @@ else
 CXX=g++
 endif
 BINEXT=
-RM=rm -f
+RM=rm -rvf
 endif
 MAINBIN=$(MAINTARGET)$(BINEXT)
 
@@ -37,58 +37,40 @@ LD=$(CXX)
 MAINLIB=nmf5
 FULLLIBNAME=$(BUILDDIR)/lib$(MAINLIB).a
 
-LIBSOURCES = \
-	cmatrix.cpp\
-	cmodular.cpp\
-	cmonomial.cpp\
-	commonpolyops.cpp\
-	cpolynomial.cpp\
-	f4main.cpp\
-	gbimpl.cpp\
-	globalf4.cpp\
-	libf4mpi.cpp\
-	monomialmap.cpp\
-	outputroutines.cpp\
-	parse.tab.cpp\
-	f5c_plain.cpp\
-	f5_plain.cpp\
-	reducebyset.cpp
-
-
+LIBSOURCES = $(wildcard *.cpp)
 ifeq ($(WITH_MPI),1)
-	LIBSOURCES += mpimatrix.cpp
+	LIBSOURCES += $(wildcard mpi/*.cpp)
 endif
 
 
 ALLSOURCES=$(LIBSOURCES) $(MAINTARGET).cpp
 LIBOBJECTS = $(LIBSOURCES:%.cpp=build/%.o)
-ALLOBJECTS = $(ALLSOURCES:%.cpp=build/%.o)
 
-$(MAINBIN): $(BUILDDIR)/$(MAINTARGET).o $(FULLLIBNAME)
+all: $(BUILDDIR)/$(MAINBIN) $(BUILDDIR)/run-gt$(BINEXT)
+$(BUILDDIR)/$(MAINBIN): $(BUILDDIR)/$(MAINTARGET).o $(FULLLIBNAME)
 	$(LD) $(BUILDDIR)/$(MAINTARGET).o -L $(BUILDDIR) -l $(MAINLIB) -o $@ $(LDFLAGS)
 
-TEST_SOURCES=tst/run-gt.cpp\
-	tst/cmodular.cpp
-TEST_OBJECTS = $(TEST_SOURCES:tst/%.cpp=build/tst/%.o)
+TEST_SOURCES=$(wildcard unittest/*.cpp)
+TEST_OBJECTS = $(TEST_SOURCES:unittest/%.cpp=build/unittest/%.o)
 
-run-gt$(BINEXT): $(TEST_OBJECTS) $(FULLLIBNAME)
+$(BUILDDIR)/run-gt$(BINEXT): $(TEST_OBJECTS) $(FULLLIBNAME)
 	$(LD) -pthread $^ -L $(BUILDDIR) -l $(MAINLIB) -o $@ $(LDFLAGS)
 
 $(FULLLIBNAME): $(LIBOBJECTS)
 	ar cr $@ $^
 
-$(BUILDDIR)/tst/run-gt.o: 3rd/gtest/src/gtest-all.cc
+$(BUILDDIR)/unittest/run-gt.o: 3rd/gtest/src/gtest-all.cc
 
-$(BUILDDIR)/tst/%.o: tst/%.cpp
-	mkdir -p $(BUILDDIR)/tst
-	$(CXX) $(CXXFLAGS)  -I . -I 3rd/gtest -I 3rd/gtest/include -c $< -o $@
+$(BUILDDIR)/unittest/%.o: unittest/%.cpp
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -c $< -o $@
 
 $(BUILDDIR)/%.o: %.cpp
-	mkdir -p $(BUILDDIR)
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) -I . -c $< -o $@
 
 clean:
-	$(RM) $(MAINTARGET) $(ALLOBJECTS) $(MAINBIN) $(FULLLIBNAME)
+	$(RM) $(BUILDDIR)
 
 3rd/gtest/src/gtest-all.cc:
 	rm -rf 3rd/gtest/ /tmp/gtest.zip /tmp/gtest_version
