@@ -47,4 +47,4 @@ private:
 			fast_ring_.InsertInResult(labeled_poly_to_reduce, R_);
 		}
 	}
-}
+};
