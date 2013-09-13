@@ -10,6 +10,6 @@ TEST(ApproxSigantureGroebner, ZeroPolys)
 	std::unique_ptr<R> out_ring = Mock::CreateRing();
 	const typename R::PolysSet empty_in;
 	typename R::PolysSet out;
-	ApproxSigantureGroebner<R>(*ring, empty_in, *out_ring, out);
+	ApproxSigantureGroebner<R>::Do(*ring, empty_in, *out_ring, out);
 	out.expect_empty();
 }
