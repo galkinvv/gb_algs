@@ -2,7 +2,7 @@
 
 WITH_MPI=0
 OPTIMIZE = 3
-CXXFLAGS = -O$(OPTIMIZE) -g -march=i686 -mtune=i686 -std=c++0x -DWITH_MPI=$(WITH_MPI)
+CXXFLAGS = -O$(OPTIMIZE) -g -march=i686 -mtune=i686 -std=c++0x -DWITH_MPI=$(WITH_MPI) -MD -MP
 #-ffunction-sections -fdata-sections
 #CXXFLAGS = -g -pg -O3 -march=i686 -mtune=i686
 
@@ -51,6 +51,7 @@ $(BUILDDIR)/$(MAINBIN): $(BUILDDIR)/$(MAINTARGET).o $(FULLLIBNAME)
 	$(LD) $(BUILDDIR)/$(MAINTARGET).o -L $(BUILDDIR) -l $(MAINLIB) -o $@ $(LDFLAGS)
 
 TEST_SOURCES=$(wildcard unittest/*.cpp)
+TEST_SOURCES+=$(wildcard unittest/mock/*.cpp)
 TEST_OBJECTS = $(TEST_SOURCES:unittest/%.cpp=build/unittest/%.o)
 
 $(BUILDDIR)/run-gt$(BINEXT): $(TEST_OBJECTS) $(FULLLIBNAME)
@@ -78,3 +79,5 @@ clean:
 	unzip /tmp/gtest.zip -d /tmp/gtest_version
 	mkdir -p 3rd/
 	mv /tmp/gtest_version/gtest* 3rd/gtest
+
+-include $(shell find $(BUILDDIR) -name '*.d')

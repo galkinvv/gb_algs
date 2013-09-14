@@ -2,7 +2,7 @@
 #include <set>
 #include <vector>
 #include <memory>
-#include <gtest/gtest.h>
+#include "mock_base.h"
 namespace Mock
 {
 	class NoCopy
@@ -33,10 +33,7 @@ namespace Mock
 
 		struct PolysSet: private std::vector<Polynomial>
 		{
-			void expect_empty()
-			{
-				EXPECT_EQ(this->size(), 0);
-			}
+			FRIEND_FOR_TEST
 		};
 		class FastAssociatedLabeledRingWithTracking : NoCopy
 		{
@@ -120,13 +117,5 @@ namespace Mock
 			//TODO
 		}
 	};
-
-	std::unique_ptr<Ring> CreateRing()
-	{
-		std::unique_ptr<Ring> result;
-		result.reset(new Ring());
-		return result;
-	}
-	
-	
+	std::unique_ptr<Ring> CreateRing();	
 }
