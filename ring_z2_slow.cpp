@@ -1,14 +1,8 @@
-#include "ring.h"
+#include "ring_z2_slow.h"
 #include <algorithm>
 #include <cassert>
-namespace Mock
+namespace
 {
-	std::unique_ptr<Ring> CreateRing()
-	{
-		std::unique_ptr<Ring> result;
-		result.reset(new Ring());
-		return result;
-	}
 	template <class TMonomial>
 	TMonomial Mmul(const TMonomial& m1, const TMonomial& m2)
 	{
@@ -30,7 +24,7 @@ namespace Mock
 		}
 		return result;
 	}
-	
+
 	template <class TMonomial>
 	int MDeg(const TMonomial& m)
 	{
@@ -104,18 +98,39 @@ namespace Mock
 		return false; //equal
 	}
 
-	typedef Ring::FastAssociatedLabeledRingWithTracking FR;
-	FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)
+	typedef RingZ2Slow::FastAssociatedLabeledRingWithTracking FR;
+
+	struct RingZ2SlowIoData: IOData<RingZ2Slow>
 	{
-		auto min = std::min_element(queue.begin(), queue.end(), SigLess<MultLPoly>);
-		assert(min != queue.end());
-		LPoly result;
-		result.sig_index = min->poly.sig_index;
-		result.sig_mon = Mmul(min->poly.sig_mon, min->mul_by);
-		result.value = Pmul(min->poly.value, min->mul_by);
-		result.reconstruction_info = Pmul(min->poly.reconstruction_info, min->mul_by);
-		queue.erase(min);
-		return result;
+		using IOData<RingZ2Slow>::in_;
+		using IOData<RingZ2Slow>::in_ring_;
 	}
-	
+}
+
+FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)
+{
+	auto min = std::min_element(queue.begin(), queue.end(), SigLess<MultLPoly>);
+	assert(min != queue.end());
+	LPoly result;
+	result.sig_index = min->poly.sig_index;
+	result.sig_mon = Mmul(min->poly.sig_mon, min->mul_by);
+	result.value = Pmul(min->poly.value, min->mul_by);
+	result.reconstruction_info = Pmul(min->poly.reconstruction_info, min->mul_by);
+	queue.erase(min);
+	return result;
+}
+
+std::unique_ptr<IOData<RingZ2Slow>> RingZ2Slow::Create(const F4MPI::IOPolynomSet& in)
+{
+	auto* data = new RingZ2SlowIoData();
+	data.in_ring_ = RingZ2Slow();
+	data.in_ = PolysSet();
+	return std::unique_ptr<IOData<RingZ2Slow>>(data);
+}
+
+F4MPI::IOPolynomSet RingZ2Slow::ConvertResult(std::unique_ptr<IOData<RingZ2Slow>>& result)
+{
+	result.reset();
+	//TODO
+	return F4MPI::IOPolynomSet();
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
 WITH_MPI=0
-OPTIMIZE = 3
+OPTIMIZE = 0
 CXXFLAGS = -O$(OPTIMIZE) -g -march=i686 -mtune=i686 -std=c++0x -DWITH_MPI=$(WITH_MPI) -MD -MP
 #-ffunction-sections -fdata-sections
 #CXXFLAGS = -g -pg -O3 -march=i686 -mtune=i686

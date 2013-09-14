@@ -7,6 +7,7 @@
 Предполагается, что куча хранится в виде бинарного дерева, записанного по строкам.
 Поэтому необходимо, чтоб используемая STL-реализация функций \c make_heap/\c push_heap/\c pop_heap работала с таким же представлением.
 
+
 IntrusivePtr\<T\> представляет собой реализацию указателя со счётчиком ссылок,
 работающего с типами T унаследованными от IntrusiveRefCountBase
 */
@@ -240,4 +241,13 @@ class IntrusivePtr{
 	}
 };
 } //namespace F4MPI	
+
+class NoCopy
+{
+	void operator=(const NoCopy&);
+	NoCopy(const NoCopy&);
+protected:
+	NoCopy(){}
+};
+
 #endif
