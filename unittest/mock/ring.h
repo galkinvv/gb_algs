@@ -15,16 +15,18 @@ namespace Mock
 
 	class Ring: NoCopy
 	{
-		struct Monomial: std::map<char,int>{};
-		struct Polynomial: std::vector<Monomial>{};
+		typedef std::map<char,int> Monomial;
+		typedef std::vector<Monomial> Polynomial;
 		
 		Ring(){}
 		friend std::unique_ptr<Ring> CreateRing();
 		
+		struct ReconstructionInfoImpl: std::vector<Monomial>{
+			Monomial top;
+		};
 	public:
 		class FastAssociatedLabeledRingWithTracking;
-		class ReconstructionInfo:std::vector<Monomial>{
-			Monomial top;
+		class ReconstructionInfo: ReconstructionInfoImpl{
 			friend class Ring;
 			friend class FastAssociatedLabeledRingWithTracking;
 		};
@@ -37,25 +39,24 @@ namespace Mock
 		};
 		class FastAssociatedLabeledRingWithTracking : NoCopy
 		{
-			class FastPoly: std::vector<Monomial>
-			{
-				friend class FastAssociatedLabeledRingWithTracking;
-			};
-			class LPoly
+			typedef std::vector<Monomial> FastPoly;
+			struct LPolyImpl
 			{
 				FastPoly value;
 				FastPoly reconstruction_info;
 				double sig_index;
 				Monomial sig_mon;
-				friend class FastAssociatedLabeledRingWithTracking;
 			};
-		private:
 			struct MultLPoly
 			{
-				LPoly poly;
+				LPolyImpl poly;
 				Monomial mul_by;
 			};
 		public:
+			class LPoly:LPolyImpl
+			{
+				friend class FastAssociatedLabeledRingWithTracking;
+			};
 			class MultLPolysQueue:std::vector<MultLPoly>{
 				friend class FastAssociatedLabeledRingWithTracking;
 			};
@@ -67,10 +68,7 @@ namespace Mock
 			{
 				return queue.empty();
 			}
-			LPoly DequeueSigSmallest(MultLPolysQueue& queue)
-			{
-				//TODO
-			}
+			LPoly DequeueSigSmallest(MultLPolysQueue& queue);
 			void PutInQueueExtendLabeledPolys(const PolysSet& in, MultLPolysQueue& queue)
 			{
 				//TODO
