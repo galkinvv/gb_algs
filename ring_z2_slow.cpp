@@ -121,17 +121,33 @@ FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)
 	return result;
 }
 
+void FR::PutInQueueExtendLabeledPolys(const PolysSet& in, MultLPolysQueue& queue)
+{
+	double current_sig_index = 1;
+	for(auto poly = in.begin(); poly != in. end(); ++poly, current_sig_index += 1)
+	{
+		MultLPoly mp;		
+		mp.poly.value = *poly;
+		mp.poly.sig_index = current_sig_index;
+		queue.push_back(mp);
+	}
+}
+
 std::unique_ptr<IOData<RingZ2Slow>> RingZ2Slow::Create(const F4MPI::IOPolynomSet& in)
 {
 	auto* data = new RingZ2SlowIoData();
-	//data->in_ring_ = RingZ2Slow();
-	data->in_ = PolysSet();
+	RingZ2Slow ring;
+	ring.CopyTo(data->in_ring_); 
+	PolysSet in_polys;
+	//TODO convert in to in_polys
+	data->in_ = in_polys;
 	return std::unique_ptr<IOData<RingZ2Slow>>(data);
 }
 
 F4MPI::IOPolynomSet RingZ2Slow::ConvertResult(std::unique_ptr<IOData<RingZ2Slow>>& result)
 {
 	result.reset();
-	//TODO
-	return F4MPI::IOPolynomSet();
+	//TODO convert result 
+	F4MPI::IOPolynomSet converted_result;
+	return converted_result;
 }

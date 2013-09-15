@@ -66,10 +66,7 @@ public:
 			return queue.empty();
 		}
 		LPoly DequeueSigSmallest(MultLPolysQueue& queue);
-		void PutInQueueExtendLabeledPolys(const PolysSet& in, MultLPolysQueue& queue)
-		{
-			//TODO
-		}
+		void PutInQueueExtendLabeledPolys(const PolysSet& in, MultLPolysQueue& queue);
 		void FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue, LPolysResult& to_fill)
 		{
 			//TODO
