@@ -3,6 +3,7 @@
   <VirtualDirectory Name="unittest">
     <VirtualDirectory Name="mock">
       <File Name="unittest/mock/mock_base.h"/>
+      <File Name="unittest/mock/ring.h"/>
     </VirtualDirectory>
     <File Name="unittest/test_base.h"/>
     <File Name="unittest/run-gt.cpp"/>

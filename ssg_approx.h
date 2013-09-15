@@ -1,4 +1,6 @@
 #pragma once
+#include "ringbase.h"
+
 template<class TRing>
 class ApproxSignatureGroebner
 {

@@ -1,9 +1,10 @@
+#pragma once
 #include <map>
 #include <set>
 #include <vector>
 #include <memory>
 #include "algs.h"
-#include <ringbase.h>
+#include "ringbase.h"
 namespace F4MPI
 {
 	class IOPolynomSet;
