@@ -14,7 +14,7 @@ class RingZ2Slow: NoCopy
 	typedef std::vector<Monomial> Polynomial;
 
 	RingZ2Slow(){}
-	friend std::unique_ptr<RingZ2Slow> CreateRingZ2Slow();
+	friend class IOData<RingZ2Slow>;
 
 	struct ReconstructionInfoImpl: std::vector<Monomial>{
 		Monomial top;

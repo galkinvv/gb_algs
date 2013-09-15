@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CodeLite_Project Name="gb_algs_codelite" InternalType="">
+  <VirtualDirectory Name="unittest">
+    <VirtualDirectory Name="mock">
+      <File Name="unittest/mock/mock_base.h"/>
+    </VirtualDirectory>
+    <File Name="unittest/test_base.h"/>
+    <File Name="unittest/run-gt.cpp"/>
+    <File Name="unittest/ssg_approx.cpp"/>
+    <File Name="unittest/cmodular.cpp"/>
+  </VirtualDirectory>
+  <Description/>
+  <Dependencies/>
+  <Settings Type="Dynamic Library">
+    <GlobalSettings>
+      <Compiler Options="">
+        <IncludePath Value="."/>
+      </Compiler>
+      <Linker Options="">
+        <LibraryPath Value="."/>
+      </Linker>
+      <ResourceCompiler Options=""/>
+    </GlobalSettings>
+    <Configuration Name="Debug" CompilerType="gnu g++" DebuggerType="GNU gdb debugger" Type="Dynamic Library" BuildCmpWithGlobalSettings="append" BuildLnkWithGlobalSettings="append" BuildResWithGlobalSettings="append">
+      <Compiler Options="-g" Required="yes" PreCompiledHeader="">
+        <IncludePath Value="."/>
+      </Compiler>
+      <Linker Options="" Required="yes"/>
+      <ResourceCompiler Options="" Required="no"/>
+      <General OutputFile="" IntermediateDirectory="./Debug" Command="" CommandArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes"/>
+      <Environment EnvVarSetName="&lt;Use Defaults&gt;" DbgSetName="&lt;Use Defaults&gt;"/>
+      <Debugger IsRemote="no" RemoteHostName="" RemoteHostPort="" DebuggerPath="">
+        <PostConnectCommands/>
+        <StartupCommands/>
+      </Debugger>
+      <PreBuild/>
+      <PostBuild/>
+      <CustomBuild Enabled="yes">
+        <RebuildCommand/>
+        <CleanCommand>make clean</CleanCommand>
+        <BuildCommand>make</BuildCommand>
+        <PreprocessFileCommand/>
+        <SingleFileCommand/>
+        <MakefileGenerationCommand/>
+        <ThirdPartyToolName>None</ThirdPartyToolName>
+        <WorkingDirectory>$(WorkspacePath)</WorkingDirectory>
+      </CustomBuild>
+      <AdditionalRules>
+        <CustomPostBuild/>
+        <CustomPreBuild/>
+      </AdditionalRules>
+    </Configuration>
+    <Configuration Name="Release" CompilerType="gnu g++" DebuggerType="GNU gdb debugger" Type="Dynamic Library" BuildCmpWithGlobalSettings="append" BuildLnkWithGlobalSettings="append" BuildResWithGlobalSettings="append">
+      <Compiler Options="" Required="yes" PreCompiledHeader="">
+        <IncludePath Value="."/>
+      </Compiler>
+      <Linker Options="-O2" Required="yes"/>
+      <ResourceCompiler Options="" Required="no"/>
+      <General OutputFile="" IntermediateDirectory="./Release" Command="" CommandArguments="" WorkingDirectory="$(IntermediateDirectory)" PauseExecWhenProcTerminates="yes"/>
+      <Environment EnvVarSetName="&lt;Use Defaults&gt;" DbgSetName="&lt;Use Defaults&gt;"/>
+      <Debugger IsRemote="no" RemoteHostName="" RemoteHostPort="" DebuggerPath="">
+        <PostConnectCommands/>
+        <StartupCommands/>
+      </Debugger>
+      <PreBuild/>
+      <PostBuild/>
+      <CustomBuild Enabled="yes">
+        <RebuildCommand/>
+        <CleanCommand>make clean</CleanCommand>
+        <BuildCommand>make</BuildCommand>
+        <PreprocessFileCommand/>
+        <SingleFileCommand/>
+        <MakefileGenerationCommand/>
+        <ThirdPartyToolName>None</ThirdPartyToolName>
+        <WorkingDirectory>$(WorkspacePath)</WorkingDirectory>
+      </CustomBuild>
+      <AdditionalRules>
+        <CustomPostBuild/>
+        <CustomPreBuild/>
+      </AdditionalRules>
+    </Configuration>
+  </Settings>
+  <VirtualDirectory Name="test">
+    <File Name="test/hcyclic8"/>
+    <File Name="test/hcyclic3"/>
+    <File Name="test/hcyclic5"/>
+    <File Name="test/hcyclic9"/>
+    <File Name="test/hcyclic7"/>
+    <File Name="test/harier1"/>
+    <File Name="test/hcyclic4"/>
+    <File Name="test/hcyclic6"/>
+  </VirtualDirectory>
+  <VirtualDirectory Name="gb_algs">
+    <File Name="Makefile"/>
+    <File Name=".gitignore"/>
+    <File Name="ringbase.h"/>
+    <File Name="reducebyset.cpp"/>
+    <File Name="ring_z2_slow.h"/>
+    <File Name="conversions.h"/>
+    <File Name="f4mpi_to_native_bridge.h"/>
+    <File Name="commonpolyops.h"/>
+    <File Name="outputroutines.h"/>
+    <File Name="cpolynomial.cpp"/>
+    <File Name="f4main.cpp"/>
+    <File Name="algs.h"/>
+    <File Name="outputroutines.cpp"/>
+    <File Name="mpimatrix.h"/>
+    <File Name="ssg_approx.h"/>
+    <File Name="gbimpl.cpp"/>
+    <File Name="memorymanager.h"/>
+    <File Name="globalf4.cpp"/>
+    <File Name="types.h"/>
+    <File Name="mpi_start_info.h"/>
+    <File Name="f5main.h"/>
+    <File Name="parse.ypp"/>
+    <File Name="cmatrix.cpp"/>
+    <File Name="monomialmap.cpp"/>
+    <File Name="f4_mpi_settings.h"/>
+    <File Name="f4main.h"/>
+    <File Name="matrixinfoimpl.h"/>
+    <File Name="parse.tab.cpp"/>
+    <File Name="cpolynomial.h"/>
+    <File Name="cmonomial.h"/>
+    <File Name="cmatrix.h"/>
+    <File Name="ring_z2_slow.cpp"/>
+    <File Name="libf4mpi.h"/>
+    <File Name="parse.tab.h"/>
+    <File Name="reducebyset.h"/>
+    <File Name="f5_plain.cpp"/>
+    <File Name="libf4mpi.cpp"/>
+    <File Name="globalf4.h"/>
+    <File Name="gbimpl.h"/>
+    <File Name="f5c_plain.cpp"/>
+    <File Name="commonpolyops.cpp"/>
+    <File Name="settings.h"/>
+    <File Name="monomialmap.h"/>
+    <File Name="cmonomial.cpp"/>
+    <File Name="cmodular.h"/>
+    <File Name="cmodular.cpp"/>
+    <File Name="iopolynomset.h"/>
+  </VirtualDirectory>
+  <VirtualDirectory Name="mpi">
+    <File Name="mpi/mpimatrix.cpp"/>
+  </VirtualDirectory>
+  <VirtualDirectory Name="integrtest">
+    <File Name="integrtest/runalgo.cpp"/>
+  </VirtualDirectory>
+</CodeLite_Project>

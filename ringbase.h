@@ -13,4 +13,4 @@ protected:
 	IOData():
 		in_ring(in_ring_), in(in_)
 	{}
-}
+};

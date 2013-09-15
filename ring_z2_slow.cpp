@@ -1,4 +1,5 @@
 #include "ring_z2_slow.h"
+#include "iopolynomset.h"
 #include <algorithm>
 #include <cassert>
 namespace
@@ -104,7 +105,7 @@ namespace
 	{
 		using IOData<RingZ2Slow>::in_;
 		using IOData<RingZ2Slow>::in_ring_;
-	}
+	};
 }
 
 FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)
@@ -123,8 +124,8 @@ FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)
 std::unique_ptr<IOData<RingZ2Slow>> RingZ2Slow::Create(const F4MPI::IOPolynomSet& in)
 {
 	auto* data = new RingZ2SlowIoData();
-	data.in_ring_ = RingZ2Slow();
-	data.in_ = PolysSet();
+	//data->in_ring_ = RingZ2Slow();
+	data->in_ = PolysSet();
 	return std::unique_ptr<IOData<RingZ2Slow>>(data);
 }
 
