@@ -26,7 +26,7 @@ void EraseAll(std::vector<X> &A, std::vector<bool> Mark)
 		while(L < R && !Mark[R])R--;
 		if(L < R)
 		{
-			swap(A[L], A[R]);
+			std::swap(A[L], A[R]);
 			L++;
 			R--;
 		}

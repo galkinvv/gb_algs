@@ -1,8 +1,15 @@
 #!/usr/bin/make -f
 
-WITH_MPI=0
-OPTIMIZE = 0
-CXXFLAGS = -O$(OPTIMIZE) -g -march=i686 -mtune=i686 -std=c++0x -DWITH_MPI=$(WITH_MPI) -MD -MP
+ifndef CXX11
+	CXX11=g++-4.8 -std=c++11
+endif
+ifndef WITH_MPI
+	WITH_MPI=0
+endif
+ifndef OPTIMIZE
+	OPTIMIZE = g
+endif
+CXXFLAGS = -O$(OPTIMIZE) -g -march=i686 -mtune=i686 -DWITH_MPI=$(WITH_MPI) -MD -MP
 #-ffunction-sections -fdata-sections
 #CXXFLAGS = -g -pg -O3 -march=i686 -mtune=i686
 
@@ -18,21 +25,18 @@ ifeq ($(WITH_MPI),1)
 CXXFLAGS+=-I"$(ProgramFiles)\MPICH2\include"
 LDFLAGS+=-L"$(ProgramFiles)\MPICH2\lib" -lmpi
 endif
-CXX=g++
 RM=del
 BINEXT=.exe
 else
 ifeq ($(WITH_MPI),1)
-CXX=mpiCC
-else
-CXX=g++
+CXX11:=MPICH_CCC=$(firstword $(CXX11)) mpiCC $(wordlist 2,99,$(CXX11) )
 endif
 BINEXT=
 RM=rm -rvf
 endif
 MAINBIN=$(MAINTARGET)$(BINEXT)
 
-LD=$(CXX)
+LD=$(CXX11)
 
 MAINLIB=nmf5
 FULLLIBNAME=$(BUILDDIR)/lib$(MAINLIB).a
@@ -64,11 +68,11 @@ $(BUILDDIR)/unittest/run-gt.o: 3rd/gtest/src/gtest-all.cc
 
 $(BUILDDIR)/unittest/%.o: unittest/%.cpp
 	mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -c $< -o $@
+	$(CXX11) $(CXXFLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -c $< -o $@
 
 $(BUILDDIR)/%.o: %.cpp
 	mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) -I . -c $< -o $@
+	$(CXX11) $(CXXFLAGS) -I . -c $< -o $@
 
 clean:
 	$(RM) $(BUILDDIR)

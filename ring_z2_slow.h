@@ -11,6 +11,7 @@ namespace F4MPI
 }
 class RingZ2Slow: NoCopy
 {
+	//Z_2 ring with degrevlex oredr on variables
 	typedef std::map<char,int> Monomial;
 	typedef std::vector<Monomial> Polynomial;
 

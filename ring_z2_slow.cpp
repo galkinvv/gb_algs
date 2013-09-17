@@ -139,6 +139,21 @@ std::unique_ptr<IOData<RingZ2Slow>> RingZ2Slow::Create(const F4MPI::IOPolynomSet
 	RingZ2Slow ring;
 	ring.CopyTo(data->in_ring_); 
 	PolysSet in_polys;
+	if (
+		in.field_char != 2 ||
+		in.mon_order != F4MPI::CMonomial::degrevlexOrder ||
+		in.type != F4MPI::FieldType::Z
+		)
+	{
+		throw std::runtime_error("unsupported parameters for RingZ2Slow");
+	}
+	for(auto poly:in.polys)
+	{
+		for(auto mon = poly.m_begin(); mon != poly.m_end(); ++mon)
+		{
+			
+		}
+	}
 	//TODO convert in to in_polys
 	data->in_ = in_polys;
 	return std::unique_ptr<IOData<RingZ2Slow>>(data);
