@@ -15,9 +15,11 @@ class RingZ2Slow: NoCopy
 	typedef std::map<char,int> Monomial;
 	typedef std::vector<Monomial> Polynomial;
 
-	RingZ2Slow(){}
+	RingZ2Slow();
+	~RingZ2Slow();
 	friend class IOData<RingZ2Slow>;
-
+	struct Impl;
+	std::unique_ptr<Impl> impl_;
 	struct ReconstructionInfoImpl: std::vector<Monomial>{
 		Monomial top;
 	};
@@ -28,7 +30,7 @@ public:
 		friend class FastAssociatedLabeledRingWithTracking;
 	};
 
-	void CopyTo(RingZ2Slow& to)const{}
+	void CopyTo(RingZ2Slow& to)const;
 
 	struct PolysSet: private std::vector<Polynomial>
 	{

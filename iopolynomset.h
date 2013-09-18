@@ -12,5 +12,6 @@ namespace F4MPI
 		FieldType type;
 		int field_char;
 		CMonomialBase::Order mon_order;
+		int var_count;
 	};
 }

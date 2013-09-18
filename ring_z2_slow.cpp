@@ -106,6 +106,7 @@ namespace
 		using IOData<RingZ2Slow>::in_;
 		using IOData<RingZ2Slow>::in_ring_;
 	};
+	static const char kFirstVar = 'a';
 }
 
 FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)
@@ -132,13 +133,26 @@ void FR::PutInQueueExtendLabeledPolys(const PolysSet& in, MultLPolysQueue& queue
 		queue.push_back(mp);
 	}
 }
+struct RingZ2Slow::Impl
+{
+	int var_count;
+};
+
+RingZ2Slow::RingZ2Slow()
+	:impl_(new Impl())
+{}
+
+RingZ2Slow::~RingZ2Slow()
+{}
+
+void RingZ2Slow::CopyTo(RingZ2Slow& other)const
+{
+	*other.impl_ = *impl_;
+}
 
 std::unique_ptr<IOData<RingZ2Slow>> RingZ2Slow::Create(const F4MPI::IOPolynomSet& in)
 {
 	auto* data = new RingZ2SlowIoData();
-	RingZ2Slow ring;
-	ring.CopyTo(data->in_ring_); 
-	PolysSet in_polys;
 	if (
 		in.field_char != 2 ||
 		in.mon_order != F4MPI::CMonomial::degrevlexOrder ||
@@ -147,22 +161,51 @@ std::unique_ptr<IOData<RingZ2Slow>> RingZ2Slow::Create(const F4MPI::IOPolynomSet
 	{
 		throw std::runtime_error("unsupported parameters for RingZ2Slow");
 	}
+	data->in_ring_.impl_->var_count = in.var_count;
+	PolysSet in_polys;
 	for(auto poly:in.polys)
 	{
+		Polynomial poly_in_ring;
 		for(auto mon = poly.m_begin(); mon != poly.m_end(); ++mon)
 		{
-			
+			Monomial mon_in_ring;
+			for (int var_idx = 0; var_idx < data->in_ring_.impl_->var_count; ++var_idx)
+			{
+				if (int deg = mon->getDegree(var_idx))
+				{
+					mon_in_ring[kFirstVar] = deg;
+				}
+			}
+			poly_in_ring.push_back(mon_in_ring);
 		}
+		in_polys.push_back(poly_in_ring);
 	}
-	//TODO convert in to in_polys
 	data->in_ = in_polys;
 	return std::unique_ptr<IOData<RingZ2Slow>>(data);
 }
 
 F4MPI::IOPolynomSet RingZ2Slow::ConvertResult(std::unique_ptr<IOData<RingZ2Slow>>& result)
 {
-	result.reset();
-	//TODO convert result 
 	F4MPI::IOPolynomSet converted_result;
+	converted_result.field_char = 2;
+	converted_result.mon_order = F4MPI::CMonomial::degrevlexOrder;
+	converted_result.type = F4MPI::FieldType::Z;
+	converted_result.var_count = result->out_ring.impl_->var_count;
+	for(auto poly_in_ring:result->out)
+	{
+		F4MPI::CPolynomial poly;
+		for(auto mon_in_ring: poly_in_ring)
+		{
+			std::vector<F4MPI::CMonomialBase::Deg> mon(converted_result.var_count);
+			for (auto var_deg_pair:mon_in_ring)
+			{
+				int var_idx = var_deg_pair.first - kFirstVar;
+				mon[var_idx] =var_deg_pair.second;
+			}
+			poly.addTerm(F4MPI::CModular(1), F4MPI::CMonomial(mon));
+		}
+		converted_result.polys.push_back(poly);
+	}
+	result.reset();
 	return converted_result;
 }

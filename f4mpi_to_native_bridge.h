@@ -9,6 +9,7 @@ namespace F4MPI
 		io_poly_set_in.type = FieldType::Z;
 		io_poly_set_in.field_char = CModular::getMOD();
 		io_poly_set_in.mon_order = CMonomial::getOrder();
+		io_poly_set_in.var_count = CMonomial::theNumberOfVariables;
 		auto io_data = TRing::Create(io_poly_set_in);
 		TAlgoT<TRing>::Do(*io_data);
 		F4MPI::IOPolynomSet io_poly_set_out = TRing::ConvertResult(io_data);
