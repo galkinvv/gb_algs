@@ -60,7 +60,9 @@ public:
 		class MultLPolysQueue:std::vector<MultLPoly>{
 			friend class FastAssociatedLabeledRingWithTracking;
 		};
-		class LPolysResult:std::vector<LPoly>{};
+		class LPolysResult:std::vector<LPolyImpl>{
+			friend class FastAssociatedLabeledRingWithTracking;
+		};
 
 		FastAssociatedLabeledRingWithTracking(const RingZ2Slow&)
 		{}
@@ -70,10 +72,7 @@ public:
 		}
 		LPoly DequeueSigSmallest(MultLPolysQueue& queue);
 		void PutInQueueExtendLabeledPolys(const PolysSet& in, MultLPolysQueue& queue);
-		void FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue, LPolysResult& to_fill)
-		{
-			//TODO
-		}
+		void FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue, LPolysResult& to_fill);
 		void ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
 		{
 			//TODO

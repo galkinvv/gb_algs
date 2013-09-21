@@ -25,12 +25,12 @@ namespace
 		}
 		return result;
 	}
-
+	
 	template <class TMonomial>
 	int MDeg(const TMonomial& m)
 	{
 		int result = 0;
-		for(auto i = m.begin(); i!=m.end; ++i)
+		for(auto i = m.begin(); i!=m.end(); ++i)
 		{
 			result+=i->second;
 		}
@@ -79,8 +79,15 @@ namespace
 		}
 	}
 
-	template <class TMultLPoly>
-	auto MultSig(const TMultLPoly& mp) -> decltype(mp.mul_by)
+	template <class TPolynomial, class TMonomial = decltype(*TPolynomial().cbegin())>
+	TMonomial HM(const TPolynomial& p) 
+	{
+		assert(!p.empty());
+		return *std::max_element(p.begin(), p.end(), MDegRevLexless<TMonomial>);
+	}
+
+	template <class TMultLPoly, class TMonomial = decltype(TMultLPoly().mul_by)>
+	TMonomial  MultSig(const TMultLPoly& mp)
 	{
 		return Mmul(mp.mul_by, mp.poly.sig_mon);
 	}
@@ -94,7 +101,7 @@ namespace
 		}
 		if (unequal(MultSig(mp1), MultSig(mp2), item_less))
 		{
-			return item_less; //index1 < index2
+			return item_less; //sigmon1 < sigmon2
 		}
 		return false; //equal
 	}
@@ -133,6 +140,25 @@ void FR::PutInQueueExtendLabeledPolys(const PolysSet& in, MultLPolysQueue& queue
 		queue.push_back(mp);
 	}
 }
+
+void FR::FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue, LPolysResult& to_fill)
+{
+	for(auto i0 = queue.begin(); i0 != queue.end(); ++i0)
+	{
+		assert(MDeg(i0->mul_by)  == 0 && MDeg(i0->poly.sig_mon) == 0) ;
+		for(auto i1 = std::next(i0); i1 != queue.end(); ++i1)
+		{
+			MultLPoly syz_part[2];
+			syz_part[0].poly.sig_index = i0->poly.sig_index;
+			syz_part[0].poly.sig_mon = HM(i1->poly.value);
+			syz_part[1].poly.sig_index = i1->poly.sig_index;
+			syz_part[1].poly.sig_mon = HM(i0->poly.value);;
+			int greater_sig_idx = static_cast<int>(SigLess(syz_part[0], syz_part[1]));
+			to_fill.push_back(syz_part[greater_sig_idx].poly);
+		}
+	}
+}
+
 struct RingZ2Slow::Impl
 {
 	int var_count;
