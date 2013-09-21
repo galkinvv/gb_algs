@@ -81,7 +81,7 @@ public:
 		ReconstructionInfo FieldAgnosticReconstructionInfo(const LPoly& poly)
 		{
 			ReconstructionInfo result;
-			static_cast<std::vector<Monomial>&>(result) = poly.reconstruction_info;
+			result.assign(poly.reconstruction_info.begin(),  poly.reconstruction_info.end());
 			//TODO: fill top
 			return result;
 		}
@@ -110,6 +110,7 @@ public:
 	bool ConstructAndInsertNormalized(const PolysSet& in, const ReconstructionInfo& info, PolysSet& out)
 	{
 		//TODO
+		return true;
 	}
 
 	static std::unique_ptr<IOData<RingZ2Slow>> Create(const F4MPI::IOPolynomSet& in);

@@ -64,9 +64,7 @@ $(BUILDDIR)/run-gt$(BINEXT): $(TEST_OBJECTS) $(FULLLIBNAME)
 $(FULLLIBNAME): $(LIBOBJECTS)
 	ar cr $@ $^
 
-$(BUILDDIR)/unittest/run-gt.o: 3rd/gtest/src/gtest-all.cc
-
-$(BUILDDIR)/unittest/%.o: unittest/%.cpp
+$(BUILDDIR)/unittest/%.o: unittest/%.cpp 3rd/gtest/src/gtest-all.cc
 	mkdir -p $(dir $@)
 	$(CXX11) $(CXXFLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -c $< -o $@
 
