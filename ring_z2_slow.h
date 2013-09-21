@@ -73,10 +73,8 @@ public:
 		LPoly DequeueSigSmallest(MultLPolysQueue& queue);
 		void PutInQueueExtendLabeledPolys(const PolysSet& in, MultLPolysQueue& queue);
 		void FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue, LPolysResult& to_fill);
-		void ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
-		{
-			//TODO
-		}
+		void ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers);
+		
 		ReconstructionInfo FieldAgnosticReconstructionInfo(const LPoly& poly)
 		{
 			ReconstructionInfo result;
