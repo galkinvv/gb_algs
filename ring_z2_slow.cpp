@@ -112,10 +112,16 @@ TPolynomial PReduce(const TPolynomial& poly_to_red, const TPolynomial& by, const
 	for (auto mon_by_notmuled:by)
 	{
 		auto mon = Mmul(mon_by_notmuled, mul_by);
-		auto already_present = 
-		presence_count.insert(mon);
+		auto pair_position_already_present_flag = presence_count.insert(mon);
+		if (!pair_position_already_present_flag.second)
+		{
+			presence_count.erase(pair_position_already_present_flag.first);
+		}
 	}
-	
+	TPolynomial result;
+	result.reserve(presence_count.size());
+	result.insert(result.begin(), presence_count.begin(), presence_count.end());
+	return result;
 }
 
 template <class TMultLPoly, class TMonomial = decltype(TMultLPoly().mul_by)>
@@ -187,7 +193,30 @@ void FR::FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue, 
 
 void FR::ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
 {
-	//TODO
+	while(!poly.value.empty())
+	{
+		for(auto reducer:reducers)
+		{
+			if(!reducer.value.empty())
+			{
+				auto divider = DivideIfCan(HM(poly.value), HM(reducer.value));
+				if (!divider)
+				{
+					continue;
+				}
+				MultLPoly mult_reductor;
+				mult_reductor.poly = reducer;
+				mult_reductor.mul_by = *divider;
+				MultLPoly to_reduce;
+				to_reduce.poly = poly;
+				if (!SigLess(mult_reductor, to_reduce))
+				{
+					continue;
+				}
+				poly.value = PReduce(poly.value,  reducer.value, *divider);
+			}
+		}
+	}
 }
 
 struct RingZ2Slow::Impl {
