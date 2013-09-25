@@ -75,13 +75,8 @@ public:
 		void FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue, LPolysResult& to_fill);
 		void ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers);
 		
-		ReconstructionInfo FieldAgnosticReconstructionInfo(const LPoly& poly)
-		{
-			ReconstructionInfo result;
-			result.assign(poly.reconstruction_info.begin(),  poly.reconstruction_info.end());
-			//TODO: fill top
-			return result;
-		}
+		ReconstructionInfo FieldAgnosticReconstructionInfo(const LPoly& poly);
+
 		bool IsZero(const LPoly& poly)
 		{
 			return poly.value.empty();

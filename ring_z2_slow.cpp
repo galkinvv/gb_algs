@@ -193,8 +193,10 @@ void FR::FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue, 
 
 void FR::ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
 {
-	while(!poly.value.empty())
+	bool failed_to_find_reducer = false;
+	while(!poly.value.empty() && !failed_to_find_reducer)
 	{
+		failed_to_find_reducer = true;
 		for(auto reducer:reducers)
 		{
 			if(!reducer.value.empty())
@@ -214,9 +216,19 @@ void FR::ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
 					continue;
 				}
 				poly.value = PReduce(poly.value,  reducer.value, *divider);
+				failed_to_find_reducer = false;
+				break;
 			}
 		}
 	}
+}
+
+RingZ2Slow::ReconstructionInfo FR::FieldAgnosticReconstructionInfo(const LPoly& poly)
+{
+	ReconstructionInfo result;
+	result.assign(poly.reconstruction_info.begin(),  poly.reconstruction_info.end());
+	result.top = HM(poly.reconstruction_info);
+	return result;
 }
 
 struct RingZ2Slow::Impl {
