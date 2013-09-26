@@ -20,7 +20,7 @@ class RingZ2Slow: NoCopy
 	friend class IOData<RingZ2Slow>;
 	struct Impl;
 	std::unique_ptr<Impl> impl_;
-	struct ReconstructionInfoImpl: std::vector<Monomial>{
+	struct ReconstructionInfoImpl: std::vector<std::vector<Monomial>>{
 		Monomial top;
 	};
 public:
@@ -43,7 +43,7 @@ public:
 		struct LPolyImpl
 		{
 			FastPoly value;
-			FastPoly reconstruction_info;
+			std::vector<FastPoly> reconstruction_info;
 			double sig_index;
 			Monomial sig_mon;
 		};
@@ -77,27 +77,13 @@ public:
 		
 		ReconstructionInfo FieldAgnosticReconstructionInfo(const LPoly& poly);
 
-		bool IsZero(const LPoly& poly)
-		{
-			return poly.value.empty();
-		}
-		void Normalize(LPoly& poly)
-		{
-			//TODO
-		}
-		void ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult& reducers)
-		{
-			//TODO
-		}
-		void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
-		{
-			//TODO
-		}
-		void InsertInResult(const LPoly& poly, LPolysResult& result)
-		{
-			//TODO
-		}
-
+		bool IsZero(const LPoly& poly);
+		
+		void Normalize(LPoly& poly);
+		
+		void InsertInResult(const LPoly& poly, LPolysResult& result);
+		void ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult& reducers);
+		void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue);
 	};
 	bool ConstructAndInsertNormalized(const PolysSet& in, const ReconstructionInfo& info, PolysSet& out)
 	{

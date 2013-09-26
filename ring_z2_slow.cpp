@@ -74,19 +74,17 @@ template <class TMonomial>
 std::unique_ptr<TMonomial> DivideIfCan(const TMonomial& m1, const TMonomial& m2)
 {
 	std::unique_ptr<TMonomial> result(new TMonomial);
-	for (auto var_deg:m1)
-	{
+	for (auto var_deg:m1) {
 		auto deg = var_deg.second;
 		auto var = var_deg.first;
 		assert(deg >0);
 		auto var_deg_in_m2 = m2.find(var);
-		if (var_deg_in_m2 == m2.end() || var_deg_in_m2 ->second < deg )
-		{
+		if (var_deg_in_m2 == m2.end() || var_deg_in_m2 ->second < deg ) {
 			return nullptr;
 		}
 		int deg_diff = deg - var_deg_in_m2 ->second;
-		if (deg_diff == 0){
-				continue;
+		if (deg_diff == 0) {
+			continue;
 		}
 		(*result)[var] = deg_diff;
 	}
@@ -101,20 +99,16 @@ TConstMonomialRef HM(const TPolynomial& p)
 }
 
 template <class TPolynomial, class TMonomial>
-TPolynomial PReduce(const TPolynomial& poly_to_red, const TPolynomial& by, const TMonomial& mul_by)
+TPolynomial PSubtract(const TPolynomial& poly_to_red, const TPolynomial& by, const TMonomial& mul_by)
 {
-	assert(HM(poly_to_red) == Mmul(HM(by), mul_by));
 	std::set<TMonomial> presence_count;
-	for (auto mon:poly_to_red)
-	{
+	for (auto mon:poly_to_red) {
 		presence_count.insert(mon);
 	}
-	for (auto mon_by_notmuled:by)
-	{
+	for (auto mon_by_notmuled:by) {
 		auto mon = Mmul(mon_by_notmuled, mul_by);
 		auto pair_position_already_present_flag = presence_count.insert(mon);
-		if (!pair_position_already_present_flag.second)
-		{
+		if (!pair_position_already_present_flag.second) {
 			presence_count.erase(pair_position_already_present_flag.first);
 		}
 	}
@@ -122,6 +116,13 @@ TPolynomial PReduce(const TPolynomial& poly_to_red, const TPolynomial& by, const
 	result.reserve(presence_count.size());
 	result.insert(result.begin(), presence_count.begin(), presence_count.end());
 	return result;
+}
+
+template <class TPolynomial, class TMonomial>
+TPolynomial PReduce(const TPolynomial& poly_to_red, const TPolynomial& by, const TMonomial& mul_by)
+{
+	assert(HM(poly_to_red) == Mmul(HM(by), mul_by));
+	return PSubtract(poly_to_red, by, mul_by);
 }
 
 template <class TMultLPoly, class TMonomial = decltype(TMultLPoly().mul_by)>
@@ -142,6 +143,26 @@ bool SigLess(const TMultLPoly& mp1, const TMultLPoly& mp2)
 	return false; //equal
 }
 
+template <class TMultLPoly>
+bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly&  sup_by)
+{
+	if (sup_by.poly.value.empty()) return false;
+	if (maybe_supded.poly.value.empty()) return false;
+	if (maybe_supded.poly.sig_index !=  sup_by.poly.sig_index) {
+		return false; //index_old != index_new
+	}
+	auto sig_old = MultSig(maybe_supded);
+	auto sig_new = MultSig(sup_by);
+	if (!DivideIfCan(sig_old, sig_new))
+	{
+		return false; //index_old not divisible by index_new
+	}
+	//auto sig_old_hm_new = 
+
+	//TODO
+	return false; //equal
+}
+
 typedef RingZ2Slow::FastAssociatedLabeledRingWithTracking FR;
 
 struct RingZ2SlowIoData: IOData<RingZ2Slow> {
@@ -159,19 +180,27 @@ FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)
 	result.sig_index = min->poly.sig_index;
 	result.sig_mon = Mmul(min->poly.sig_mon, min->mul_by);
 	result.value = Pmul(min->poly.value, min->mul_by);
-	result.reconstruction_info = Pmul(min->poly.reconstruction_info, min->mul_by);
+	result.reconstruction_info.reserve(min->poly.reconstruction_info.size());
+	for (auto rec_info_poly:min->poly.reconstruction_info) {
+		result.reconstruction_info.push_back(Pmul(rec_info_poly, min->mul_by));
+	}
 	queue.erase(min);
 	return result;
 }
 
 void FR::PutInQueueExtendLabeledPolys(const PolysSet& in, MultLPolysQueue& queue)
 {
-	double current_sig_index = 1;
-	for(auto poly = in.begin(); poly != in. end(); ++poly, current_sig_index += 1) {
+	int current_poly_index = 0;
+	for(auto poly: in) {
 		MultLPoly mp;
-		mp.poly.value = *poly;
-		mp.poly.sig_index = current_sig_index;
+		for (auto mon : poly) {
+			mp.poly.value.push_back(mon);
+		}
+		mp.poly.reconstruction_info.resize(in.size());
+		mp.poly.reconstruction_info[current_poly_index].resize(1);
+		mp.poly.sig_index = double(current_poly_index) + 1;
 		queue.push_back(mp);
+		++current_poly_index;
 	}
 }
 
@@ -181,6 +210,7 @@ void FR::FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue, 
 		assert(MDeg(i0->mul_by)  == 0 && MDeg(i0->poly.sig_mon) == 0) ;
 		for(auto i1 = std::next(i0); i1 != queue.end(); ++i1) {
 			MultLPoly syz_part[2];
+			//value and reconstruction info are zero
 			syz_part[0].poly.sig_index = i0->poly.sig_index;
 			syz_part[0].poly.sig_mon = HM(i1->poly.value);
 			syz_part[1].poly.sig_index = i1->poly.sig_index;
@@ -194,16 +224,12 @@ void FR::FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue, 
 void FR::ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
 {
 	bool failed_to_find_reducer = false;
-	while(!poly.value.empty() && !failed_to_find_reducer)
-	{
+	while(!poly.value.empty() && !failed_to_find_reducer) {
 		failed_to_find_reducer = true;
-		for(auto reducer:reducers)
-		{
-			if(!reducer.value.empty())
-			{
+		for(auto reducer:reducers) {
+			if(!reducer.value.empty()) {
 				auto divider = DivideIfCan(HM(poly.value), HM(reducer.value));
-				if (!divider)
-				{
+				if (!divider) {
 					continue;
 				}
 				MultLPoly mult_reductor;
@@ -211,11 +237,15 @@ void FR::ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
 				mult_reductor.mul_by = *divider;
 				MultLPoly to_reduce;
 				to_reduce.poly = poly;
-				if (!SigLess(mult_reductor, to_reduce))
-				{
+				if (!SigLess(mult_reductor, to_reduce)) {
 					continue;
 				}
 				poly.value = PReduce(poly.value,  reducer.value, *divider);
+				assert(poly.reconstruction_info.size() == reducer.reconstruction_info.size());
+				for (int rec_info_idx = 0; rec_info_idx <poly.reconstruction_info.size(); ++rec_info_idx) {
+					auto& rec_info_ref = poly.reconstruction_info[rec_info_idx];
+					rec_info_ref = PSubtract(rec_info_ref, reducer.reconstruction_info[rec_info_idx], *divider);
+				}
 				failed_to_find_reducer = false;
 				break;
 			}
@@ -227,8 +257,34 @@ RingZ2Slow::ReconstructionInfo FR::FieldAgnosticReconstructionInfo(const LPoly& 
 {
 	ReconstructionInfo result;
 	result.assign(poly.reconstruction_info.begin(),  poly.reconstruction_info.end());
-	result.top = HM(poly.reconstruction_info);
+	result.top = HM(poly.value);
 	return result;
+}
+
+void FR::ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult& reducers)
+{
+	throw std::logic_error("ring extension requsted for Z2");
+}
+
+bool FR::IsZero(const LPoly& poly)
+{
+	return poly.value.empty();
+}
+
+void FR::Normalize(LPoly& poly)
+{
+	//Always normalized in Z2
+}
+
+void FR::InsertInResult(const LPoly& poly, LPolysResult& result)
+{
+	result.push_back(poly);
+}
+
+
+void FR::ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
+{
+	//TODO
 }
 
 struct RingZ2Slow::Impl {
