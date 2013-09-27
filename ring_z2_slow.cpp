@@ -130,6 +130,13 @@ TMonomial  MultSig(const TMultLPoly& mp)
 {
 	return Mmul(mp.mul_by, mp.poly.sig_mon);
 }
+
+template <class TMultLPoly, class TMonomial = decltype(TMultLPoly().mul_by)>
+TMonomial  MultHM(const TMultLPoly& mp)
+{
+	return Mmul(mp.mul_by, HM(mp.poly.value));
+}
+
 template <class TMultLPoly>
 bool SigLess(const TMultLPoly& mp1, const TMultLPoly& mp2)
 {
@@ -137,27 +144,32 @@ bool SigLess(const TMultLPoly& mp1, const TMultLPoly& mp2)
 	if (unequal(mp1.poly.sig_index, mp2.poly.sig_index, item_less)) {
 		return item_less; //index1 < index2
 	}
-	if (unequal(MultSig(mp1), MultSig(mp2), item_less)) {
+	auto sig1 = MultSig(mp1);
+	auto sig2 = MultSig(mp2);
+	if (unequal(sig1, sig2, item_less, MDegRevLexless<decltype(sig1)>)) {
 		return item_less; //sigmon1 < sigmon2
 	}
 	return false; //equal
 }
 
 template <class TMultLPoly>
-bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly&  sup_by)
+bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by)
 {
-	if (sup_by.poly.value.empty()) return false;
-	if (maybe_supded.poly.value.empty()) return false;
 	if (maybe_supded.poly.sig_index !=  sup_by.poly.sig_index) {
 		return false; //index_old != index_new
 	}
-	auto sig_old = MultSig(maybe_supded);
-	auto sig_new = MultSig(sup_by);
-	if (!DivideIfCan(sig_old, sig_new))
+	auto sig_supded = MultSig(maybe_supded);
+	auto sig_by = MultSig(sup_by);
+	if (!DivideIfCan(sig_supded, sig_by))
 	{
 		return false; //index_old not divisible by index_new
 	}
-	//auto sig_old_hm_new = 
+	if (IsZero(sup_by.poly)) return true; //zero polynomial with dividing sig
+	if (IsZero(maybe_supded.poly)) return false; //zero polynomial with sig divisible by non-zero
+	
+	auto sig_supded_hm_by = Mmul(sig_supded, MultHM(sup_by));
+	auto sig_by_hm_supded = Mmul(sig_by, MultHM(maybe_supded));
+
 
 	//TODO
 	return false; //equal

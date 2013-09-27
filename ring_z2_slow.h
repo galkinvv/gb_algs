@@ -12,15 +12,18 @@ namespace F4MPI
 class RingZ2Slow: NoCopy
 {
 	//Z_2 ring with degrevlex oredr on variables
-	typedef std::map<char,int> Monomial;
-	typedef std::vector<Monomial> Polynomial;
+	struct Monomial : std::map<char,int>{};
+	friend bool operator<(const Monomial&, const Monomial&); //undefined
+	struct Polynomial : std::vector<Monomial>{};
+	friend bool operator<(const Polynomial&, const Polynomial&); //undefined
 
 	RingZ2Slow();
 	~RingZ2Slow();
 	friend class IOData<RingZ2Slow>;
 	struct Impl;
 	std::unique_ptr<Impl> impl_;
-	struct ReconstructionInfoImpl: std::vector<std::vector<Monomial>>{
+	struct ReconstructionInfoImpl: std::vector<std::vector<Monomial>>
+	{
 		Monomial top;
 	};
 public:
@@ -39,7 +42,7 @@ public:
 
 	class FastAssociatedLabeledRingWithTracking : NoCopy
 	{
-		typedef std::vector<Monomial> FastPoly;
+		struct FastPoly : std::vector<Monomial> {};
 		struct LPolyImpl
 		{
 			FastPoly value;
@@ -57,10 +60,12 @@ public:
 		{
 			friend class FastAssociatedLabeledRingWithTracking;
 		};
-		class MultLPolysQueue:std::vector<MultLPoly>{
+		class MultLPolysQueue:std::vector<MultLPoly>
+		{
 			friend class FastAssociatedLabeledRingWithTracking;
 		};
-		class LPolysResult:std::vector<LPolyImpl>{
+		class LPolysResult:std::vector<LPolyImpl>
+		{
 			friend class FastAssociatedLabeledRingWithTracking;
 		};
 
