@@ -12,11 +12,11 @@ namespace F4MPI
 class RingZ2Slow: NoCopy
 {
 	//Z_2 ring with degrevlex oredr on variables
-	struct Monomial : std::map<char,int>{};
-	friend bool operator<(const Monomial&, const Monomial&); //undefined
+	struct Monomial : std::map<char,int>{
+		friend bool operator<(const Monomial&, const Monomial&); //undefined
+	};
+	
 	struct Polynomial : std::vector<Monomial>{};
-	friend bool operator<(const Polynomial&, const Polynomial&); //undefined
-
 	RingZ2Slow();
 	~RingZ2Slow();
 	friend class IOData<RingZ2Slow>;
