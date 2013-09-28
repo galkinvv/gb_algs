@@ -82,7 +82,12 @@ public:
 		
 		ReconstructionInfo FieldAgnosticReconstructionInfo(const LPoly& poly);
 
-		bool IsZero(const LPoly& poly);
+		bool IsZero(const LPoly& poly)
+		{
+			return IsZeroImpl(poly);
+		}
+		
+		bool IsZeroImpl(const LPolyImpl& poly);
 		
 		void Normalize(LPoly& poly);
 		

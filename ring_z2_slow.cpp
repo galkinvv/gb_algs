@@ -41,6 +41,26 @@ TMonomial Mmul(const TMonomial& m1, const TMonomial& m2)
 	return result;
 }
 
+template <class TMonomial>
+TMonomial ToLCMMultiplier(const TMonomial& to_mul, const TMonomial& lcm_with)
+{
+	TMonomial result;
+	for(auto var_deg_pair:lcm_with) {
+		auto same_var_pos= to_mul.find(var_deg_pair.first);
+		auto var_deg_result = var_deg_pair;
+
+		if (same_var_pos != to_mul.end())
+		{
+			var_deg_result.second -= same_var_pos->second;
+		}
+		if (var_deg_result.second >0)
+		{
+			result.insert(var_deg_result);
+		}
+	}
+	return result;
+}
+
 template <class TMonomial, class TPolynomial>
 TPolynomial Pmul(const TPolynomial& p, const TMonomial& m)
 {
@@ -182,8 +202,9 @@ bool SigLess(const TMultLPoly& mp1, const TMultLPoly& mp2)
 template <class TMultLPoly>
 bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by)
 {
-	if (maybe_supded.poly.sig_index !=  sup_by.poly.sig_index) {
-		return false; //index_old != index_new
+	if (maybe_supded.poly.sig_index !=  sup_by.poly.sig_index)
+	{
+		return false; //can't supersede wth different indexes
 	}
 	auto sig_supded = MultSig(maybe_supded);
 	auto sig_by = MultSig(sup_by);
@@ -196,10 +217,11 @@ bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by)
 	
 	auto sig_supded_hm_by = Mmul(sig_supded, MultHM(sup_by));
 	auto sig_by_hm_supded = Mmul(sig_by, MultHM(maybe_supded));
-
-
-	//TODO
-	return false; //equal
+	if (MDegRevLexless(sig_by_hm_supded, sig_supded_hm_by))
+	{
+		return false; //HM/S for maybe_supded is smaller
+	}
+	return true; // HM/S for maybe_supded is not smaller
 }
 
 typedef RingZ2Slow::FastAssociatedLabeledRingWithTracking FR;
@@ -305,7 +327,7 @@ void FR::ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult
 	throw std::logic_error("ring extension requsted for Z2");
 }
 
-bool FR::IsZero(const LPoly& poly)
+bool FR::IsZeroImpl(const LPolyImpl& poly)
 {
 	return poly.value.empty();
 }
@@ -323,7 +345,22 @@ void FR::InsertInResult(const LPoly& poly, LPolysResult& result)
 
 void FR::ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
 {
+	assert(!IsZeroImpl(right_part));
+	for (auto left_part:left_parts)
+	{
+		if (IsZeroImpl(left_part))
+		{
+			continue;
+		}
+		MultLPoly left;
+		left.poly = left_part;
+		left.mul_by = ToLCMMultiplier(HM(left_part.value), HM(right_part.value));
+		MultLPoly right;
+		right.poly = right_part;
+		right.mul_by = ToLCMMultiplier(HM(right_part.value), HM(left_part.value));
+		MultLPoly &greatest = SigLess(left, right) ? right : left;
 	//TODO
+	}
 }
 
 struct RingZ2Slow::Impl {
