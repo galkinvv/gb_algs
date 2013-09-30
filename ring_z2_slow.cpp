@@ -138,6 +138,12 @@ std::unique_ptr<TMonomial> DivideIfCan(const TMonomial& m1, const TMonomial& m2)
 	return result;
 }
 
+template <class TPolynomial>
+bool IsZeroImpl(const TPolynomial& p)
+{
+	return p.empty();
+}
+
 template <class TPolynomial, class TConstMonomialRef = decltype(*TPolynomial().cbegin())>
 TConstMonomialRef HM(const TPolynomial& p)
 {
@@ -212,8 +218,8 @@ bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by)
 	{
 		return false; //index_old not divisible by index_new
 	}
-	if (IsZero(sup_by.poly)) return true; //zero polynomial with dividing sig
-	if (IsZero(maybe_supded.poly)) return false; //zero polynomial with sig divisible by non-zero
+	if (IsZeroImpl(sup_by.poly.value)) return true; //zero polynomial with dividing sig
+	if (IsZeroImpl(maybe_supded.poly.value)) return false; //zero polynomial with sig divisible by non-zero
 	
 	auto sig_supded_hm_by = Mmul(sig_supded, MultHM(sup_by));
 	auto sig_by_hm_supded = Mmul(sig_by, MultHM(maybe_supded));
@@ -327,9 +333,9 @@ void FR::ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult
 	throw std::logic_error("ring extension requsted for Z2");
 }
 
-bool FR::IsZeroImpl(const LPolyImpl& poly)
+bool FR::IsZero(const LPoly& poly)
 {
-	return poly.value.empty();
+	return IsZeroImpl(poly.value);
 }
 
 void FR::Normalize(LPoly& poly)
@@ -345,10 +351,10 @@ void FR::InsertInResult(const LPoly& poly, LPolysResult& result)
 
 void FR::ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
 {
-	assert(!IsZeroImpl(right_part));
+	assert(!IsZeroImpl(right_part.value));
 	for (auto left_part:left_parts)
 	{
-		if (IsZeroImpl(left_part))
+		if (IsZeroImpl(left_part.value))
 		{
 			continue;
 		}
@@ -358,8 +364,27 @@ void FR::ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts
 		MultLPoly right;
 		right.poly = right_part;
 		right.mul_by = ToLCMMultiplier(HM(right_part.value), HM(left_part.value));
-		MultLPoly &greatest = SigLess(left, right) ? right : left;
-	//TODO
+		MultLPoly &new_lpoly = SigLess(left, right) ? right : left;
+		bool was_supeseded;
+		for(auto existing_lpoly : queue)
+		{
+			if (IsSupersededBy(new_lpoly, existing_lpoly))
+			{
+				was_supeseded = true;
+				break;
+			}
+		}
+		if (was_supeseded)
+		{
+			continue;
+		}
+		queue.erase(
+			std::remove_if(
+				queue.begin(), queue.end(), std::bind(IsSupersededBy<MultLPoly>, std::placeholders::_1, new_lpoly)
+			),
+			queue.end()
+		);
+		queue.push_back(new_lpoly);
 	}
 }
 

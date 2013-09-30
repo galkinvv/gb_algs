@@ -55,6 +55,7 @@ public:
 			LPolyImpl poly;
 			Monomial mul_by;
 		};
+		
 	public:
 		class LPoly:LPolyImpl
 		{
@@ -82,12 +83,7 @@ public:
 		
 		ReconstructionInfo FieldAgnosticReconstructionInfo(const LPoly& poly);
 
-		bool IsZero(const LPoly& poly)
-		{
-			return IsZeroImpl(poly);
-		}
-		
-		bool IsZeroImpl(const LPolyImpl& poly);
+		bool IsZero(const LPoly& poly);
 		
 		void Normalize(LPoly& poly);
 		
