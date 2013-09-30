@@ -91,11 +91,7 @@ public:
 		void ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult& reducers);
 		void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue);
 	};
-	bool ConstructAndInsertNormalized(const PolysSet& in, const ReconstructionInfo& info, PolysSet& out)
-	{
-		//TODO
-		return true;
-	}
+	bool ConstructAndInsertNormalized(const PolysSet& in, const ReconstructionInfo& info, PolysSet& out);
 
 	static std::unique_ptr<IOData<RingZ2Slow>> Create(const F4MPI::IOPolynomSet& in);
 

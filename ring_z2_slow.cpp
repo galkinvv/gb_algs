@@ -6,27 +6,22 @@
 namespace
 {
 
-struct MonomialHash
-{
+struct MonomialHash {
 	template <class TMonomial>
-	std::size_t operator()(TMonomial const& mon) const 
-    {
-        std::size_t result = 0;
-		for(auto var : mon)
-		{
+	std::size_t operator()(TMonomial const& mon) const {
+		std::size_t result = 0;
+		for(auto var : mon) {
 			result = result *(1 + 1 << 4) ^ pair_hash(var);
 		}
-        return result;
-    }
+		return result;
+	}
 
 	template <class T>
-	std::size_t std_hash(const T& var) const 
-	{
+	std::size_t std_hash(const T& var) const {
 		return std::hash<T>()(var);
 	}
 	template <class Pair>
-	std::size_t pair_hash(const Pair& pair) const 
-	{
+	std::size_t pair_hash(const Pair& pair) const {
 		return std_hash(pair.first) + (1 + 1<<2) * std_hash(pair.second) ;
 	}
 };
@@ -49,12 +44,10 @@ TMonomial ToLCMMultiplier(const TMonomial& to_mul, const TMonomial& lcm_with)
 		auto same_var_pos= to_mul.find(var_deg_pair.first);
 		auto var_deg_result = var_deg_pair;
 
-		if (same_var_pos != to_mul.end())
-		{
+		if (same_var_pos != to_mul.end()) {
 			var_deg_result.second -= same_var_pos->second;
 		}
-		if (var_deg_result.second >0)
-		{
+		if (var_deg_result.second >0) {
 			result.insert(var_deg_result);
 		}
 	}
@@ -152,13 +145,13 @@ TConstMonomialRef HM(const TPolynomial& p)
 }
 
 template <class TPolynomial, class TMonomial>
-TPolynomial PSubtract(const TPolynomial& poly_to_red, const TPolynomial& by, const TMonomial& mul_by)
+TPolynomial PAdd(const TPolynomial& not_muled_item, const TPolynomial& muled_item, const TMonomial& mul_by)
 {
 	std::unordered_set<TMonomial, MonomialHash> presence_count;
-	for (auto mon:poly_to_red) {
+	for (auto mon:not_muled_item) {
 		presence_count.insert(mon);
 	}
-	for (auto mon_by_notmuled:by) {
+	for (auto mon_by_notmuled:muled_item) {
 		auto mon = Mmul(mon_by_notmuled, mul_by);
 		auto pair_position_already_present_flag = presence_count.insert(mon);
 		if (!pair_position_already_present_flag.second) {
@@ -175,7 +168,7 @@ template <class TPolynomial, class TMonomial>
 TPolynomial PReduce(const TPolynomial& poly_to_red, const TPolynomial& by, const TMonomial& mul_by)
 {
 	assert(HM(poly_to_red) == Mmul(HM(by), mul_by));
-	return PSubtract(poly_to_red, by, mul_by);
+	return PAdd(poly_to_red, by, mul_by);
 }
 
 template <class TMultLPoly, class TMonomial = decltype(TMultLPoly().mul_by)>
@@ -208,23 +201,20 @@ bool SigLess(const TMultLPoly& mp1, const TMultLPoly& mp2)
 template <class TMultLPoly>
 bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by)
 {
-	if (maybe_supded.poly.sig_index !=  sup_by.poly.sig_index)
-	{
+	if (maybe_supded.poly.sig_index !=  sup_by.poly.sig_index) {
 		return false; //can't supersede wth different indexes
 	}
 	auto sig_supded = MultSig(maybe_supded);
 	auto sig_by = MultSig(sup_by);
-	if (!DivideIfCan(sig_supded, sig_by))
-	{
+	if (!DivideIfCan(sig_supded, sig_by)) {
 		return false; //index_old not divisible by index_new
 	}
 	if (IsZeroImpl(sup_by.poly.value)) return true; //zero polynomial with dividing sig
 	if (IsZeroImpl(maybe_supded.poly.value)) return false; //zero polynomial with sig divisible by non-zero
-	
+
 	auto sig_supded_hm_by = Mmul(sig_supded, MultHM(sup_by));
 	auto sig_by_hm_supded = Mmul(sig_by, MultHM(maybe_supded));
-	if (MDegRevLexless(sig_by_hm_supded, sig_supded_hm_by))
-	{
+	if (MDegRevLexless(sig_by_hm_supded, sig_supded_hm_by)) {
 		return false; //HM/S for maybe_supded is smaller
 	}
 	return true; // HM/S for maybe_supded is not smaller
@@ -311,7 +301,7 @@ void FR::ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
 				assert(poly.reconstruction_info.size() == reducer.reconstruction_info.size());
 				for (int rec_info_idx = 0; rec_info_idx <poly.reconstruction_info.size(); ++rec_info_idx) {
 					auto& rec_info_ref = poly.reconstruction_info[rec_info_idx];
-					rec_info_ref = PSubtract(rec_info_ref, reducer.reconstruction_info[rec_info_idx], *divider);
+					rec_info_ref = PAdd(rec_info_ref, reducer.reconstruction_info[rec_info_idx], *divider);
 				}
 				failed_to_find_reducer = false;
 				break;
@@ -352,10 +342,8 @@ void FR::InsertInResult(const LPoly& poly, LPolysResult& result)
 void FR::ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
 {
 	assert(!IsZeroImpl(right_part.value));
-	for (auto left_part:left_parts)
-	{
-		if (IsZeroImpl(left_part.value))
-		{
+	for (auto left_part:left_parts) {
+		if (IsZeroImpl(left_part.value)) {
 			continue;
 		}
 		MultLPoly left;
@@ -366,23 +354,20 @@ void FR::ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts
 		right.mul_by = ToLCMMultiplier(HM(right_part.value), HM(left_part.value));
 		MultLPoly &new_lpoly = SigLess(left, right) ? right : left;
 		bool was_supeseded;
-		for(auto existing_lpoly : queue)
-		{
-			if (IsSupersededBy(new_lpoly, existing_lpoly))
-			{
+		for(auto existing_lpoly : queue) {
+			if (IsSupersededBy(new_lpoly, existing_lpoly)) {
 				was_supeseded = true;
 				break;
 			}
 		}
-		if (was_supeseded)
-		{
+		if (was_supeseded) {
 			continue;
 		}
 		queue.erase(
-			std::remove_if(
-				queue.begin(), queue.end(), std::bind(IsSupersededBy<MultLPoly>, std::placeholders::_1, new_lpoly)
-			),
-			queue.end()
+		    std::remove_if(
+		        queue.begin(), queue.end(), std::bind(IsSupersededBy<MultLPoly>, std::placeholders::_1, new_lpoly)
+		    ),
+		    queue.end()
 		);
 		queue.push_back(new_lpoly);
 	}
@@ -402,6 +387,26 @@ RingZ2Slow::~RingZ2Slow()
 void RingZ2Slow::CopyTo(RingZ2Slow& other)const
 {
 	*other.impl_ = *impl_;
+}
+
+bool RingZ2Slow::ConstructAndInsertNormalized(const PolysSet& in, const ReconstructionInfo& info, PolysSet& out)
+{
+	Polynomial result;
+	assert(info.size() == in.size());
+	auto in_poly = in.cbegin();
+	for(auto rec_info : info)
+	{
+		assert(in_poly != in.cend());
+		for(auto mon : rec_info)
+		{
+			result = PAdd(result, *in_poly, mon);
+		}
+		++in_poly;
+	}
+	assert(!IsZeroImpl(result));
+	assert(HM(result) == info.top);
+	out.push_back(result);
+	return true;
 }
 
 std::unique_ptr<IOData<RingZ2Slow>> RingZ2Slow::Create(const F4MPI::IOPolynomSet& in)
