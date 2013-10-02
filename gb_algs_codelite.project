@@ -139,6 +139,7 @@
     <File Name="cmodular.h"/>
     <File Name="cmodular.cpp"/>
     <File Name="iopolynomset.h"/>
+    <File Name="CrossRingInfo.h"/>
   </VirtualDirectory>
   <VirtualDirectory Name="mpi">
     <File Name="mpi/mpimatrix.cpp"/>
