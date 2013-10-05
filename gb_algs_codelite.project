@@ -9,6 +9,7 @@
     <File Name="unittest/run-gt.cpp"/>
     <File Name="unittest/ssg_approx.cpp"/>
     <File Name="unittest/cmodular.cpp"/>
+    <File Name="unittest/zero_skipping_indexed_iterator.cpp"/>
   </VirtualDirectory>
   <Description/>
   <Dependencies/>
@@ -139,7 +140,8 @@
     <File Name="cmodular.h"/>
     <File Name="cmodular.cpp"/>
     <File Name="iopolynomset.h"/>
-    <File Name="CrossRingInfo.h"/>
+    <File Name="cross_ring_info.h"/>
+    <File Name="zero_skipping_indexed_iterator.h"/>
   </VirtualDirectory>
   <VirtualDirectory Name="mpi">
     <File Name="mpi/mpimatrix.cpp"/>

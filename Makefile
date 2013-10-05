@@ -77,7 +77,7 @@ clean:
 
 3rd/gtest/src/gtest-all.cc:
 	rm -rf 3rd/gtest/ /tmp/gtest.zip /tmp/gtest_version
-	wget http://googletest.googlecode.com/files/gtest-1.7.0-rc1.zip -O /tmp/gtest.zip
+	wget http://googletest.googlecode.com/files/gtest-1.7.0.zip -O /tmp/gtest.zip
 	unzip /tmp/gtest.zip -d /tmp/gtest_version
 	mkdir -p 3rd/
 	mv /tmp/gtest_version/gtest* 3rd/gtest

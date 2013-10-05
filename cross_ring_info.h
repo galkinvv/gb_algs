@@ -12,70 +12,22 @@ namespace CrossRingInfo
 	{
 		int var_count;
 	};
-
 	template <MonomialOrder t_order>
 	struct MonimailMetaData:MonimailMetaDataWithoutOrder
 	{
 		static const MonomialOrder order = t_order;
 	};
 	
-	template<class Container, class Item>
-	struct ZeroSkippingIndexedIterator
-	{	
-		ZeroSkippingIndexedIterator():
-			index_(0), 
-			container_(nullptr)
-		{
+	typedef std::vector<int> DegreesContainer;
+	typedef int ArrayPos;
+	struct ArrayInterval
+	{
+		ArrayPos begin, end;
+		std::size_t size(){
+			return end - begin;
 		}
-			
-		explicit ZeroSkippingIndexedIterator(const Container& container):
-			index_(0), 
-			container_(&container)
-		{
-			GoToNextNonzero();
-		}
-			
-		Item operator*()
-		{
-			assert(container_);
-			assert(index_ < container_->size());
-			return Item((*container_)[index_], index_);
-		}
-		
-		//iterate over zero values
-		void operator++()
-		{
-			GoNext();
-			GoToNextNonzero();
-		}
-		
-		bool operator !=(const ZeroSkippingIndexedIterator& other)
-		{
-			//assume compare with end;
-			assert(!other.container_);
-			assert(container_);
-			return index_ != container_->size();
-		}
-	private:
-		void GoNext()
-		{
-			++index_;
-		}
-		void GoToNextNonzero()
-		{	
-			assert(container_);
-			while(index_ < container_->size())
-			{
-				if ((*container_)[index_])
-				{
-					break;
-				}
-				GoNext();
-			}
-		}
-		int index_;
-		const Container* container_;
 	};
+	
 	
 	struct PerVariableData
 	{
@@ -87,38 +39,46 @@ namespace CrossRingInfo
 		int index;
 	};
 	
+	template <class Container>
 	struct MonomialData{
-		MonomialData(const MonimailMetaDataWithoutOrder& metadata)
+		MonomialData(Container& container, ArrayInterval pos)
+			:container_(container)
+			,pos_(pos)
 		{
-			data.resize(metadata.var_count);
 		}
 		
 		void Add(const PerVariableData& var)
 		{
-			assert(var.index < data.size());
-			assert(data[var.index] == 0);
-			data[var.index] = var.degree;
+			assert(var.index >= 0);
+			assert(var.index < pos.size());
+			assert(var.degree > 0);
+			auto& container_value = container[pos.begin + var.index];
+			assert(container_value  == 0);
+			container_value = var.degree;
 		}
-		typedef ZeroSkippingIndexedIterator<std::vector<int>, PerVariableData> const_iterator;
+		
+		typedef ZeroSkippingIndexedIterator<Container, PerVariableData> const_iterator;
 		const_iterator begin() const
 		{
-			return const_iterator(data);
+			return const_iterator::BeginOf(container, pos_);
 		}
 
 		const_iterator end() const
 		{
-			return const_iterator();
+			return const_iterator::EndOf(container, pos_);
 		}
 
 	protected:
-		std::vector<int> data;
-		template <class TMonimailMetaData>
+		Container& container_;
+		ArrayInterval pos_;
 		MonomialData(const MonomialData&) = delete;
 		MonomialData operator=(const MonomialData&) = delete;
 	};
-	class MonomialCollection: private std::vector<MonomialData>{
+	template <class Container>
+	class MonomialCollection: private std::vector<MonomialData<Container>>{
 		
 	};
+	typedef   
 	class BasisElementReconstructionInfo
 	{
 		
