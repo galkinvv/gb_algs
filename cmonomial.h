@@ -255,6 +255,10 @@ class CMonomialBase{
 					return compareDegRevLex(degrees1, degrees2, orderParam+1, theNumberOfVariables+1);
 					break;
 				}
+			default:
+				{
+					throw std::logic_error("Unknown monomial order");
+				}
 		}
 		return 0;
 	}

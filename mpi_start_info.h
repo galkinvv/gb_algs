@@ -1,8 +1,9 @@
 #pragma once
-
 #if WITH_MPI
 #include <mpi.h>
 #endif
+
+#include "algs.h"
 
 struct MPIStartInfo
 {
@@ -19,6 +20,8 @@ struct MPIStartInfo
 	MPI_Comm_size(MPI_COMM_WORLD,&numberOfProcs);
 	MPI_Comm_rank(MPI_COMM_WORLD,&thisProcessRank);
 #else
+	IgnoreIfUnused(argc);
+	IgnoreIfUnused(argv);
 	numberOfProcs = 1;
 	thisProcessRank = 0;
 #endif

@@ -9,11 +9,15 @@ endif
 ifndef OPTIMIZE
 	OPTIMIZE = g
 endif
-CXXFLAGS = -O$(OPTIMIZE) -g -march=i686 -mtune=i686 -DWITH_MPI=$(WITH_MPI) -MD -MP
+
+GCC_WARNINGS=-Wall -Wextra -Wuninitialized -W -Wparentheses -Wformat=2 -Wswitch-default -Wcast-align -Wpointer-arith -Wwrite-strings -Wstrict-aliasing=2
+GCC_WARNINGS_OFF=-Wno-missing-field-initializers -Wno-format-nonliteral -Wno-unknown-pragmas -Wno-reorder
+
+CXXFLAGS = $(GCC_WARNINGS) $(GCC_WARNINGS_OFF) -O$(OPTIMIZE) -ffunction-sections -fdata-sections -g -march=i686 -mtune=i686 -DWITH_MPI=$(WITH_MPI) -MD -MP
 #-ffunction-sections -fdata-sections
 #CXXFLAGS = -g -pg -O3 -march=i686 -mtune=i686
 
-LDFLAGS = -O$(OPTIMIZE) -g
+LDFLAGS = -O$(OPTIMIZE) -g -Wl,--gc-sections
 #-Wl,--gc-sections -Wl,--print-gc-sections
 #LDFLAGS = -O3 -g -pg
 

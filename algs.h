@@ -1,5 +1,7 @@
-#ifndef Algs_h
-#define Algs_h
+#pragma once
+#include <cstddef>
+#include <limits>
+#include <type_traits>
 /**
 \file
 Содержит обобщённые процедуры и типы.
@@ -250,4 +252,11 @@ protected:
 	NoCopy(){}
 };
 
-#endif
+template <class... Args> void IgnoreIfUnused(Args...){}
+
+template < typename T, size_t N >
+constexpr int countof( T ( & /*arr*/ )[ N ] )
+{
+	static_assert(std::extent< T[ N ] >::value <= size_t(std::numeric_limits<int>::max()), "Static array size exceeds int. countof will not work");
+	return int(std::extent< T[ N ] >::value);
+}

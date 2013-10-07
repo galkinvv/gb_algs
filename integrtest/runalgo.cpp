@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <sstream>
+#include <iterator>
 using namespace std;
 #include "mpi_start_info.h"
 #include "libf4mpi.h"
@@ -39,13 +40,13 @@ CMDLineOption cmdlineoptions[]={
 void printUsage(const char* name){
 	fprintf(stderr, "Usage: %s inputfile outputfile [OPTIONS] \n", name);
 	fprintf(stderr, "OPTIONS (--option1 value1 --option2 value2 ... --optionN valueN):\n");
-	for (int i=0; i<sizeof(cmdlineoptions)/sizeof(cmdlineoptions[0]);++i){
+	for (const auto& cmdlineoption: cmdlineoptions){
 		ostringstream hlp;
 		hlp<<"  ";
 		hlp.width(14);
 		hlp<<left;
-		hlp<<cmdlineoptions[i].cmdline<<cmdlineoptions[i].helpcomment<<"  Default: "<<localAlgOptions.*cmdlineoptions[i].value;
-		if (cmdlineoptions[i].kind==CMDLineOption::cmdopt_bool) hlp<<", bool";
+		hlp<<cmdlineoption.cmdline<<cmdlineoption.helpcomment<<"  Default: "<<localAlgOptions.*cmdlineoption.value;
+		if (cmdlineoption.kind==CMDLineOption::cmdopt_bool) hlp<<", bool";
 		hlp<<"\n";
 		fprintf(stderr, "%s", hlp.str().c_str());
 	}
@@ -80,21 +81,21 @@ int main(int argc, char * argv[]){
 				int ci=optstart;
 				while (ci<argc){
 					string optname=argv[ci];
-					int oi=-1;
-					for	(int i=0; i<sizeof(cmdlineoptions)/sizeof(cmdlineoptions[0]);++i){
-						if (cmdlineoptions[i].cmdline==optname) oi=i;
+					const CMDLineOption* cur_option = nullptr;
+					for	(const auto& cmdlineoption : cmdlineoptions){
+						if (cmdlineoption.cmdline==optname) cur_option=&cmdlineoption;
 					}
 					
-					if (oi<0){
+					if (!cur_option){
 						fprintf(stderr, "\nERROR: Unknown option \"%s\"\n\n",argv[ci]);
 						printUsage(argv[0]);
 					}
-					int *option=&(localAlgOptions.*cmdlineoptions[oi].value);
+					int *option=&(localAlgOptions.*(cur_option->value));
 					++ci;
 					char *err;
 					if (ci<argc) *option=strtol(argv[ci],&err,0);
 
-					if (ci>=argc || *err || (cmdlineoptions[oi].kind==CMDLineOption::cmdopt_bool && (*option & ~1))){
+					if (ci>=argc || *err || (cur_option->kind==CMDLineOption::cmdopt_bool && (*option & ~1))){
 						fprintf(stderr, "\nERROR: Option value expected after \"%s\"\n\n",argv[ci-1]);
 						printUsage(argv[0]);
 					}else ++ci;
@@ -102,9 +103,9 @@ int main(int argc, char * argv[]){
 			}
 			ostringstream optionsstream;
 			if (!mpi_info.isSingleProcess()) optionsstream<<".mpi"<<mpi_info.numberOfProcs;
-			for	(int i=0; i<sizeof(cmdlineoptions)/sizeof(cmdlineoptions[0]);++i){
-				if (!cmdlineoptions[i].fname) continue;
-				optionsstream<<'.'<<cmdlineoptions[i].fname<<'_'<<localAlgOptions.*cmdlineoptions[i].value;
+			for	(const auto& cmdlineoption : cmdlineoptions){
+				if (!cmdlineoption.fname) continue;
+				optionsstream<<'.'<<cmdlineoption.fname<<'_'<<localAlgOptions.*cmdlineoption.value;
 			}
 			if (argc>=3){
 				outputname=argv[2];

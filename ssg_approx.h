@@ -24,7 +24,6 @@ class ApproxSignatureGroebner
 		while(!fast_ring_.QueueEmpty(B_))
 		{
 			auto labeled_poly_to_reduce = fast_ring_.DequeueSigSmallest(B_);
-			bool got_zero = false;
 			for(;;)
 			{
 				fast_ring_.ReduceCheckingSignatures(labeled_poly_to_reduce, R_);

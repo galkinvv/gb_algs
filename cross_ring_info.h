@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <cassert>
+#include "zero_skipping_indexed_iterator.h"
 
 namespace CrossRingInfo
 {
@@ -66,7 +67,7 @@ namespace CrossRingInfo
 
 	struct MonomialCollection{
 		MonomialCollection(int expected_monomial_count, DegreesContainer& container, const MonimailMetaDataWithoutOrder& monomial_metadata)
-			:interval{container.size(), container.size()}
+			:interval{int(container.size()), int(container.size())}
 			,monomial_metadata_(monomial_metadata)
 			,container_(container)
 		{
@@ -74,26 +75,26 @@ namespace CrossRingInfo
 		}
 		void MonomialAdditionDone()
 		{
-			interval.end += monomial_metadata.var_count;
-			assert(interval.end <= container_.size());
+			interval.end += monomial_metadata_.var_count;
+			assert(interval.end <= int(container_.size()));
 		}
 		void AddVariable(const PerVariableData& data)
 		{
 			int  index = interval.end + data.index;
-			assert(index <= container_.size());
+			assert(index <= int(container_.size()));
 			auto& value_to_change = container_[index];
 			assert(0 == value_to_change );
 			value_to_change  = data.degree;
 		}
-		template <class BaseIterator = DegreesContainer::const_iterator>
-		struct const_iterator
+		template <class BaseIterator>
+		struct Iterator
 		{
 			BaseIterator position;
 			const MonimailMetaDataWithoutOrder& monomial_metadata;
-			
+			typedef MonomialData<BaseIterator> Item;
 			Item operator*()
 			{
-				return MonomialData<BaseIterator>(position, NextPosition());
+				return Item(position, NextPosition());
 			}
 			
 			void operator++()
@@ -101,7 +102,7 @@ namespace CrossRingInfo
 				position = NextPosition();
 			}
 			
-			bool operator !=(const const_iterator& other)
+			bool operator !=(const Iterator& other)
 			{
 				return position != other.position;
 			}
@@ -111,6 +112,7 @@ namespace CrossRingInfo
 				return position + monomial_metadata.var_count;
 			}
 		};
+		typedef Iterator<DegreesContainer::const_iterator> const_iterator;
 		const_iterator begin()const
 		{
 			return const_iterator{container_.begin() + interval.begin * monomial_metadata_.var_count , monomial_metadata_};
@@ -128,11 +130,14 @@ namespace CrossRingInfo
 	
 	class BasisElementReconstructionInfo
 	{
-		
+		DegreesContainer degrees;
+		MonomialCollection poly_info;
 	};
+
 	class InputElementConstructionInfo
 	{
-		
+		DegreesContainer degrees;
+		std::vector<MonomialCollection> input_poly_infos;
 	};
 }
 

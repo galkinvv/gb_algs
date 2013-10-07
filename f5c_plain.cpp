@@ -403,13 +403,13 @@ void F5PerryReduce(F5Data& data, SortedSPols& sPols)//может менять в
 
 void AddFromNewOldForNewPoly(const F5Data& data, LPolyPtr newPoly, SortedSPairs& sPairs)
 {
-	for(int i=0;i<data.prevBasis.size();++i)
+	for(int i=0;i<int(data.prevBasis.size());++i)
 	{
 		AddSPtoSorted(SP::fromNewOld(newPoly, i, data), sPairs);
 	}
 }
 
-void F5ByPerryStep(ReduceBySet& oldBasis, PolynomSet &basis, const CPolynomial& extraPolynom, const F4AlgData* f4options)
+void F5ByPerryStep(ReduceBySet& oldBasis, PolynomSet &basis, const CPolynomial& extraPolynom, const F4AlgData* /*f4options*/)
 {
 	//MEASURE_TIME_IN_BLOCK("F5ByPerryStep");
 	F5Data data(oldBasis, extraPolynom);
@@ -418,7 +418,6 @@ void F5ByPerryStep(ReduceBySet& oldBasis, PolynomSet &basis, const CPolynomial& 
 	auto sPols = SortedSPols(BySigComparator(data));
 	while (!sPairsToProcess.empty())
 	{
-		int lastGCurrSize = data.gCurr.size();
 		const auto smallestKey = sPairsToProcess.cbegin()->first;
 		for (auto sPairIt = sPairsToProcess.cbegin(); sPairIt != sPairsToProcess.cend() && sPairIt->first == smallestKey; ++sPairIt)
 		{
@@ -428,7 +427,7 @@ void F5ByPerryStep(ReduceBySet& oldBasis, PolynomSet &basis, const CPolynomial& 
 		sPairsToProcess.erase(smallestKey);
 		int prevGCurrSize = data.gCurr.size();
 		F5PerryReduce(data, sPols);
-		for (int k = prevGCurrSize; k < data.gCurr.size(); ++k)
+		for (int k = prevGCurrSize; k < int(data.gCurr.size()); ++k)
 		{
 			AddFromNewOldForNewPoly(data, data.gCurr[k], sPairsToProcess);
 			for (int j = 0; j < k; ++j)

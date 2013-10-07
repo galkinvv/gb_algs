@@ -422,7 +422,7 @@ public:
 	void reset()
 	{
 		//Освобождение всей выделеннную память
-		for(int i = 0; i<allocated.size(); i++)
+		for(int i = 0; i< int(allocated.size()); i++)
 			delete[] allocated[i];		
 		allocated.clear();
 		//удаление её из пула

@@ -192,7 +192,7 @@ namespace F4MPIPolyParser{
 
 	void trimStr(std::string& s){
 		static const char* spaceChars="\t \n\r";
-		int first=s.find_first_not_of(spaceChars),last=s.find_last_not_of(spaceChars);
+		size_t first=s.find_first_not_of(spaceChars),last=s.find_last_not_of(spaceChars);
 		if (first==s.npos){//empty string
 			s="";
 		}else{
@@ -202,7 +202,7 @@ namespace F4MPIPolyParser{
 	
 	void removeComment(std::string& s){
 		static const char* commentChars="#";
-		int last=s.find_first_of(commentChars);
+		size_t last=s.find_first_of(commentChars);
 		if (last!=s.npos){
 			s=s.substr(0,last);
 		}
@@ -214,14 +214,13 @@ namespace F4MPIPolyParser{
 		using namespace std;
 		in.exceptions(istream::badbit);
 		string cl;
-		typedef string::iterator Si;
 		do{
 			getline(in,cl);
 			trimStr(cl);
 			removeComment(cl);
 			if(!in) return -1;
 		}while (cl.size()==0);
-		int lastvar=0;
+		size_t lastvar=0;
 		while(lastvar<cl.size()){
 			static const char* delimeters=" ,\t;:";
 			int nxt=cl.find_first_of(delimeters,lastvar);

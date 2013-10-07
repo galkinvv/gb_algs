@@ -1,6 +1,7 @@
 #include "gbimpl.h"
 #include "f4main.h"
 #include "f5main.h"
+#include "algs.h"
 #include "f4mpi_to_native_bridge.h"
 #include "ring_z2_slow.h"
 #include "ssg_approx.h"
@@ -8,13 +9,6 @@
 #include <stdexcept>
 
 namespace F4MPI{
-#define StaticArraySize(arr) (sizeof(arr)/sizeof(arr[0]))
-	/*
-	template <class T, int N> int StaticArraySize(T arr[N])
-	{
-		return N;
-	}
-*/
 	PolynomSet GB(PolynomSet F, const F4AlgData* f4options)
 	{
 		const decltype(GB) *funcs[] = {
@@ -23,7 +17,7 @@ namespace F4MPI{
 			PerryOrig::F5ByPerry,
 			GBwithRingAlgo<RingZ2Slow, ApproxSignatureGroebner>
 		};
-		if (StaticArraySize(funcs) > f4options->selectedAlgo)
+		if (countof(funcs) > f4options->selectedAlgo)
 		{
 			return funcs[f4options->selectedAlgo](F, f4options);
 		}

@@ -103,7 +103,7 @@ class CModular{
 	}
 
 	///явное преобразование к типу int
-	const int toint()const{
+	int toint()const{
 		return val;
 	}
 

@@ -147,7 +147,7 @@ CPlainPolynomial CPlainPolynomial::operator-(const CPlainPolynomial& p)const{
 //Реализация не очень эффективна, но используется только в вводе данных
 CPlainPolynomial CPlainPolynomial::operator*(const CPlainPolynomial& p)const{
 	CPlainPolynomial result;
-	for (int i=0;i<p.size();++i){
+	for (int i=0;i<int(p.size());++i){
 		CPlainPolynomial tcopy=*this;
 		tcopy*=p.getMon(i);
 		tcopy*=p.getCoeff(i);
@@ -177,7 +177,7 @@ void CPlainPolynomial::printPolynomial(ostream& output, ParserVarNames* names) c
 		return;
 	}
 	int i=0;
-	while(i!=size()){
+	while(i!=int(size())){
 		string term= "";
 		string mon = getMon(i).toString(names);
 		CModular coeff=getCoeff(i);
@@ -191,7 +191,7 @@ void CPlainPolynomial::printPolynomial(ostream& output, ParserVarNames* names) c
 		term+=mon;
 		output<<term;
 		++i;
-		if(i!=size())
+		if(i!=int(size()))
 			output<<"+";
 	}
 }

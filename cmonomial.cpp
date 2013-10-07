@@ -28,7 +28,7 @@ std::string CMonomialBase::varName(int varIdxFrom1, ParserVarNames* names)
 	if (names)
 	{
 		int idxInNames = varIdxFrom1-1;
-		assert(idxInNames >= 0 && idxInNames < names->size());
+		assert(idxInNames >= 0 && idxInNames < int(names->size()));
 		return (*names)[varIdxFrom1-1];
 	}
 	else

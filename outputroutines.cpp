@@ -49,7 +49,7 @@ void PrintMatrixAsPolynomials(ostream& output,CMatrix& matrix, ParserVarNames* n
 		output<<"empty\n";
 		return;
 	}
-	for(int i = 0; i<matrix.size(); ++i){
+	for(int i = 0; i<int(matrix.size()); ++i){
 		CPolynomial P;
 		MatrixRow R = matrix.getRow(i);
 		rowToPolynomial(R,matrix.getMonomialMap(),P);

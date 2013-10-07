@@ -94,12 +94,12 @@ void Preprocess (PolynomSet& polys, PolynomSet& reducers)
 				
 		processed.storeMonomial(mon);
 
-		for(int i = 0; i<reducers.size(); i++)
+		for(const auto& reducer: reducers)
 		{			
-			HMR = reducers[i].HM();
+			HMR = reducer.HM();
 			if(mon.tryDivide(HMR, mulby))
 			{
-				polys.push_back(reducers[i]);												
+				polys.push_back(reducer);
 				polys.back()*=mulby;				
 				{
 					//MEASURE_TIME_IN_BLOCK("storeNotProcessedCMonomials");
@@ -139,16 +139,16 @@ void AutoReduceBasis(PolynomSet& basis, const F4AlgData* f4options){
 	vector<bool> Mark;
 	int Size = 0;
 	CMonomial HMf;
-	for(int i = 0; i<basis.size(); i++)
+	for(int i = 0; i<int(basis.size()); i++)
 	{
 		HMf = basis[i].HM();		
-		for(int j = 0; j<minimalBasis.size(); j++)if(Mark[j]){
+		for(int j = 0; j<int(minimalBasis.size()); j++)if(Mark[j]){
 			if(minimalBasis[j].HM().divisibleBy(HMf)){
 				Mark[j] = false, Size--;
 			}
 		}
 		bool Condition = true;
-		for(int j = 0; Condition && j<minimalBasis.size(); j++)if(Mark[j]){
+		for(int j = 0; Condition && j<int(minimalBasis.size()); j++)if(Mark[j]){
 			if(HMf.divisibleBy(minimalBasis[j].HM())){
 				Condition = false;
 			}
@@ -163,13 +163,13 @@ void AutoReduceBasis(PolynomSet& basis, const F4AlgData* f4options){
 	PolynomSet reducers;
 	reducers.reserve(Size);	
 	MonomialMap minimalBasisMons;	
-	for(int j = 0; j<minimalBasis.size(); j++)if(Mark[j])
+	for(int j = 0; j<int(minimalBasis.size()); j++)if(Mark[j])
 	{
 		reducers.push_back(minimalBasis[j]);
 		minimalBasisMons.storeMonomial(minimalBasis[j].HM());
 	}	
 	minimalBasis.resize(reducers.size());
-	for(int i = 0; i<reducers.size(); i++)
+	for(int i = 0; i<int(reducers.size()); i++)
 	{
 		minimalBasis[i] = reducers[i];
 	}
@@ -208,7 +208,7 @@ void SortByOrder(PolynomSet& set)
 	//MEASURE_TIME_IN_BLOCK("SortByOrder");
 	sort(set.begin(), set.end(), cmpForReduceByOrder);
 }
-void AutoReduceSetWithBasisFull(const PolynomSet& set, const F4AlgData* f4options, ReduceBySet& result)
+void AutoReduceSetWithBasisFull(const PolynomSet& set, const F4AlgData* /*f4options*/, ReduceBySet& result)
 {
 	//MEASURE_TIME_IN_BLOCK("AutoReduceSetWithBasisFull");
 	auto mySet = set;

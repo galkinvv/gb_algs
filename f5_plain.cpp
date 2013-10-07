@@ -48,7 +48,7 @@ static const char* const LatexNewLine = "\\\\*\n";
 std::string LatexVarName(int idx)
 {
 	const std::array<const char*, 5> first_vars = {"x","y","z","t","w"};
-	if (idx < first_vars.size()) return first_vars[idx];
+	if (idx < int(first_vars.size())) return first_vars[idx];
 	ostringstream s;
 	s << "v_{" << idx << "}";
 	return s.str();
@@ -100,7 +100,7 @@ std::string Latex(const CPolynomial& p)
 		}
 		s << Latex(p.getMon(i));
 		++i;
-		if(i==p.size())
+		if(i==int(p.size()))
 		{
 			break;
 		}
@@ -247,7 +247,6 @@ LPolyPtr AddNewPolyAndRule(const Label& label, const CPolynomial& poly, F5Global
 	if (f5_globals.latex_log)
 	{
 		*f5_globals.latex_log << "добавляется как $"<<LatexRI(&back, f5_globals)<<"="<<Latex(&back)<<"$ и попадает в правила, делая Rule["<<label.index<<"] равным $[";
-		bool first = true;
 		for(auto i = cur_rule.rbegin(); i != cur_rule.rend(); ++i)
 		{
 			if (i != cur_rule.rbegin())
@@ -652,12 +651,11 @@ PolynomSet IncrementalF5(PolynomSet F, const F4AlgData* f4options){
 мономом и индексом, равным порядковому номеру во входных данных:\\\\*
 $R\\leftarrow[
 								 ));
-		bool first = true;
-		for(int i = 0; i < f5_globals.R.size(); ++i)
+		for(int i = 0; i < int(f5_globals.R.size()); ++i)
 		{
 			auto lpoly = f5_globals.R[i];
 			*f5_globals.latex_log << "["<<i+1<<"]="<<Latex(&lpoly);
-			if (i != f5_globals.R.size() - 1)
+			if (i != int(f5_globals.R.size()) - 1)
 			{
 				*f5_globals.latex_log << ",$" << LatexNewLine << "$";
 			}

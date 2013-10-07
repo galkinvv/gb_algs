@@ -8,6 +8,7 @@
 #if WITH_MPI
 #include <mpi.h>
 #endif
+#include "algs.h"
 #include "gbimpl.h"
 #include "outputroutines.h"
 #include "matrixinfoimpl.h"
@@ -47,6 +48,8 @@ F4OptForStatsDescription optionsDescription[]={
 LibF4ReturnCode MPICheckResult(LibF4ReturnCode result=LIBF4_NO_ERROR, int root=0){
 #if WITH_MPI
 	MPI_Bcast(&result, sizeof(result), MPI_CHAR, root, MPI_COMM_WORLD);
+#else
+	IgnoreIfUnused(root);
 #endif	
 	return result;
 }
@@ -110,9 +113,9 @@ LibF4ReturnCode runF4FromStream(istream& input, ostream& output, F4AlgOptions& f
 #endif	
 	if (stats){
 		fprintf(stats, "\nOptions:\n");
-		for (int i=0; i<sizeof(optionsDescription)/sizeof(optionsDescription[0]);++i){
-			if (!optionsDescription[i].statsname) continue;
-			fprintf(stats, "%s: %d\n", optionsDescription[i].statsname,f4data.*optionsDescription[i].value);
+		for (const auto& optionDescription : optionsDescription){
+			if (!optionDescription.statsname) continue;
+			fprintf(stats, "%s: %d\n", optionDescription.statsname,f4data.*optionDescription.value);
 		}
 	}
 
@@ -195,7 +198,7 @@ LibF4ReturnCode runF4MPIFromFile(const char* inputName, const char* outputName, 
 	std::unique_ptr<ofstream> latexLog;
 	FILE *stats=0;
 	F4Stats f4stats;
-	LibF4ReturnCode successCode;
+	LibF4ReturnCode successCode = LIBF4_NO_ERROR;
 	if (mpi_start_info.isMainProcess()){
 		try{
 			input.open(inputName);

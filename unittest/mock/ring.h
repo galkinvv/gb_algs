@@ -27,7 +27,7 @@ namespace Mock
 			friend class FastAssociatedLabeledRingWithTracking;
 		};
 
-		void CopyTo(Ring& to)const{}
+		void CopyTo(Ring& /*to*/)const{}
 
 		struct PolysSet: private std::vector<Polynomial>
 		{
@@ -64,19 +64,20 @@ namespace Mock
 			{
 				return queue.empty();
 			}
-			LPoly DequeueSigSmallest(MultLPolysQueue& queue)
+			LPoly DequeueSigSmallest(MultLPolysQueue& /*queue*/)
+			{
+				//TODO
+				return LPoly();
+			}
+			void PutInQueueExtendLabeledPolys(const PolysSet& /*in*/, MultLPolysQueue& /*queue*/)
 			{
 				//TODO
 			}
-			void PutInQueueExtendLabeledPolys(const PolysSet& in, MultLPolysQueue& queue)
+			void FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& /*queue*/, LPolysResult& /*to_fill*/)
 			{
 				//TODO
 			}
-			void FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue, LPolysResult& to_fill)
-			{
-				//TODO
-			}
-			void ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
+			void ReduceCheckingSignatures(LPoly& /*poly*/, LPolysResult& /*reducers*/)
 			{
 				//TODO
 			}
@@ -91,38 +92,39 @@ namespace Mock
 			{
 				return poly.value.empty();
 			}
-			void Normalize(LPoly& poly)
+			void Normalize(LPoly& /*poly*/)
 			{
 				//TODO
 			}
-			void ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult& reducers)
+			void ExtendRingWithMonomialToHelpReconstruct(const LPoly& /*poly*/, LPolysResult& /*reducers*/)
 			{
 				//TODO
 			}
-			void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
+			void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& /*left_parts*/, const LPoly& /*right_part*/, MultLPolysQueue& /*queue*/)
 			{
 				//TODO
 			}
-			void InsertInResult(const LPoly& poly, LPolysResult& result)
+			void InsertInResult(const LPoly& /*poly*/, LPolysResult& /*result*/)
 			{
 				//TODO
 			}
 
 		};
-		bool ConstructAndInsertNormalized(const PolysSet& in, const ReconstructionInfo& info, PolysSet& out)
+		bool ConstructAndInsertNormalized(const PolysSet& /*in*/, const ReconstructionInfo& /*info*/, PolysSet& /*out*/)
 		{
 			//TODO
+			return true;
 		}
 
-		static std::unique_ptr<IOData<Ring>> Create(const std::string& in);
+		static std::unique_ptr<IOData<Ring>> Create(const std::string& /*in*/);
 
-		static std::string ConvertResult(std::unique_ptr<IOData<Ring>>& result)
+		static std::string ConvertResult(std::unique_ptr<IOData<Ring>>& /*result*/)
 		{
 			return "";
 		}
 	};
 	struct RingIOData: IOData<Ring> {};
-	inline std::unique_ptr<IOData<Ring>> Ring::Create(const std::string& in)
+	inline std::unique_ptr<IOData<Ring>> Ring::Create(const std::string& /*in*/)
 	{
 		auto* data = new RingIOData();
 		return std::unique_ptr<IOData<Ring>>(data);

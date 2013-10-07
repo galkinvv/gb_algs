@@ -11,7 +11,7 @@ struct MonomialHash {
 	std::size_t operator()(TMonomial const& mon) const {
 		std::size_t result = 0;
 		for(auto var : mon) {
-			result = result *(1 + 1 << 4) ^ pair_hash(var);
+			result = result *(1 + (1 << 4)) ^ pair_hash(var);
 		}
 		return result;
 	}
@@ -22,7 +22,7 @@ struct MonomialHash {
 	}
 	template <class Pair>
 	std::size_t pair_hash(const Pair& pair) const {
-		return std_hash(pair.first) + (1 + 1<<2) * std_hash(pair.second) ;
+		return std_hash(pair.first) + (1 + (1 << 2)) * std_hash(pair.second) ;
 	}
 };
 
@@ -299,7 +299,7 @@ void FR::ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
 				}
 				poly.value = PReduce(poly.value,  reducer.value, *divider);
 				assert(poly.reconstruction_info.size() == reducer.reconstruction_info.size());
-				for (int rec_info_idx = 0; rec_info_idx <poly.reconstruction_info.size(); ++rec_info_idx) {
+				for (int rec_info_idx = 0; rec_info_idx < int(poly.reconstruction_info.size()); ++rec_info_idx) {
 					auto& rec_info_ref = poly.reconstruction_info[rec_info_idx];
 					rec_info_ref = PAdd(rec_info_ref, reducer.reconstruction_info[rec_info_idx], *divider);
 				}
@@ -318,7 +318,7 @@ RingZ2Slow::ReconstructionInfo FR::FieldAgnosticReconstructionInfo(const LPoly& 
 	return result;
 }
 
-void FR::ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult& reducers)
+void FR::ExtendRingWithMonomialToHelpReconstruct(const LPoly& /*poly*/, LPolysResult& /*reducers*/)
 {
 	throw std::logic_error("ring extension requsted for Z2");
 }
@@ -328,7 +328,7 @@ bool FR::IsZero(const LPoly& poly)
 	return IsZeroImpl(poly.value);
 }
 
-void FR::Normalize(LPoly& poly)
+void FR::Normalize(LPoly& /*poly*/)
 {
 	//Always normalized in Z2
 }

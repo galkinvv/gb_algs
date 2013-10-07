@@ -54,9 +54,8 @@ bool ReduceBySet::reduceTopOnceWithCache(CPolynomial& polyToReduce)
 
 void ReduceBySet::reduceWithSearchCache(CPolynomial& polyToReduce)
 {
-	bool somethingReduced = false;
 	int i = 0;
-	while(i < polyToReduce.size())
+	while(i < int(polyToReduce.size()))
 	{
 		const auto& mon = polyToReduce.getMon(i);
 		CMonomial mulby;

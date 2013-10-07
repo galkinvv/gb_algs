@@ -239,7 +239,7 @@ void CMatrix::fastReduceRangeByRangeConstOverflow(MatrixIterator mfrom, MatrixIt
 	delete[] resultsmem;
 }
 
- void CMatrix::printMatrixInfo(FILE *output,const char* name,int ID){
+ void CMatrix::printMatrixInfo(FILE *output,const char* name,int /*ID*/){
 	SingleMatrixInfo info;
 	makeMatrixStats(info);
 	fprintf(output,"matrix %s   \tnrows: %d  columns: %d  elements: %d  fill percent: %f%%\n",
@@ -442,6 +442,8 @@ void wakeUpSyncWithOtherProcesses(const F4AlgData* f4options, MPIDiagonalFormOpt
 		MPI_Bcast(&finish,1,MPI_INT,0,MPI_COMM_WORLD);//Выведем остальные процессы из ожидания
 	}
 	MPI_Bcast(&options,sizeof(options),MPI_CHAR,0,MPI_COMM_WORLD);//Раздадим всем опции
+#else
+	IgnoreIfUnused(f4options, options);
 #endif
 }
 
@@ -469,7 +471,7 @@ int forwardGaussElimination(
 	int lastNotProcessedBlock=0;//Блок, относительно которого в следующий раз будет происходить редукция
 	for(;;){
 		int nextBlockStart=getNthBlockStart(rowBlockStarts.size(),f4options);
-		if (nextBlockStart>=mymat.size()){
+		if (nextBlockStart>=int(mymat.size())){
 			rowBlockStarts.push_back(mymat.size());//В конце добавляется номер "за последним блоком"
 			break;
 		}
@@ -487,7 +489,7 @@ int forwardGaussElimination(
 			//myMatNew - оставшиеся строки. Попутно выкинем нулевые
 			extramat.reserve(rowBlockStarts[lastNotProcessedBlock+1]-rowBlockStarts[lastNotProcessedBlock]);
 			myMatNew.reserve(mymat.size()-rowBlockStarts[lastNotProcessedBlock]);
-			for (int i=lastNotProcessedBlock;i+1<rowBlockStarts.size();++i){
+			for (int i=lastNotProcessedBlock;i+1<int(rowBlockStarts.size());++i){
 				int from=rowBlockStarts[i];
 				int to=rowBlockStarts[i+1];
 				//выкинуть нулевые строки
@@ -516,6 +518,8 @@ int forwardGaussElimination(
 		}
 #if WITH_MPI
 		if (reduceOptions.usefulProcesses>1) bcastMat(getid,extramat,f4options->mpi_start_info.thisProcessRank,commUseful,f4options->MPIUseBigSends);//разослать extramat с getid на все процессоры
+#else
+		IgnoreIfUnused(commUseful);
 #endif
 
 		if (f4options->mpi_start_info.thisProcessRank==resid){
@@ -563,7 +567,7 @@ void backGaussElimination(
 	int linesremains=reduceOptions.matrixSize;
 	matrix.reserve(reduceOptions.matrixSize);
 	while(linesremains>0){
-		int bsize;
+		int bsize = 0;
 		if (f4options->mpi_start_info.thisProcessRank==getid){//редуцирующий блок строк находится на данном процессоре
 			bsize=resultblocksizes.back();//размер этого блока
 			resultblocksizes.pop_back();
@@ -587,6 +591,8 @@ void backGaussElimination(
 		}else{
 			//место под строки результата
 			bsize=bcastRecvToMatrix(getid,matrix,commUseful,f4options->MPIUseBigSends);
+#else
+			IgnoreIfUnused(commUseful);
 #endif
 		}
 		//авторедукция строк с текущего процесса по блоку

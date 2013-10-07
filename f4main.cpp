@@ -28,7 +28,7 @@ void Update(PolynomSet& G, SPairSet& P, const CPolynomial& h)
 	CMonomial LCM_HMh_HMg1;
 	CMonomial HMg2;
 	CMonomial LCM_HMh_HMg2;
-	for(int i = 0; i<G.size(); i++)
+	for(int i = 0; i<int(G.size()); i++)
 	{
 		HMg1 = G[i].HM();
 		bool Condition = false;
@@ -41,14 +41,14 @@ void Update(PolynomSet& G, SPairSet& P, const CPolynomial& h)
 		else{		
 			Condition = true;
 			LCM_HMh_HMg1 = CMonomial::lcm(HMh, HMg1);			
-			for(int j = i+1; Condition && j<G.size(); ++j)
+			for(int j = i+1; Condition && j<int(G.size()); ++j)
 			{
 				HMg2 = G[j].HM();
 				LCM_HMh_HMg2 = CMonomial::lcm(HMh, HMg2);
 				if(LCM_HMh_HMg1.divisibleBy(LCM_HMh_HMg2))
 					Condition = false;
 			}			
-			for(int j = 0; Condition && j<D.size(); j++)
+			for(int j = 0; Condition && j<int(D.size()); j++)
 			{
 				HMg2 = G[D[j]].HM();
 				LCM_HMh_HMg2 = CMonomial::lcm(HMh, HMg2);
@@ -69,7 +69,7 @@ void Update(PolynomSet& G, SPairSet& P, const CPolynomial& h)
 	{
 		//MEASURE_TIME_IN_BLOCK("SecondCriteria");
 		CMonomial LCM_HMg1_HMg2;
-		for(int i = 0; i<P.size(); i++)
+		for(int i = 0; i<int(P.size()); i++)
 		{
 			LCM_HMg1_HMg2 = CMonomial::lcm(P[i].first.HM(), P[i].second.HM());
 			if( LCM_HMg1_HMg2.divisibleBy(HMh) &&        
@@ -84,7 +84,7 @@ void Update(PolynomSet& G, SPairSet& P, const CPolynomial& h)
 
 	{
 		//MEASURE_TIME_IN_BLOCK("MakeNewSPairs");
-		for(int i = 0; i<Pnew.size(); i++)
+		for(int i = 0; i<int(Pnew.size()); i++)
 			P.push_back(MakeSPair(h, G[Pnew[i]]));
 	}
 	{
@@ -94,7 +94,7 @@ void Update(PolynomSet& G, SPairSet& P, const CPolynomial& h)
 	{
 		//MEASURE_TIME_IN_BLOCK("CheckDivisibility");
 		Mark.resize(G.size());
-		for(int i = 0; i<G.size(); i++)
+		for(int i = 0; i<int(G.size()); i++)
 		{
 			if(!G[i].HM().divisibleBy(HMh))
 				Mark[i] = true;
@@ -159,14 +159,14 @@ void SelectSPairs(SPairSet &sPairs, PolynomSet& ret)
 	vector<bool> Mark(sPairs.size());
 	int minDeg = 2000000000;
 	
-	for(int i = 0; i<sPairs.size(); i++)
+	for(int i = 0; i<int(sPairs.size()); i++)
 	{
 		int d = CMonomial::lcm(sPairs[i].first.HM(), sPairs[i].second.HM()).getDegree();	
 		if(d<minDeg)minDeg = d;
 	}
 	int count = 0;
 
-	for(int i = 0; i<sPairs.size(); i++)
+	for(int i = 0; i<int(sPairs.size()); i++)
 	{		
 		if(CMonomial::lcm(sPairs[i].first.HM(), sPairs[i].second.HM()).getDegree() == minDeg)
 		{		
@@ -176,7 +176,7 @@ void SelectSPairs(SPairSet &sPairs, PolynomSet& ret)
 		else
 			Mark[i] = true;
 	}	
-	for(int i = 0; i<sPairs.size(); i++)if(!Mark[i])
+	for(int i = 0; i<int(sPairs.size()); i++)if(!Mark[i])
 	{
 		SPolynomial2(sPairs[i]);
 		ret.push_back(sPairs[i].first);
@@ -264,8 +264,8 @@ PolynomSet F4(PolynomSet F, const F4AlgData* f4options){
 		ReduceF4(sPolynomials, basis, newBasisElements, f4options);		
 		sort(newBasisElements.begin(),newBasisElements.end(),cmpForUpdaters);
 		// Updating basis and sPairs
-		for(int i = 0; i<newBasisElements.size(); i++)		
-			Update(basis, sPairs, newBasisElements[i]);				
+		for(const auto& newBasisElement: newBasisElements)
+			Update(basis, sPairs, newBasisElement);
 		
 	}
 	if(f4options->autoReduceBasis){
