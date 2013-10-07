@@ -26,8 +26,8 @@ namespace CrossRingInfo
 			degree(a_degree),
 			index(a_index)
 		{}
-		int degree;
-		int index;
+		const int degree;
+		const int index;
 	};
 	
 	template <class ContainerIterator>
@@ -49,7 +49,7 @@ namespace CrossRingInfo
 			return const_iterator::EndOf(begin_, end_);
 		}
 
-	protected:
+	private:
 		const ContainerIterator &begin_;
 		const ContainerIterator &end_;
 	};
@@ -65,7 +65,8 @@ namespace CrossRingInfo
 		}
 	};
 
-	struct MonomialCollection{
+	class MonomialCollection{
+	  protected:
 		MonomialCollection(int expected_monomial_count, DegreesContainer& container, const MonimailMetaDataWithoutOrder& monomial_metadata)
 			:interval{int(container.size()), int(container.size())}
 			,monomial_metadata_(monomial_metadata)
@@ -85,6 +86,10 @@ namespace CrossRingInfo
 			auto& value_to_change = container_[index];
 			assert(0 == value_to_change );
 			value_to_change  = data.degree;
+		}
+		int size()const
+		{
+			return (interval.end - interval.begin)/monomial_metadata_.var_count;
 		}
 		template <class BaseIterator>
 		struct Iterator
@@ -112,6 +117,7 @@ namespace CrossRingInfo
 				return position + monomial_metadata.var_count;
 			}
 		};
+	  public:
 		typedef Iterator<DegreesContainer::const_iterator> const_iterator;
 		const_iterator begin()const
 		{
@@ -126,18 +132,64 @@ namespace CrossRingInfo
 		const MonimailMetaDataWithoutOrder& monomial_metadata_;
 		DegreesContainer& container_;
 	};
-	
-	
-	class BasisElementReconstructionInfo
+
+	struct MonomialCollectionImpl:MonomialCollection
 	{
-		DegreesContainer degrees;
-		MonomialCollection poly_info;
+		template <class... TA>
+		MonomialCollectionImpl(TA&&... args):
+			MonomialCollection(std::forward<TA>(args)...)
+		{}
+		using MonomialCollection::MonomialAdditionDone;
+		using MonomialCollection::AddVariable;
+		using MonomialCollection::size;
 	};
 
-	class InputElementConstructionInfo
+	template <class MonomialMetadata>
+	struct BasisElementReconstructionInfo
 	{
-		DegreesContainer degrees;
-		std::vector<MonomialCollection> input_poly_infos;
+		BasisElementReconstructionInfo(const MonomialMetadata& metadata, int expected_monomial_count)
+		:metadata_(metadata)
+		,poly_info_(expected_monomial_count, degrees_, metadata_)
+		{}
+
+		void AddVariable(const PerVariableData& data)
+		{
+			poly_info_.AddVariable(data);
+		}
+		void MonomialAdditionDone()
+		{
+			poly_info_.MonomialAdditionDone();
+		}
+		const MonomialMetadata& MetaData()const
+		{
+			return metadata_;
+		}
+		MonomialCollectionImpl::const_iterator begin()const
+		{
+			return poly_info_.begin();
+		}
+		MonomialCollectionImpl::const_iterator end()const
+		{
+			assert(poly_info_.size() * metadata_.var_count == degrees_.size());
+			return poly_info_.end();
+		}
+	private:
+		const MonomialMetadata& metadata_;
+		DegreesContainer degrees_;
+		MonomialCollectionImpl poly_info_;
+	};
+
+	template <class MonomialMetadata>
+	struct InputElementConstructionInfo
+	{
+		InputElementConstructionInfo(const MonomialMetadata& metadata)
+			:metadata_(metadata)
+		{}
+		
+	private:
+		const MonomialMetadata& metadata_;
+		DegreesContainer degrees_;
+		std::vector<MonomialCollectionImpl> input_poly_infos_;
 	};
 }
 

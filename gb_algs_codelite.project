@@ -10,6 +10,7 @@
     <File Name="unittest/ssg_approx.cpp"/>
     <File Name="unittest/cmodular.cpp"/>
     <File Name="unittest/zero_skipping_indexed_iterator.cpp"/>
+    <File Name="unittest/cross_ring_info.cpp"/>
   </VirtualDirectory>
   <Description/>
   <Dependencies/>
