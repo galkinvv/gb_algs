@@ -72,6 +72,9 @@ $(BUILDDIR)/unittest/%.o: unittest/%.cpp 3rd/gtest/src/gtest-all.cc
 	mkdir -p $(dir $@)
 	$(CXX11) $(CXXFLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -c $< -o $@
 
+parse.tab:
+	bison parse.ypp
+
 $(BUILDDIR)/%.o: %.cpp
 	mkdir -p $(dir $@)
 	$(CXX11) $(CXXFLAGS) -I . -c $< -o $@
