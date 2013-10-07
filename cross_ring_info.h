@@ -12,22 +12,12 @@ namespace CrossRingInfo
 	{
 		int var_count;
 	};
+	
 	template <MonomialOrder t_order>
 	struct MonimailMetaData:MonimailMetaDataWithoutOrder
 	{
 		static const MonomialOrder order = t_order;
 	};
-	
-	typedef std::vector<int> DegreesContainer;
-	typedef int ArrayPos;
-	struct ArrayInterval
-	{
-		ArrayPos begin, end;
-		std::size_t size(){
-			return end - begin;
-		}
-	};
-	
 	
 	struct PerVariableData
 	{
@@ -39,46 +29,103 @@ namespace CrossRingInfo
 		int index;
 	};
 	
-	template <class Container>
+	template <class ContainerIterator>
 	struct MonomialData{
-		MonomialData(Container& container, ArrayInterval pos)
-			:container_(container)
-			,pos_(pos)
+		MonomialData(const ContainerIterator& begin, const ContainerIterator& end)
+			:begin_(begin)
+			,end_(end)
 		{
 		}
 		
-		void Add(const PerVariableData& var)
-		{
-			assert(var.index >= 0);
-			assert(var.index < pos.size());
-			assert(var.degree > 0);
-			auto& container_value = container[pos.begin + var.index];
-			assert(container_value  == 0);
-			container_value = var.degree;
-		}
-		
-		typedef ZeroSkippingIndexedIterator<Container, PerVariableData> const_iterator;
+		typedef ZeroSkippingIndexedIterator<ContainerIterator, PerVariableData> const_iterator;
 		const_iterator begin() const
 		{
-			return const_iterator::BeginOf(container, pos_);
+			return const_iterator::BeginOf(begin_, end_);
 		}
 
 		const_iterator end() const
 		{
-			return const_iterator::EndOf(container, pos_);
+			return const_iterator::EndOf(begin_, end_);
 		}
 
 	protected:
-		Container& container_;
-		ArrayInterval pos_;
-		MonomialData(const MonomialData&) = delete;
-		MonomialData operator=(const MonomialData&) = delete;
+		const ContainerIterator &begin_;
+		const ContainerIterator &end_;
 	};
-	template <class Container>
-	class MonomialCollection: private std::vector<MonomialData<Container>>{
+
+	typedef std::vector<int> DegreesContainer;
 		
+	typedef int ArrayPos;
+	struct ArrayInterval
+	{
+		ArrayPos begin, end;
+		std::size_t size(){
+			return end - begin;
+		}
 	};
-	typedef   
+
+	struct MonomialCollection{
+		MonomialCollection(int expected_monomial_count, DegreesContainer& container, const MonimailMetaDataWithoutOrder& monomial_metadata)
+			:interval{container.size(), container.size()}
+			,monomial_metadata_(monomial_metadata)
+			,container_(container)
+		{
+			container_.resize(interval.end + expected_monomial_count*monomial_metadata.var_count);
+		}
+		void MonomialAdditionDone()
+		{
+			interval.end += monomial_metadata.var_count;
+			assert(interval.end <= container_.size());
+		}
+		void AddVariable(const PerVariableData& data)
+		{
+			int  index = interval.end + data.index;
+			assert(index <= container_.size());
+			auto& value_to_change = container_[index];
+			assert(0 == value_to_change );
+			value_to_change  = data.degree;
+		}
+		template <class BaseIterator = DegreesContainer::const_iterator>
+		struct const_iterator
+		{
+			BaseIterator position;
+			const MonimailMetaDataWithoutOrder& monomial_metadata;
+			
+			Item operator*()
+			{
+				return MonomialData<BaseIterator>(position, NextPosition());
+			}
+			
+			void operator++()
+			{
+				position = NextPosition();
+			}
+			
+			bool operator !=(const const_iterator& other)
+			{
+				return position != other.position;
+			}
+		private:
+			BaseIterator NextPosition()
+			{
+				return position + monomial_metadata.var_count;
+			}
+		};
+		const_iterator begin()const
+		{
+			return const_iterator{container_.begin() + interval.begin * monomial_metadata_.var_count , monomial_metadata_};
+		}
+		const_iterator end()const
+		{
+			return const_iterator{container_.begin() + interval.end* monomial_metadata_.var_count , monomial_metadata_};
+		}
+	private:
+		ArrayInterval interval;
+		const MonimailMetaDataWithoutOrder& monomial_metadata_;
+		DegreesContainer& container_;
+	};
+	
+	
 	class BasisElementReconstructionInfo
 	{
 		
