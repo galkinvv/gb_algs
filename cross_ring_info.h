@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <algorithm>
 #include <cassert>
 #include "zero_skipping_indexed_iterator.h"
 
@@ -81,6 +82,8 @@ namespace CrossRingInfo
 		}
 		void AddVariable(const PerVariableData& data)
 		{
+			assert(data.index >= 0);
+			assert(data.index < monomial_metadata_.var_count);
 			int  index = interval.end + data.index;
 			assert(index <= int(container_.size()));
 			auto& value_to_change = container_[index];
@@ -107,7 +110,7 @@ namespace CrossRingInfo
 				position = NextPosition();
 			}
 			
-			bool operator !=(const Iterator& other)
+			bool operator !=(const Iterator& other)const
 			{
 				return position != other.position;
 			}
@@ -147,9 +150,9 @@ namespace CrossRingInfo
 	template <class MonomialMetadata>
 	struct BasisElementReconstructionInfo
 	{
-		BasisElementReconstructionInfo(const MonomialMetadata& metadata, int expected_monomial_count)
+		BasisElementReconstructionInfo(const MonomialMetadata& metadata, int monomial_count)
 		:metadata_(metadata)
-		,poly_info_(expected_monomial_count, degrees_, metadata_)
+		,poly_info_(monomial_count, degrees_, metadata_)
 		{}
 
 		void AddVariable(const PerVariableData& data)
@@ -180,16 +183,55 @@ namespace CrossRingInfo
 	};
 
 	template <class MonomialMetadata>
-	struct InputElementConstructionInfo
+	struct InputElementsConstructionInfo
 	{
-		InputElementConstructionInfo(const MonomialMetadata& metadata)
+		InputElementsConstructionInfo(const MonomialMetadata& metadata)
 			:metadata_(metadata)
 		{}
+		void BeginPolynomialConstruction(int monomial_count)
+		{
+			assert(TotalMonomials() * metadata_.var_count == degrees_.size());
+			input_poly_infos_.emplace_back(monomial_count, degrees_, metadata_);
+		}
+		void AddVariable(const PerVariableData& data)
+		{
+			BuiltPolynomial().AddVariable(data);
+		}
+		void MonomialAdditionDone()
+		{
+			BuiltPolynomial().MonomialAdditionDone();
+		}
+		const MonomialMetadata& MetaData()const
+		{
+			return metadata_;
+		}
 		
+		const MonomialCollection* begin()const
+		{
+			return input_poly_infos_.data();
+		}
+		const MonomialCollection* end()const
+		{
+			return input_poly_infos_.data() + input_poly_infos_.size();
+		}
+
 	private:
+		int TotalMonomials()const
+		{
+			return std::accumulate(input_poly_infos_.begin(), input_poly_infos_.end(), 0, CalcSizeSum);
+		}
+		static int CalcSizeSum(int  res, const MonomialCollectionImpl& poly)
+		{
+			return res + poly.size();
+		}
 		const MonomialMetadata& metadata_;
 		DegreesContainer degrees_;
 		std::vector<MonomialCollectionImpl> input_poly_infos_;
+		MonomialCollectionImpl& BuiltPolynomial()
+		{
+			assert(!input_poly_infos_.empty());
+			return input_poly_infos_.back();
+		}
 	};
 }
 
