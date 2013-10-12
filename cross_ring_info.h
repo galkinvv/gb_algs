@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include "zero_skipping_indexed_iterator.h"
+#include "utils.h"
 
 namespace CrossRingInfo
 {
@@ -105,6 +106,11 @@ namespace CrossRingInfo
 				return Item(position, NextPosition());
 			}
 			
+			PseudoPointer<Item> operator->()
+			{
+				return PseudoPointer<Item>(position, NextPosition());
+			}
+
 			void operator++()
 			{
 				position = NextPosition();

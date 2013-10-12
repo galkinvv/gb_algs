@@ -143,6 +143,7 @@
     <File Name="iopolynomset.h"/>
     <File Name="cross_ring_info.h"/>
     <File Name="zero_skipping_indexed_iterator.h"/>
+    <File Name="utils.h"/>
   </VirtualDirectory>
   <VirtualDirectory Name="mpi">
     <File Name="mpi/mpimatrix.cpp"/>

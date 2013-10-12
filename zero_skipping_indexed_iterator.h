@@ -1,8 +1,7 @@
 #pragma once
-template<class Container, class Item>
+template<class BaseIterator, class Item>
 	struct ZeroSkippingIndexedIterator
 	{
-		typedef typename Container::const_iterator BaseIterator;
 		static ZeroSkippingIndexedIterator BeginOf(const BaseIterator& begin, const BaseIterator& end)
 		{
 			return ZeroSkippingIndexedIterator(begin, end, begin);

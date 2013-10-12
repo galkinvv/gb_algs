@@ -19,7 +19,7 @@ struct Item
 TYPED_TEST_CASE_P(ZeroSkippingIndexedIteratorTest);
 
 TYPED_TEST_P(ZeroSkippingIndexedIteratorTest, SkipMidAndLastZeroes) {
-  typedef ZeroSkippingIndexedIterator<TypeParam, Item> It;
+  typedef ZeroSkippingIndexedIterator<typename TypeParam::const_iterator, Item> It;
   TypeParam data;
   data.push_back(1);
   data.push_back(0);
@@ -40,7 +40,7 @@ TYPED_TEST_P(ZeroSkippingIndexedIteratorTest, SkipMidAndLastZeroes) {
 }
 
 TYPED_TEST_P(ZeroSkippingIndexedIteratorTest, SkipFirstZeroes) {
-  typedef ZeroSkippingIndexedIterator<TypeParam, Item> It;
+  typedef ZeroSkippingIndexedIterator<typename TypeParam::const_iterator, Item> It;
   TypeParam data;
   data.push_back(0);
   data.push_back(0);
@@ -61,7 +61,7 @@ TYPED_TEST_P(ZeroSkippingIndexedIteratorTest, SkipFirstZeroes) {
 }
 
 TYPED_TEST_P(ZeroSkippingIndexedIteratorTest, Empty) {
-  typedef ZeroSkippingIndexedIterator<TypeParam, Item> It;
+  typedef ZeroSkippingIndexedIterator<typename TypeParam::const_iterator, Item> It;
   TypeParam data;
   auto current = It::BeginOf(data.begin(), data. end());
   auto end = It::EndOf(data.begin(), data. end());
@@ -69,7 +69,7 @@ TYPED_TEST_P(ZeroSkippingIndexedIteratorTest, Empty) {
 }
 
 TYPED_TEST_P(ZeroSkippingIndexedIteratorTest, SingleNonZero) {
-  typedef ZeroSkippingIndexedIterator<TypeParam, Item> It;
+  typedef ZeroSkippingIndexedIterator<typename TypeParam::const_iterator, Item> It;
   TypeParam data;
   data.push_back(7);
   auto current = It::BeginOf(data.begin(), data. end());
@@ -82,7 +82,7 @@ TYPED_TEST_P(ZeroSkippingIndexedIteratorTest, SingleNonZero) {
 }
 
 TYPED_TEST_P(ZeroSkippingIndexedIteratorTest, AllZeroes) {
-  typedef ZeroSkippingIndexedIterator<TypeParam, Item> It;
+  typedef ZeroSkippingIndexedIterator<typename TypeParam::const_iterator, Item> It;
   TypeParam data;
   data.push_back(0);
   data.push_back(0);
