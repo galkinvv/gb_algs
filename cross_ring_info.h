@@ -2,6 +2,7 @@
 #include <vector>
 #include <algorithm>
 #include <cassert>
+#include <ostream>
 #include "zero_skipping_indexed_iterator.h"
 #include "utils.h"
 
@@ -31,6 +32,11 @@ namespace CrossRingInfo
 		const int degree;
 		const int index;
 	};
+	std::ostream& operator << (std::ostream& s, const PerVariableData& data)
+	{
+		s << "x_" << data.index << "^" << data.degree;
+		return s;
+	}
 	
 	template <class ContainerIterator>
 	struct MonomialData{
@@ -52,8 +58,8 @@ namespace CrossRingInfo
 		}
 
 	private:
-		const ContainerIterator &begin_;
-		const ContainerIterator &end_;
+		const ContainerIterator begin_;
+		const ContainerIterator end_;
 	};
 
 	typedef std::vector<int> DegreesContainer;
@@ -101,12 +107,12 @@ namespace CrossRingInfo
 			BaseIterator position;
 			const MonimailMetaDataWithoutOrder& monomial_metadata;
 			typedef MonomialData<BaseIterator> Item;
-			Item operator*()
+			Item operator*()const
 			{
 				return Item(position, NextPosition());
 			}
 			
-			PseudoPointer<Item> operator->()
+			PseudoPointer<Item> operator->()const
 			{
 				return PseudoPointer<Item>(position, NextPosition());
 			}
@@ -121,7 +127,7 @@ namespace CrossRingInfo
 				return position != other.position;
 			}
 		private:
-			BaseIterator NextPosition()
+			BaseIterator NextPosition()const
 			{
 				return position + monomial_metadata.var_count;
 			}

@@ -17,7 +17,8 @@ CXXFLAGS = $(GCC_WARNINGS) $(GCC_WARNINGS_OFF) -O$(OPTIMIZE) -ffunction-sections
 #-ffunction-sections -fdata-sections
 #CXXFLAGS = -g -pg -O3 -march=i686 -mtune=i686
 
-LDFLAGS = -O$(OPTIMIZE) -g -Wl,--gc-sections
+LDFLAGS = -O$(OPTIMIZE) -g 
+#-Wl,--gc-sections
 #-Wl,--gc-sections -Wl,--print-gc-sections
 #LDFLAGS = -O3 -g -pg
 

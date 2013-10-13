@@ -1,6 +1,7 @@
 #pragma once
 #include <type_traits>
 #include <utility>
+#include <initializer_list>
 class NoCopy
 {
 	void operator=(const NoCopy&);
@@ -36,3 +37,9 @@ class PseudoPointer
 		return &temp_data_;
 	}
 };
+
+template <class T>
+const std::initializer_list<T>& ilist(const std::initializer_list<T>&  list)
+{
+	return list;
+}
