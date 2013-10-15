@@ -7,25 +7,19 @@ bool VarDegEqual(const V& v0, const V& v1)
 {
 	return (v0.index  == v1.index) && (v0.degree == v1.degree);
 }
-template <class Iterator, class Container, class Comparator>
-void ExpectIterEqualToContainer(const Iterator& begin, const Iterator& end, const Container& container, const Comparator& equal)
+
+template <class ContainerWithoutSize, class Container, class Comparator>
+void ExpectEqualToContainer(const ContainerWithoutSize& cont_no_size, const Container& container, const Comparator& equal)
 {
 	SCOPED_TRACE(container.size());
-	Iterator curr_it = begin;
 	auto container_cur = container.begin();
-	for(;;)
+	for(auto item:cont_no_size)
 	{
-		bool it_ends = !(curr_it != end);
-		bool cont_ends = !(container_cur != container.end());
-		EXPECT_EQ(it_ends, cont_ends);
-		if (it_ends || cont_ends)
-		{
-			break;
-		}
-		EXPECT_PRED2(equal, *curr_it, *container_cur);
-		++curr_it;
+		ASSERT_NE(container_cur, container.end());
+		EXPECT_PRED2(equal, item, *container_cur);
 		++container_cur;
 	}
+	EXPECT_EQ(container_cur, container.end());
 }
 
 class CrossRingInfoTest: public ::testing::Test
@@ -76,9 +70,6 @@ TEST_F(CrossRingInfoTest, Empty)
 TEST_F(CrossRingInfoTest, 3x3)
 {
 	CrossRingInfo::BasisElementReconstructionInfo<DegRevLex> poly_rec_info(order_, 3);
-	poly_rec_info.AddVariable(V(1,6));
-	poly_rec_info.AddVariable(V(99,5));
-	poly_rec_info.AddVariable(V(2,0));
 	poly_rec_info.MonomialAdditionDone();
 	poly_rec_info.AddVariable(V(1,1));
 	poly_rec_info.AddVariable(V(2,3));
@@ -89,13 +80,37 @@ TEST_F(CrossRingInfoTest, 3x3)
 	poly_rec_info.MonomialAdditionDone();
 	auto monomial_it = poly_rec_info.begin();
 	EXPECT_NE(monomial_it , poly_rec_info.end());
-	ExpectIterEqualToContainer(monomial_it ->begin(), monomial_it ->end(),  ilist({V(2,0), V(99,5), V(1,6)}), VarDegEqual);
+	ExpectEqualToContainer(*monomial_it,  ilist<V>({}), VarDegEqual);
 	++monomial_it ;
 	EXPECT_NE(monomial_it , poly_rec_info.end());
-	ExpectIterEqualToContainer(monomial_it ->begin(), monomial_it ->end(),  ilist({V(1,1), V(2,3)}), VarDegEqual);
+	ExpectEqualToContainer(*monomial_it,  ilist({V(1,1), V(2,3)}), VarDegEqual);
 	++monomial_it ;
 	EXPECT_NE(monomial_it , poly_rec_info.end());
-	ExpectIterEqualToContainer(monomial_it ->begin(), monomial_it ->end(),  ilist({V(2,4), V(99,5), V(1,6)}), VarDegEqual);
+	ExpectEqualToContainer(*monomial_it,  ilist({V(2,4), V(99,5), V(1,6)}), VarDegEqual);
 	++monomial_it ;
 	EXPECT_FALSE(monomial_it  != poly_rec_info.end());
+	CrossRingInfo::InputElementsConstructionInfo<DegRevLex> input_rec_info(order_);
+	input_rec_info.BeginPolynomialConstruction(1);
+	input_rec_info.AddVariable(V(4,1));
+	input_rec_info.AddVariable(V(1,3));
+	input_rec_info.MonomialAdditionDone();
+	input_rec_info.BeginPolynomialConstruction(3);
+	input_rec_info.AddVariable(V(1,1));
+	input_rec_info.AddVariable(V(2,3));
+	input_rec_info.MonomialAdditionDone();
+	input_rec_info.AddVariable(V(1,6));
+	input_rec_info.AddVariable(V(99,5));
+	input_rec_info.AddVariable(V(2,4));
+	input_rec_info.MonomialAdditionDone();
+	input_rec_info.MonomialAdditionDone();
+	input_rec_info.BeginPolynomialConstruction(0);
+	for (auto input_poly:input_rec_info)
+	{
+		for(auto mon:input_poly)
+		{
+			ExpectEqualToContainer(mon,  ilist({V(2,4), V(99,5), V(1,6)}), VarDegEqual);
+		}
+	}
+	EXPECT_FALSE(input_rec_info.begin() != input_rec_info.end());
+
 }

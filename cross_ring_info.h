@@ -136,11 +136,11 @@ namespace CrossRingInfo
 		typedef Iterator<DegreesContainer::const_iterator> const_iterator;
 		const_iterator begin()const
 		{
-			return const_iterator{container_.begin() + interval.begin * monomial_metadata_.var_count , monomial_metadata_};
+			return const_iterator{container_.begin() + interval.begin, monomial_metadata_};
 		}
 		const_iterator end()const
 		{
-			return const_iterator{container_.begin() + interval.end* monomial_metadata_.var_count , monomial_metadata_};
+			return const_iterator{container_.begin() + interval.end, monomial_metadata_};
 		}
 	private:
 		ArrayInterval interval;
@@ -150,10 +150,8 @@ namespace CrossRingInfo
 
 	struct MonomialCollectionImpl:MonomialCollection
 	{
-		template <class... TA>
-		MonomialCollectionImpl(TA&&... args):
-			MonomialCollection(std::forward<TA>(args)...)
-		{}
+		DECLARE_FORWARDING_CONSTRUCTOR(MonomialCollectionImpl, MonomialCollection)
+
 		using MonomialCollection::MonomialAdditionDone;
 		using MonomialCollection::AddVariable;
 		using MonomialCollection::size;
