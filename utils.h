@@ -2,6 +2,7 @@
 #include <type_traits>
 #include <utility>
 #include <initializer_list>
+#include <ostream>
 class NoCopy
 {
 	void operator=(const NoCopy&);
@@ -43,3 +44,16 @@ const std::initializer_list<T>& ilist(const std::initializer_list<T>&  list)
 {
 	return list;
 }
+
+template <class Container, class Separator>
+void OutputContainer(std::ostream& s, const Container& data, const Separator& separator)
+	{
+		for(auto i = data.begin(); i != data.end(); ++i)
+		{
+			if (i != data.begin())
+			{
+				s << separator;
+			}
+			s << *i;
+		}
+	}

@@ -22,6 +22,28 @@ void ExpectEqualToContainer(const ContainerWithoutSize& cont_no_size, const Cont
 	EXPECT_EQ(container_cur, container.end());
 }
 
+template <class SubComparator>
+struct ContainerEqualExpect
+{
+	explicit ContainerEqualExpect(const SubComparator& equal)
+		:equal_(equal)
+	{}
+	
+	template <class ContainerWithoutSize, class Container>
+	bool operator()(const ContainerWithoutSize& cont_no_size, const Container& container)const
+	{
+		ExpectEqualToContainer(cont_no_size, container, equal_);
+		return true;
+	}
+private:
+	const SubComparator& equal_;
+};
+
+template <class SubComparator> ContainerEqualExpect<SubComparator> CreateContainerComparator(const SubComparator& equal)
+{
+	return ContainerEqualExpect<SubComparator>(equal);
+}
+
 class CrossRingInfoTest: public ::testing::Test
 {
 public:
@@ -104,6 +126,16 @@ TEST_F(CrossRingInfoTest, 3x3)
 	input_rec_info.MonomialAdditionDone();
 	input_rec_info.MonomialAdditionDone();
 	input_rec_info.BeginPolynomialConstruction(0);
+	
+
+	ExpectEqualToContainer(input_rec_info,
+		ilist({
+			ilist({
+				ilist({V(2,4), V(99,5), V(1,6)})
+			})
+		}), 
+		CreateContainerComparator(CreateContainerComparator(VarDegEqual))
+	);
 	for (auto input_poly:input_rec_info)
 	{
 		for(auto mon:input_poly)

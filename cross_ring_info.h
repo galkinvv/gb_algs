@@ -148,6 +148,14 @@ namespace CrossRingInfo
 		DegreesContainer& container_;
 	};
 
+	std::ostream& operator << (std::ostream& s, const MonomialCollection& data)
+	{
+		s << '[';
+		OutputContainer(s, data, ", ");
+		s << ']';
+		return s;
+	}
+
 	struct MonomialCollectionImpl:MonomialCollection
 	{
 		DECLARE_FORWARDING_CONSTRUCTOR(MonomialCollectionImpl, MonomialCollection)
@@ -191,6 +199,15 @@ namespace CrossRingInfo
 		DegreesContainer degrees_;
 		MonomialCollectionImpl poly_info_;
 	};
+
+	template <class MonomialMetadata>
+	std::ostream& operator << (std::ostream& s, const BasisElementReconstructionInfo<MonomialMetadata>& data)
+	{
+		s << '[';
+		OutputContainer(s, data, ", ");
+		s << ']';
+		return s;
+	}
 
 	template <class MonomialMetadata>
 	struct InputElementsConstructionInfo
@@ -243,5 +260,16 @@ namespace CrossRingInfo
 			return input_poly_infos_.back();
 		}
 	};
+	
+	template <class MonomialMetadata>
+	std::ostream& operator << (std::ostream& s, const InputElementsConstructionInfo<MonomialMetadata>& data)
+	{
+		s << '[';
+		OutputContainer(s, data, ", ");
+		s << ']';
+		return s;
+	}
+
+
 }
 
