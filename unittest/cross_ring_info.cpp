@@ -8,18 +8,9 @@ bool VarDegEqual(const V& v0, const V& v1)
 	return (v0.index  == v1.index) && (v0.degree == v1.degree);
 }
 
-template <class ContainerWithoutSize, class Container, class Comparator>
-void ExpectEqualToContainer(const ContainerWithoutSize& cont_no_size, const Container& container, const Comparator& equal)
+template <class Container1, class Container2, class Comparator>
+void ExpectEqualToContainer(const Container1& container1, const Container2& container2, const Comparator& equal)
 {
-	SCOPED_TRACE(container.size());
-	auto container_cur = container.begin();
-	for(auto item:cont_no_size)
-	{
-		ASSERT_NE(container_cur, container.end());
-		EXPECT_PRED2(equal, item, *container_cur);
-		++container_cur;
-	}
-	EXPECT_EQ(container_cur, container.end());
 }
 
 template <class SubComparator>
@@ -29,17 +20,30 @@ struct ContainerEqualExpect
 		:equal_(equal)
 	{}
 	
-	template <class ContainerWithoutSize, class Container>
-	bool operator()(const ContainerWithoutSize& cont_no_size, const Container& container)const
+	template <class Container1, class Container2>
+	void ExpectEqual(const Container1& container1, const Container2& container2)const
 	{
-		ExpectEqualToContainer(cont_no_size, container, equal_);
+		auto container2_cur = container2.begin();
+		for(auto container1_cur:container1)
+		{
+			ASSERT_NE(container2_cur, container2.end());
+			EXPECT_PRED2(equal_, container1_cur, *container2_cur);
+			++container2_cur;
+		}
+		EXPECT_EQ(container2_cur, container2.end());
+	}
+
+	template <class Container1, class Container2>
+	bool operator()(const Container1& container1, const Container2& container2)const
+	{
+		ExpectEqual(container1, container2);
 		return true;
 	}
 private:
 	const SubComparator& equal_;
 };
 
-template <class SubComparator> ContainerEqualExpect<SubComparator> CreateContainerComparator(const SubComparator& equal)
+template <class SubComparator> ContainerEqualExpect<SubComparator> ExpecterContainerEqual(const SubComparator& equal)
 {
 	return ContainerEqualExpect<SubComparator>(equal);
 }
@@ -102,13 +106,13 @@ TEST_F(CrossRingInfoTest, 3x3)
 	poly_rec_info.MonomialAdditionDone();
 	auto monomial_it = poly_rec_info.begin();
 	EXPECT_NE(monomial_it , poly_rec_info.end());
-	ExpectEqualToContainer(*monomial_it,  ilist<V>({}), VarDegEqual);
+	ExpecterContainerEqual(VarDegEqual)(*monomial_it,  ilist<V>({}));
 	++monomial_it ;
 	EXPECT_NE(monomial_it , poly_rec_info.end());
-	ExpectEqualToContainer(*monomial_it,  ilist({V(1,1), V(2,3)}), VarDegEqual);
+	ExpecterContainerEqual(VarDegEqual)(*monomial_it,  ilist({V(1,1), V(2,3)}));
 	++monomial_it ;
 	EXPECT_NE(monomial_it , poly_rec_info.end());
-	ExpectEqualToContainer(*monomial_it,  ilist({V(2,4), V(99,5), V(1,6)}), VarDegEqual);
+	ExpecterContainerEqual(VarDegEqual)(*monomial_it,  ilist({V(2,4), V(99,5), V(1,6)}));
 	++monomial_it ;
 	EXPECT_FALSE(monomial_it  != poly_rec_info.end());
 	CrossRingInfo::InputElementsConstructionInfo<DegRevLex> input_rec_info(order_);
@@ -116,6 +120,7 @@ TEST_F(CrossRingInfoTest, 3x3)
 	input_rec_info.AddVariable(V(4,1));
 	input_rec_info.AddVariable(V(1,3));
 	input_rec_info.MonomialAdditionDone();
+	input_rec_info.BeginPolynomialConstruction(0);
 	input_rec_info.BeginPolynomialConstruction(3);
 	input_rec_info.AddVariable(V(1,1));
 	input_rec_info.AddVariable(V(2,3));
@@ -125,24 +130,20 @@ TEST_F(CrossRingInfoTest, 3x3)
 	input_rec_info.AddVariable(V(2,4));
 	input_rec_info.MonomialAdditionDone();
 	input_rec_info.MonomialAdditionDone();
-	input_rec_info.BeginPolynomialConstruction(0);
 	
+	EXPECT_NE(input_rec_info.begin(), input_rec_info.end());
 
-	ExpectEqualToContainer(input_rec_info,
+	ExpecterContainerEqual(ExpecterContainerEqual(ExpecterContainerEqual(VarDegEqual)))(input_rec_info,
 		ilist({
 			ilist({
-				ilist({V(2,4), V(99,5), V(1,6)})
-			})
-		}), 
-		CreateContainerComparator(CreateContainerComparator(VarDegEqual))
+				ilist({V(4,1), V(1,3)}),
+			}),
+			ilist<std::initializer_list<V>>({}),
+			ilist({
+				ilist({V(1,1), V(2,3)}),
+				ilist({V(2,4), V(99,5), V(1,6)}),
+				ilist<V>({}),
+			}),
+		})
 	);
-	for (auto input_poly:input_rec_info)
-	{
-		for(auto mon:input_poly)
-		{
-			ExpectEqualToContainer(mon,  ilist({V(2,4), V(99,5), V(1,6)}), VarDegEqual);
-		}
-	}
-	EXPECT_FALSE(input_rec_info.begin() != input_rec_info.end());
-
 }

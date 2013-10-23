@@ -46,14 +46,34 @@ const std::initializer_list<T>& ilist(const std::initializer_list<T>&  list)
 }
 
 template <class Container, class Separator>
-void OutputContainer(std::ostream& s, const Container& data, const Separator& separator)
+struct  ContainerWriterStruct
+{
+	const Container& data;
+	const Separator& separator;
+};
+
+template <class Container, class Separator>
+ContainerWriterStruct<Container, Separator> OutputContainer(const Container& data, const Separator& separator)
+{
+	return {data, separator};
+}
+
+template <class Container, class Separator>
+std::ostream& operator<<(std::ostream& s, const ContainerWriterStruct<Container, Separator>& writer)
+{
+	for(auto i = writer.data.begin(); i != writer.data.end(); ++i)
 	{
-		for(auto i = data.begin(); i != data.end(); ++i)
+		if (i != writer.data.begin())
 		{
-			if (i != data.begin())
-			{
-				s << separator;
-			}
-			s << *i;
+			s << writer.separator;
 		}
+		s << *i;
 	}
+	return s;
+}
+
+template <class T>
+std::ostream& operator<<(std::ostream& s, const std::initializer_list<T>& ilist)
+{
+	return s << "{" << OutputContainer(ilist, ", ") << "}";
+}

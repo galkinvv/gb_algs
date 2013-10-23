@@ -32,10 +32,10 @@ namespace CrossRingInfo
 		const int degree;
 		const int index;
 	};
+	
 	std::ostream& operator << (std::ostream& s, const PerVariableData& data)
 	{
-		s << "x_" << data.index << "^" << data.degree;
-		return s;
+		return s << "x_" << data.index << "^" << data.degree;
 	}
 	
 	template <class ContainerIterator>
@@ -62,6 +62,11 @@ namespace CrossRingInfo
 		const ContainerIterator end_;
 	};
 
+	template <class ContainerIterator>
+	std::ostream& operator << (std::ostream& s, const MonomialData<ContainerIterator>& data)
+	{
+		return s << "(" << OutputContainer(data, "+") << ")";
+	}
 	typedef std::vector<int> DegreesContainer;
 		
 	typedef int ArrayPos;
@@ -150,10 +155,7 @@ namespace CrossRingInfo
 
 	std::ostream& operator << (std::ostream& s, const MonomialCollection& data)
 	{
-		s << '[';
-		OutputContainer(s, data, ", ");
-		s << ']';
-		return s;
+		return s << '(' << OutputContainer(data, ", ") << ')';
 	}
 
 	struct MonomialCollectionImpl:MonomialCollection
@@ -203,10 +205,7 @@ namespace CrossRingInfo
 	template <class MonomialMetadata>
 	std::ostream& operator << (std::ostream& s, const BasisElementReconstructionInfo<MonomialMetadata>& data)
 	{
-		s << '[';
-		OutputContainer(s, data, ", ");
-		s << ']';
-		return s;
+		return s << "{\n" << OutputContainer(s, data, ",\n\t") << "\n}";
 	}
 
 	template <class MonomialMetadata>
@@ -264,12 +263,7 @@ namespace CrossRingInfo
 	template <class MonomialMetadata>
 	std::ostream& operator << (std::ostream& s, const InputElementsConstructionInfo<MonomialMetadata>& data)
 	{
-		s << '[';
-		OutputContainer(s, data, ", ");
-		s << ']';
-		return s;
+		return s << '[' << OutputContainer(data, ", ") << ']';
 	}
-
-
 }
 
