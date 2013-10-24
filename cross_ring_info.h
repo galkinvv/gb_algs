@@ -209,9 +209,9 @@ namespace CrossRingInfo
 	}
 
 	template <class MonomialMetadata>
-	struct InputElementsConstructionInfo
+	struct MonomialListList
 	{
-		InputElementsConstructionInfo(const MonomialMetadata& metadata)
+		MonomialListList(const MonomialMetadata& metadata)
 			:metadata_(metadata)
 		{}
 		void BeginPolynomialConstruction(int monomial_count)
@@ -230,8 +230,7 @@ namespace CrossRingInfo
 		const MonomialMetadata& MetaData()const
 		{
 			return metadata_;
-		}
-		
+		}		
 		const MonomialCollection* begin()const
 		{
 			return input_poly_infos_.data();
@@ -261,7 +260,36 @@ namespace CrossRingInfo
 	};
 	
 	template <class MonomialMetadata>
-	std::ostream& operator << (std::ostream& s, const InputElementsConstructionInfo<MonomialMetadata>& data)
+	struct MonomialListListWithTopInfo: MonomialListList<MonomialMetadata>
+	{
+		typedef  MonomialListList<MonomialMetadata> Base;
+		MonomialListListWithTopInfo(const MonomialMetadata& metadata)
+			:Base(metadata)
+		{
+			Base::BeginPolynomialConstruction(1);
+		}
+		void TopInfoAdditionDone()
+		{
+			Base::MonomialAdditionDone();
+			assert((Base::begin() + 1) == Base::end());
+		}
+		const MonomialCollection* begin()const
+		{
+			auto result = Base::begin();
+			assert(result != Base::end());
+			return result + 1;
+		}
+		decltype(*(std::declval<Base>().begin()->begin())) TopInfo()const
+		{
+			auto result_poly = Base::begin();
+			assert(result_poly != Base::end());
+			return *result_poly->begin();
+		}
+	};
+	
+
+	template <class MonomialMetadata>
+	std::ostream& operator << (std::ostream& s, const MonomialListList<MonomialMetadata>& data)
 	{
 		return s << '[' << OutputContainer(data, ", ") << ']';
 	}

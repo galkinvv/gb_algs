@@ -88,9 +88,13 @@ TEST_F(CrossRingInfoDeathTest, AddVarPastEnd)
 
 TEST_F(CrossRingInfoTest, Empty)
 {
-	CrossRingInfo::BasisElementReconstructionInfo<DegRevLex> poly_rec_info(order_, 0);
+	CrossRingInfo::MonomialListListWithTopInfo<DegRevLex> poly_rec_info(order_);
+	poly_rec_info.AddVariable(V(1,6));
+	poly_rec_info.AddVariable(V(99,5));
+	poly_rec_info.TopInfoAdditionDone();
 	EXPECT_FALSE(poly_rec_info.begin() != poly_rec_info.end());
-	CrossRingInfo::InputElementsConstructionInfo<DegRevLex> input_rec_info(order_);
+	ExpecterContainerEqual(VarDegEqual)(poly_rec_info.TopInfo(), ilist({V(99,5), V(1,6)}));
+	CrossRingInfo::MonomialListList<DegRevLex> input_rec_info(order_);
 	EXPECT_FALSE(input_rec_info.begin() != input_rec_info.end());
 }
 TEST_F(CrossRingInfoTest, 3x3)
@@ -115,7 +119,7 @@ TEST_F(CrossRingInfoTest, 3x3)
 	ExpecterContainerEqual(VarDegEqual)(*monomial_it,  ilist({V(2,4), V(99,5), V(1,6)}));
 	++monomial_it ;
 	EXPECT_FALSE(monomial_it  != poly_rec_info.end());
-	CrossRingInfo::InputElementsConstructionInfo<DegRevLex> input_rec_info(order_);
+	CrossRingInfo::MonomialListList<DegRevLex> input_rec_info(order_);
 	input_rec_info.BeginPolynomialConstruction(1);
 	input_rec_info.AddVariable(V(4,1));
 	input_rec_info.AddVariable(V(1,3));
