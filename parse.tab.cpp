@@ -1791,7 +1791,7 @@ yyreturn:
 		return 0;
 	}
 	void freeParseMem(){
-		while (tempVars.size()>0){
+		while (!tempVars.empty()){
 			delete tempVars.top();
 			tempVars.pop();
 		}

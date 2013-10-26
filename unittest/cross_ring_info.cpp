@@ -8,11 +8,6 @@ bool VarDegEqual(const V& v0, const V& v1)
 	return (v0.index  == v1.index) && (v0.degree == v1.degree);
 }
 
-template <class Container1, class Container2, class Comparator>
-void ExpectEqualToContainer(const Container1& container1, const Container2& container2, const Comparator& equal)
-{
-}
-
 template <class SubComparator>
 struct ContainerEqualExpect
 {

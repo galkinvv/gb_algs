@@ -92,7 +92,7 @@ int main(int argc, char * argv[]){
 					}
 					int *option=&(localAlgOptions.*(cur_option->value));
 					++ci;
-					char *err;
+					char *err = nullptr;
 					if (ci<argc) *option=strtol(argv[ci],&err,0);
 
 					if (ci>=argc || *err || (cur_option->kind==CMDLineOption::cmdopt_bool && (*option & ~1))){
