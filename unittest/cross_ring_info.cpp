@@ -46,93 +46,132 @@ template <class SubComparator> ContainerEqualExpect<SubComparator> ExpecterConta
 class CrossRingInfoTest: public ::testing::Test
 {
 public:
-	DegRevLex order_;
-	CrossRingInfoTest()
-	{
-		order_.var_count = 7;
-	}
+	DegRevLex order_ = []{DegRevLex order; order.var_count = 7; return order;}();
+	CrossRingInfo::MonomialListList<DegRevLex> basis_info_{order_};
+	CrossRingInfo::MonomialListListWithTopInfo<DegRevLex> poly_rec_info_{order_};
 };
 typedef CrossRingInfoTest CrossRingInfoDeathTest;
 
 TEST_F(CrossRingInfoDeathTest, AddToEmpty)
 {
-	CrossRingInfo::BasisElementReconstructionInfo<DegRevLex> poly_rec_info(order_, 0);
-	EXPECT_DEATH(poly_rec_info.AddVariable(V(2,0)), "");
+	EXPECT_DEATH(basis_info_.AddVariable(V(2,0)), "");
+}
+
+TEST_F(CrossRingInfoDeathTest, AddToEmptyWithTopInfo)
+{
+	poly_rec_info_.TopInfoAdditionDone();
+	EXPECT_DEATH(poly_rec_info_.AddVariable(V(2,0)), "");
 }
 
 TEST_F(CrossRingInfoDeathTest, AddVarTooBig)
 {
-	CrossRingInfo::BasisElementReconstructionInfo<DegRevLex> poly_rec_info(order_, 1);
-	poly_rec_info.AddVariable(V(2,6));
-	EXPECT_DEATH(poly_rec_info.AddVariable(V(2,7)), "");
+	poly_rec_info_.AddVariable(V(2,6));
+	EXPECT_DEATH(poly_rec_info_.AddVariable(V(2,7)), "");
 }
 
 TEST_F(CrossRingInfoDeathTest, DoubleAddVar)
 {
-	CrossRingInfo::BasisElementReconstructionInfo<DegRevLex> poly_rec_info(order_, 1);
-	poly_rec_info.AddVariable(V(2,6));
-	EXPECT_DEATH(poly_rec_info.AddVariable(V(1,6)), "");
+	poly_rec_info_.AddVariable(V(2,6));
+	EXPECT_DEATH(poly_rec_info_.AddVariable(V(1,6)), "");
 }
 
 TEST_F(CrossRingInfoDeathTest, AddVarPastEnd)
 {
-	CrossRingInfo::BasisElementReconstructionInfo<DegRevLex> poly_rec_info(order_, 1);
-	poly_rec_info.MonomialAdditionDone();
-	EXPECT_DEATH(poly_rec_info.AddVariable(V(1,6)), "");
+	basis_info_.BeginPolynomialConstruction(3);
+	basis_info_.MonomialAdditionDone();
+	basis_info_.MonomialAdditionDone();
+	basis_info_.MonomialAdditionDone();
+	EXPECT_DEATH(basis_info_.AddVariable(V(1,6)), "");
+}
+
+TEST_F(CrossRingInfoDeathTest, AddVarPastEndWithTopInfo)
+{
+	poly_rec_info_.TopInfoAdditionDone();
+	EXPECT_DEATH(poly_rec_info_.MonomialAdditionDone(), "");
+}
+
+TEST_F(CrossRingInfoDeathTest, ForgotTopInfoAddMon)
+{
+	EXPECT_DEATH(poly_rec_info_.MonomialAdditionDone(), "");
+}
+
+TEST_F(CrossRingInfoDeathTest, ForgotTopInfoAddPoly)
+{
+	EXPECT_DEATH(poly_rec_info_.BeginPolynomialConstruction(3), "");
+}
+
+TEST_F(CrossRingInfoDeathTest, ExtraTopInfo)
+{
+	poly_rec_info_.TopInfoAdditionDone();
+	poly_rec_info_.BeginPolynomialConstruction(1);
+	EXPECT_DEATH(poly_rec_info_.TopInfoAdditionDone(), "");
 }
 
 TEST_F(CrossRingInfoTest, Empty)
 {
-	CrossRingInfo::MonomialListListWithTopInfo<DegRevLex> poly_rec_info(order_);
-	poly_rec_info.AddVariable(V(1,6));
-	poly_rec_info.AddVariable(V(99,5));
-	poly_rec_info.TopInfoAdditionDone();
-	EXPECT_FALSE(poly_rec_info.begin() != poly_rec_info.end());
-	ExpecterContainerEqual(VarDegEqual)(poly_rec_info.TopInfo(), ilist({V(99,5), V(1,6)}));
-	CrossRingInfo::MonomialListList<DegRevLex> input_rec_info(order_);
-	EXPECT_FALSE(input_rec_info.begin() != input_rec_info.end());
+	poly_rec_info_.TopInfoAdditionDone();
+	EXPECT_FALSE(poly_rec_info_.begin() != poly_rec_info_.end());
+	EXPECT_FALSE(basis_info_.begin() != basis_info_.end());
 }
+
+TEST_F(CrossRingInfoTest, TopMon)
+{
+	poly_rec_info_.AddVariable(V(1,6));
+	poly_rec_info_.AddVariable(V(99,5));
+	poly_rec_info_.TopInfoAdditionDone();
+	ExpecterContainerEqual(VarDegEqual)(poly_rec_info_.TopInfo(), ilist({V(99,5), V(1,6)}));
+}
+
+TEST_F(CrossRingInfoTest, TopMonEmpty)
+{
+	poly_rec_info_.TopInfoAdditionDone();
+	ExpecterContainerEqual(VarDegEqual)(poly_rec_info_.TopInfo(), ilist<V>({}));
+}
+
+
 TEST_F(CrossRingInfoTest, 3x3)
 {
-	CrossRingInfo::BasisElementReconstructionInfo<DegRevLex> poly_rec_info(order_, 3);
-	poly_rec_info.MonomialAdditionDone();
-	poly_rec_info.AddVariable(V(1,1));
-	poly_rec_info.AddVariable(V(2,3));
-	poly_rec_info.MonomialAdditionDone();
-	poly_rec_info.AddVariable(V(1,6));
-	poly_rec_info.AddVariable(V(99,5));
-	poly_rec_info.AddVariable(V(2,4));
-	poly_rec_info.MonomialAdditionDone();
-	auto monomial_it = poly_rec_info.begin();
-	EXPECT_NE(monomial_it , poly_rec_info.end());
+	poly_rec_info_.TopInfoAdditionDone();
+	poly_rec_info_.BeginPolynomialConstruction(3);
+	poly_rec_info_.MonomialAdditionDone();
+	poly_rec_info_.AddVariable(V(1,1));
+	poly_rec_info_.AddVariable(V(2,3));
+	poly_rec_info_.MonomialAdditionDone();
+	poly_rec_info_.AddVariable(V(1,6));
+	poly_rec_info_.AddVariable(V(99,5));
+	poly_rec_info_.AddVariable(V(2,4));
+	poly_rec_info_.MonomialAdditionDone();
+	auto first_poly = *poly_rec_info_.begin();
+	auto monomial_it = first_poly.begin();
+	EXPECT_NE(monomial_it , first_poly.end());
 	ExpecterContainerEqual(VarDegEqual)(*monomial_it,  ilist<V>({}));
 	++monomial_it ;
-	EXPECT_NE(monomial_it , poly_rec_info.end());
+	EXPECT_NE(monomial_it , first_poly.end());
 	ExpecterContainerEqual(VarDegEqual)(*monomial_it,  ilist({V(1,1), V(2,3)}));
 	++monomial_it ;
-	EXPECT_NE(monomial_it , poly_rec_info.end());
+	EXPECT_NE(monomial_it , first_poly.end());
 	ExpecterContainerEqual(VarDegEqual)(*monomial_it,  ilist({V(2,4), V(99,5), V(1,6)}));
 	++monomial_it ;
-	EXPECT_FALSE(monomial_it  != poly_rec_info.end());
-	CrossRingInfo::MonomialListList<DegRevLex> input_rec_info(order_);
-	input_rec_info.BeginPolynomialConstruction(1);
-	input_rec_info.AddVariable(V(4,1));
-	input_rec_info.AddVariable(V(1,3));
-	input_rec_info.MonomialAdditionDone();
-	input_rec_info.BeginPolynomialConstruction(0);
-	input_rec_info.BeginPolynomialConstruction(3);
-	input_rec_info.AddVariable(V(1,1));
-	input_rec_info.AddVariable(V(2,3));
-	input_rec_info.MonomialAdditionDone();
-	input_rec_info.AddVariable(V(1,6));
-	input_rec_info.AddVariable(V(99,5));
-	input_rec_info.AddVariable(V(2,4));
-	input_rec_info.MonomialAdditionDone();
-	input_rec_info.MonomialAdditionDone();
-	
-	EXPECT_NE(input_rec_info.begin(), input_rec_info.end());
+	EXPECT_FALSE(monomial_it  != first_poly.end());
 
-	ExpecterContainerEqual(ExpecterContainerEqual(ExpecterContainerEqual(VarDegEqual)))(input_rec_info,
+	basis_info_.BeginPolynomialConstruction(1);
+	basis_info_.AddVariable(V(4,1));
+	basis_info_.AddVariable(V(1,3));
+	basis_info_.MonomialAdditionDone();
+	basis_info_.BeginPolynomialConstruction(0);
+	basis_info_.BeginPolynomialConstruction(3);
+	basis_info_.AddVariable(V(1,1));
+	basis_info_.AddVariable(V(2,3));
+	basis_info_.MonomialAdditionDone();
+	basis_info_.AddVariable(V(1,6));
+	basis_info_.AddVariable(V(99,5));
+	basis_info_.AddVariable(V(2,4));
+	basis_info_.MonomialAdditionDone();
+	basis_info_.MonomialAdditionDone();
+	
+	EXPECT_NE(basis_info_.begin(), basis_info_.end());
+
+	ExpecterContainerEqual(ExpecterContainerEqual(ExpecterContainerEqual(VarDegEqual)))(basis_info_,
 		ilist({
 			ilist({
 				ilist({V(4,1), V(1,3)}),

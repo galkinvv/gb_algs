@@ -168,47 +168,6 @@ namespace CrossRingInfo
 	};
 
 	template <class MonomialMetadata>
-	struct BasisElementReconstructionInfo
-	{
-		BasisElementReconstructionInfo(const MonomialMetadata& metadata, int monomial_count)
-		:metadata_(metadata)
-		,poly_info_(monomial_count, degrees_, metadata_)
-		{}
-
-		void AddVariable(const PerVariableData& data)
-		{
-			poly_info_.AddVariable(data);
-		}
-		void MonomialAdditionDone()
-		{
-			poly_info_.MonomialAdditionDone();
-		}
-		const MonomialMetadata& MetaData()const
-		{
-			return metadata_;
-		}
-		MonomialCollectionImpl::const_iterator begin()const
-		{
-			return poly_info_.begin();
-		}
-		MonomialCollectionImpl::const_iterator end()const
-		{
-			assert(poly_info_.size() * metadata_.var_count == degrees_.size());
-			return poly_info_.end();
-		}
-	private:
-		const MonomialMetadata& metadata_;
-		DegreesContainer degrees_;
-		MonomialCollectionImpl poly_info_;
-	};
-
-	template <class MonomialMetadata>
-	std::ostream& operator << (std::ostream& s, const BasisElementReconstructionInfo<MonomialMetadata>& data)
-	{
-		return s << "{\n" << OutputContainer(s, data, ",\n\t") << "\n}";
-	}
-
-	template <class MonomialMetadata>
 	struct MonomialListList
 	{
 		MonomialListList(const MonomialMetadata& metadata)
@@ -260,13 +219,13 @@ namespace CrossRingInfo
 	};
 	
 	template <class MonomialMetadata>
-	struct MonomialListListWithTopInfo: MonomialListList<MonomialMetadata>
+	struct MonomialListListWithTopInfo: private MonomialListList<MonomialMetadata>
 	{
 		typedef  MonomialListList<MonomialMetadata> Base;
 		MonomialListListWithTopInfo(const MonomialMetadata& metadata)
 			:Base(metadata)
 		{
-			Base::BeginPolynomialConstruction(1);
+			BeginPolynomialConstruction(1);
 		}
 		void TopInfoAdditionDone()
 		{
@@ -279,6 +238,14 @@ namespace CrossRingInfo
 			assert(result != Base::end());
 			return result + 1;
 		}
+		using Base::end;
+		using Base::BeginPolynomialConstruction;
+		using Base::AddVariable;
+		void MonomialAdditionDone()
+		{
+			assert((Base::begin() + 1) != Base::end());
+			Base::MonomialAdditionDone();
+		}
 		decltype(*(std::declval<Base>().begin()->begin())) TopInfo()const
 		{
 			auto result_poly = Base::begin();
@@ -287,11 +254,17 @@ namespace CrossRingInfo
 		}
 	};
 	
-
 	template <class MonomialMetadata>
 	std::ostream& operator << (std::ostream& s, const MonomialListList<MonomialMetadata>& data)
 	{
 		return s << '[' << OutputContainer(data, ", ") << ']';
 	}
+
+	template <class MonomialMetadata>
+	std::ostream& operator << (std::ostream& s, const MonomialListListWithTopInfo<MonomialMetadata>& data)
+	{
+		return s << "{data:[" << OutputContainer(data, ", ") << "], top:" << OutputContainer(data.TopInfo(), ", ") << "}";
+	}
+
 }
 
