@@ -239,6 +239,7 @@ namespace CrossRingInfo
 			return result + 1;
 		}
 		using Base::end;
+		using Base::MetaData;
 		using Base::BeginPolynomialConstruction;
 		using Base::AddVariable;
 		void MonomialAdditionDone()

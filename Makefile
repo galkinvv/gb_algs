@@ -12,8 +12,9 @@ endif
 
 GCC_WARNINGS=-Wall -Wextra -Wuninitialized -W -Wparentheses -Wformat=2 -Wswitch-default -Wcast-align -Wpointer-arith -Wwrite-strings -Wstrict-aliasing=2
 GCC_WARNINGS_OFF=-Wno-missing-field-initializers -Wno-format-nonliteral -Wno-unknown-pragmas -Wno-reorder
+ALL_CXX_LANG_FLAGS=-DWITH_MPI=$(WITH_MPI) $(GCC_WARNINGS_OFF) $(GCC_WARNINGS)
 
-CXXFLAGS = $(GCC_WARNINGS) $(GCC_WARNINGS_OFF) -O$(OPTIMIZE) -ffunction-sections -fdata-sections -g -march=i686 -mtune=i686 -DWITH_MPI=$(WITH_MPI) -MD -MP
+CXXFLAGS = $(ALL_CXX_LANG_FLAGS) -O$(OPTIMIZE) -ffunction-sections -fdata-sections -g -march=i686 -mtune=i686 -MD -MP
 #-ffunction-sections -fdata-sections
 #CXXFLAGS = -g -pg -O3 -march=i686 -mtune=i686
 
@@ -82,6 +83,9 @@ $(BUILDDIR)/%.o: %.cpp
 
 clean:
 	$(RM) $(BUILDDIR)
+
+quickcompile:
+	$(CXX11) $(ALL_CXX_LANG_FLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -S -x c++ $(QUICK_SOURCE) -o /dev/null
 
 3rd/gtest/src/gtest-all.cc:
 	rm -rf 3rd/gtest/ /tmp/gtest.zip /tmp/gtest_version
