@@ -69,6 +69,40 @@ namespace CrossRingInfo
 	}
 	typedef std::vector<int> DegreesContainer;
 		
+	template <class MonomialMetadata>
+	class SingleMonomial
+	{
+		typedef MonomialData<DegreesContainer::const_iterator> MonData;
+		typedef decltype(std::declval<MonData>().begin()) VarIterator;
+	public:
+		SingleMonomial(const MonomialMetadata& metadata):
+			metadata_(metadata),
+			data_(metadata.var_count)
+		{}
+		
+		VarIterator begin()const
+		{
+			return MonData(data_.begin(), data_.end()).begin();
+		}
+
+		VarIterator end()const
+		{
+			return MonData(data_.begin(), data_.end()).end();
+		}
+
+		void AddVariable(const PerVariableData& data)
+		{
+			assert(data.index >= 0);
+			assert(data.index < metadata_.var_count);
+			auto& value_to_change = data_[data.index];
+			assert(0 == value_to_change );
+			value_to_change  = data.degree;
+		}
+	private:
+		const MonomialMetadata& metadata_;
+		DegreesContainer data_;
+	};
+
 	typedef int ArrayPos;
 	struct ArrayInterval
 	{

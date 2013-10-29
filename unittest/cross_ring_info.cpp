@@ -49,6 +49,7 @@ public:
 	DegRevLex order_ = []{DegRevLex order; order.var_count = 7; return order;}();
 	CrossRingInfo::MonomialListList<DegRevLex> basis_info_{order_};
 	CrossRingInfo::MonomialListListWithTopInfo<DegRevLex> poly_rec_info_{order_};
+	CrossRingInfo::SingleMonomial<DegRevLex> single_mon_{order_};
 	const CrossRingInfo::MonomialListList<DegRevLex>& const_basis_info_ = basis_info_;
 	const CrossRingInfo::MonomialListListWithTopInfo<DegRevLex>& const_poly_rec_info_ = poly_rec_info_;
 };
