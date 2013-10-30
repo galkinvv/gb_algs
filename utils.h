@@ -45,6 +45,12 @@ const std::initializer_list<T>& ilist(const std::initializer_list<T>&  list)
 	return list;
 }
 
+template <class T>
+typename std::remove_reference<T>::type CopyValue(T value)
+{
+	return value;
+}
+
 template <class Container, class Separator>
 struct  ContainerWriterStruct
 {

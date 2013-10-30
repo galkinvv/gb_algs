@@ -94,4 +94,7 @@ quickcompile:
 	mkdir -p 3rd/
 	mv /tmp/gtest_version/gtest* 3rd/gtest
 
+check: $(BUILDDIR)/run-gt$(BINEXT)
+	$(BUILDDIR)/run-gt$(BINEXT)
+
 -include $(shell find $(BUILDDIR) -name '*.d')

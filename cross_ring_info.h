@@ -89,7 +89,10 @@ namespace CrossRingInfo
 		{
 			return MonData(data_.begin(), data_.end()).end();
 		}
-
+		const MonomialMetadata& MetaData()const
+		{
+			return metadata_;
+		}		
 		void AddVariable(const PerVariableData& data)
 		{
 			assert(data.index >= 0);
@@ -99,7 +102,7 @@ namespace CrossRingInfo
 			value_to_change  = data.degree;
 		}
 	private:
-		const MonomialMetadata& metadata_;
+		const MonomialMetadata metadata_;
 		DegreesContainer data_;
 	};
 
@@ -131,7 +134,7 @@ namespace CrossRingInfo
 			assert(data.index >= 0);
 			assert(data.index < monomial_metadata_.var_count);
 			int  index = interval.end + data.index;
-			assert(index <= int(container_.size()));
+			assert(index < int(container_.size()));
 			auto& value_to_change = container_[index];
 			assert(0 == value_to_change );
 			value_to_change  = data.degree;
@@ -242,7 +245,7 @@ namespace CrossRingInfo
 		{
 			return res + poly.size();
 		}
-		const MonomialMetadata& metadata_;
+		const MonomialMetadata metadata_;
 		DegreesContainer degrees_;
 		std::vector<MonomialCollectionImpl> input_poly_infos_;
 		MonomialCollectionImpl& BuiltPolynomial()

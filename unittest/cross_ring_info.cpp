@@ -3,6 +3,7 @@
 
 typedef CrossRingInfo::MonimailMetaData<CrossRingInfo::MonomialOrder::DegRevLex> DegRevLex;
 typedef CrossRingInfo::PerVariableData V;
+
 bool VarDegEqual(const V& v0, const V& v1)
 {
 	return (v0.index  == v1.index) && (v0.degree == v1.degree);
@@ -46,12 +47,18 @@ template <class SubComparator> ContainerEqualExpect<SubComparator> ExpecterConta
 class CrossRingInfoTest: public ::testing::Test
 {
 public:
-	DegRevLex order_ = []{DegRevLex order; order.var_count = 7; return order;}();
+	const int initial_var_count_ = 7;
+	DegRevLex order_ = [&]{DegRevLex order; order.var_count = initial_var_count_; return order;}();
 	CrossRingInfo::MonomialListList<DegRevLex> basis_info_{order_};
 	CrossRingInfo::MonomialListListWithTopInfo<DegRevLex> poly_rec_info_{order_};
 	CrossRingInfo::SingleMonomial<DegRevLex> single_mon_{order_};
 	const CrossRingInfo::MonomialListList<DegRevLex>& const_basis_info_ = basis_info_;
 	const CrossRingInfo::MonomialListListWithTopInfo<DegRevLex>& const_poly_rec_info_ = poly_rec_info_;
+	const	CrossRingInfo::SingleMonomial<DegRevLex>& const_single_mon_ = single_mon_;
+	CrossRingInfoTest()
+	{
+		++order_.var_count;
+	}
 };
 typedef CrossRingInfoTest CrossRingInfoDeathTest;
 
@@ -68,14 +75,20 @@ TEST_F(CrossRingInfoDeathTest, AddToEmptyWithTopInfo)
 
 TEST_F(CrossRingInfoDeathTest, AddVarTooBig)
 {
-	poly_rec_info_.AddVariable(V(2,6));
-	EXPECT_DEATH(poly_rec_info_.AddVariable(V(2,7)), "");
+	poly_rec_info_.AddVariable(V(2,initial_var_count_-1));
+	EXPECT_DEATH(poly_rec_info_.AddVariable(V(2,initial_var_count_)), "");
 }
 
 TEST_F(CrossRingInfoDeathTest, DoubleAddVar)
 {
 	poly_rec_info_.AddVariable(V(2,6));
 	EXPECT_DEATH(poly_rec_info_.AddVariable(V(1,6)), "");
+}
+
+TEST_F(CrossRingInfoDeathTest, DoubleAddVarToSingle)
+{
+	single_mon_.AddVariable(V(2,0));
+	EXPECT_DEATH(single_mon_.AddVariable(V(1,0)), "");
 }
 
 TEST_F(CrossRingInfoDeathTest, AddVarPastEnd)
@@ -115,12 +128,16 @@ TEST_F(CrossRingInfoTest, Empty)
 	poly_rec_info_.TopInfoAdditionDone();
 	EXPECT_FALSE(const_poly_rec_info_.begin() != const_poly_rec_info_.end());
 	EXPECT_FALSE(const_basis_info_.begin() != const_basis_info_.end());
+	EXPECT_FALSE(const_single_mon_.begin() != const_single_mon_.end());
 }
 
-TEST_F(CrossRingInfoTest, HasMetaData)
+TEST_F(CrossRingInfoTest, KeepsMetaData)
 {
-	EXPECT_EQ(&const_poly_rec_info_.MetaData(), &order_);
-	EXPECT_EQ(&const_basis_info_.MetaData(), &order_);
+	EXPECT_EQ(const_poly_rec_info_.MetaData().var_count, initial_var_count_);
+	EXPECT_EQ(CopyValue(const_poly_rec_info_.MetaData().order), CopyValue(DegRevLex::order));
+
+	EXPECT_EQ(const_basis_info_.MetaData().var_count, initial_var_count_);
+	EXPECT_EQ(const_single_mon_.MetaData().var_count, initial_var_count_);
 }
 
 TEST_F(CrossRingInfoTest, TopMon)
@@ -193,4 +210,9 @@ TEST_F(CrossRingInfoTest, 3x3)
 			}),
 		})
 	);
+	
+	single_mon_.AddVariable(V(3,3));
+	single_mon_.AddVariable(V(6,1));
+	single_mon_.AddVariable(V(5,5));
+	ExpecterContainerEqual(VarDegEqual)(const_single_mon_, ilist({V(6,1), V(3,3), V(5,5)}));
 }
