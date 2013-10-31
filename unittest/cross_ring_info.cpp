@@ -23,20 +23,40 @@ struct ContainerEqualExpect
 		for(auto container1_cur:container1)
 		{
 			ASSERT_NE(container2_cur, container2.end());
-			EXPECT_PRED2(equal_, container1_cur, *container2_cur);
+			EXPECT_PRED3(SavingResultCompare, container1_cur, *container2_cur, equal_);
 			++container2_cur;
 		}
-		EXPECT_EQ(container2_cur, container2.end());
+		EXPECT_PRED2((SavingResultCompare<decltype(container2_cur), decltype(container2.end())>), container2_cur, container2.end());
+		no_asserts_happen_ = true;
 	}
 
 	template <class Container1, class Container2>
 	bool operator()(const Container1& container1, const Container2& container2)const
 	{
 		ExpectEqual(container1, container2);
-		return true;
+		return all_equal_ && no_asserts_happen_;
 	}
 private:
-	const SubComparator& equal_;
+	template <class V1, class V2>
+	void SavingResultCompare(V1& v1, V2& v2)const
+	{
+		return SavingResultCompareWithComparator(v1, v2, std::equal<V1>);
+	}
+
+	template <class V1, class V2, class Comparator = decltype(std::equal<V1>)>
+	void SavingResultCompareWithComparator(V1& v1, V2& v2, const Comparator& comp = std::equal<V1>)const
+	{
+		bool result = comp(v1, v2);
+		if (!result)
+		{
+			all_equal_ = false;
+		}
+		return result;
+	}
+	
+	const SubComparator&  equal_;
+	bool all_equal_ = true;
+	bool no_asserts_happen_ = false;
 };
 
 template <class SubComparator> ContainerEqualExpect<SubComparator> ExpecterContainerEqual(const SubComparator& equal)

@@ -33,7 +33,7 @@ namespace CrossRingInfo
 		const int index;
 	};
 	
-	std::ostream& operator << (std::ostream& s, const PerVariableData& data)
+	inline std::ostream& operator << (std::ostream& s, const PerVariableData& data)
 	{
 		return s << "x_" << data.index << "^" << data.degree;
 	}
@@ -82,12 +82,12 @@ namespace CrossRingInfo
 		
 		VarIterator begin()const
 		{
-			return MonData(data_.begin(), data_.end()).begin();
+			return AsMonomialData().begin();
 		}
 
 		VarIterator end()const
 		{
-			return MonData(data_.begin(), data_.end()).end();
+			return AsMonomialData().end();
 		}
 		const MonomialMetadata& MetaData()const
 		{
@@ -102,9 +102,21 @@ namespace CrossRingInfo
 			value_to_change  = data.degree;
 		}
 	private:
+		template <class MonomialMetadata2>
+		friend std::ostream& operator << (std::ostream& s, const SingleMonomial<MonomialMetadata2>& data);
+		MonData AsMonomialData()const
+		{
+			return MonData(data_.begin(), data_.end());
+		}
 		const MonomialMetadata metadata_;
 		DegreesContainer data_;
 	};
+
+	template <class MonomialMetadata>
+	std::ostream& operator << (std::ostream& s, const SingleMonomial<MonomialMetadata>& data)
+	{
+		return s << data.AsMonomialData();
+	}
 
 	typedef int ArrayPos;
 	struct ArrayInterval
@@ -190,7 +202,7 @@ namespace CrossRingInfo
 		DegreesContainer& container_;
 	};
 
-	std::ostream& operator << (std::ostream& s, const MonomialCollection& data)
+	inline std::ostream& operator << (std::ostream& s, const MonomialCollection& data)
 	{
 		return s << '(' << OutputContainer(data, ", ") << ')';
 	}

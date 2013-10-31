@@ -1,5 +1,6 @@
 #pragma once
 #include "ringbase.h"
+#include "cross_ring_info.h"
 
 template<class TRing>
 class ApproxSignatureGroebner
