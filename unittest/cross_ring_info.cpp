@@ -10,6 +10,7 @@ bool VarDegEqual(const V& v0, const V& v1)
 	return (v0.index  == v1.index) && (v0.degree == v1.degree);
 }
 
+
 template <class SubComparator>
 struct ContainerEqualExpect
 {
@@ -24,13 +25,11 @@ struct ContainerEqualExpect
 		for(auto container1_cur:container1)
 		{
 			ASSERT_NE(container2_cur, container2.end());
-			auto f3 = [this](decltype(container1_cur) v1, decltype(*container2_cur) v2, decltype(equal_) eq){return SavingResultCompareWithComparator(v1,v2, eq);};
-			//std::function<bool(decltype(container1_cur), decltype(container2.end()))>  f2 = [this](decltype(container2_cur) v1, decltype(container2.end()) v2){return SavingResultCompare(v1,v2);};
-			//EXPECT_PRED3(f3, container1_cur, *container2_cur, equal_);
+			auto f3 = [this](decltype(container1_cur) v1, decltype(*container2_cur) v2){return SavingResultCompareWithComparator(v1,v2, equal_);};
+			EXPECT_PRED2(f3, container1_cur, *container2_cur);
 			++container2_cur;
 		}
 		auto  f2 = [this](decltype(container2_cur) v1, decltype(container2.end()) v2){return SavingResultCompare(v1,v2);};
-		//std::function<bool(decltype(container2_cur), decltype(container2.end()))>  f2 = std::bind(&ContainerEqualExpect::SavingResultCompare<decltype(container2_cur), decltype(container2.end())>, this, std::placeholders::_1,  std::placeholders::_2);
 		EXPECT_PRED2(f2, container2_cur, container2.end());
 		no_asserts_happen_ = true;
 	}
