@@ -25,22 +25,24 @@ struct ContainerEqualExpect
 		for(auto container1_cur:container1)
 		{
 			ASSERT_NE(container2_cur, container2.end());
-			auto f3 = [this](decltype(container1_cur) v1, decltype(*container2_cur) v2){return SavingResultCompareWithComparator(v1,v2, equal_);};
-			EXPECT_PRED2(f3, container1_cur, *container2_cur);
+			auto elements_comparator = [this](decltype(container1_cur) v1, decltype(*container2_cur) v2){return SavingResultCompareWithComparator(v1,v2, equal_);};
+			EXPECT_PRED2(elements_comparator, container1_cur, *container2_cur);
 			++container2_cur;
 		}
-		auto  f2 = [this](decltype(container2_cur) v1, decltype(container2.end()) v2){return SavingResultCompare(v1,v2);};
-		EXPECT_PRED2(f2, container2_cur, container2.end());
+		auto iterator_comparator = [this](decltype(container2_cur) v1, decltype(container2.end()) v2){return SavingResultCompare(v1,v2);};
+		EXPECT_PRED2(iterator_comparator, container2_cur, container2.end());
 		no_asserts_happen_ = true;
 	}
 
 	template <class Container1, class Container2>
 	bool operator()(const Container1& container1, const Container2& container2)const
 	{
+		all_equal_ = true;
+		no_asserts_happen_ = false;
 		ExpectEqual(container1, container2);
 		return all_equal_ && no_asserts_happen_;
 	}
-//private:
+private:
 	template <class V1, class V2>
 	bool SavingResultCompare(V1& v1, V2& v2)const
 	{
@@ -59,7 +61,7 @@ struct ContainerEqualExpect
 	}
 	
 	const SubComparator&  equal_;
-	mutable bool all_equal_ = true;
+	mutable bool all_equal_ = false;
 	mutable bool no_asserts_happen_ = false;
 };
 
