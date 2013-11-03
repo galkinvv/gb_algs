@@ -1,6 +1,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <sstream>
+#include <stdexcept>
 #include <iterator>
 using namespace std;
 #include "mpi_start_info.h"
@@ -89,6 +90,7 @@ int main(int argc, char * argv[]){
 					if (!cur_option){
 						fprintf(stderr, "\nERROR: Unknown option \"%s\"\n\n",argv[ci]);
 						printUsage(argv[0]);
+						throw std::runtime_error("unknown option");
 					}
 					int *option=&(localAlgOptions.*(cur_option->value));
 					++ci;

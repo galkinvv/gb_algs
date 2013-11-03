@@ -6,9 +6,9 @@
 struct ApproxSignatureGroebnerUT: ::testing::Test{
 	void ZeroPolys()
 	{
-		typedef Mock::Ring R;
+		typedef Mock::Ring<Mock::MockMonOrder> R;
 		auto io_data = R::Create("");
-		ApproxSignatureGroebner<R>::Do(*io_data);
+		ApproxSignatureGroebner<R, Mock::FastRingWithTracking<Mock::MockMonOrder>>::Do(*io_data);
 		std::string result = R::ConvertResult(io_data);
 		EXPECT_EQ(result, "");
 	}

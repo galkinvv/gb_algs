@@ -7,115 +7,37 @@
 #include "mock_base.h"
 #include "ringbase.h"
 #include "algs.h"
+#include "cross_ring_info.h"
+
 namespace Mock
 {
+	template <class MonomialMetadata>
 	class Ring: NoCopy
 	{
-		typedef std::map<char,int> Monomial;
-		typedef std::vector<Monomial> Polynomial;
 
 		Ring(){}
 		friend class IOData<Ring>;
 
-		struct ReconstructionInfoImpl: std::vector<Monomial>{
-			Monomial top;
-		};
 	public:
-		class FastAssociatedLabeledRingWithTracking;
-		class ReconstructionInfo: ReconstructionInfoImpl{
-			friend class Ring;
-			friend class FastAssociatedLabeledRingWithTracking;
-		};
 
+		struct PolysSet:NoCopy{};
+		
 		void CopyTo(Ring& /*to*/)const{}
 
-		struct PolysSet: private std::vector<Polynomial>
-		{
-		};
-
-		class FastAssociatedLabeledRingWithTracking : NoCopy
-		{
-			typedef std::vector<Monomial> FastPoly;
-			struct LPolyImpl
-			{
-				FastPoly value;
-				FastPoly reconstruction_info;
-				double sig_index;
-				Monomial sig_mon;
-			};
-			struct MultLPoly
-			{
-				LPolyImpl poly;
-				Monomial mul_by;
-			};
-		public:
-			class LPoly:LPolyImpl
-			{
-				friend class FastAssociatedLabeledRingWithTracking;
-			};
-			class MultLPolysQueue:std::vector<MultLPoly>{
-				friend class FastAssociatedLabeledRingWithTracking;
-			};
-			class LPolysResult:std::vector<LPoly>{};
-
-			FastAssociatedLabeledRingWithTracking(const Ring&)
-			{}
-			bool QueueEmpty(const MultLPolysQueue& queue)
-			{
-				return queue.empty();
-			}
-			LPoly DequeueSigSmallest(MultLPolysQueue& /*queue*/)
-			{
-				//TODO
-				return LPoly();
-			}
-			void PutInQueueExtendLabeledPolys(const PolysSet& /*in*/, MultLPolysQueue& /*queue*/)
-			{
-				//TODO
-			}
-			void FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& /*queue*/, LPolysResult& /*to_fill*/)
-			{
-				//TODO
-			}
-			void ReduceCheckingSignatures(LPoly& /*poly*/, LPolysResult& /*reducers*/)
-			{
-				//TODO
-			}
-			ReconstructionInfo FieldAgnosticReconstructionInfo(const LPoly& poly)
-			{
-				ReconstructionInfo result;
-				static_cast<std::vector<Monomial>&>(result) = poly.reconstruction_info;
-				//TODO: fill top
-				return result;
-			}
-			bool IsZero(const LPoly& poly)
-			{
-				return poly.value.empty();
-			}
-			void Normalize(LPoly& /*poly*/)
-			{
-				//TODO
-			}
-			void ExtendRingWithMonomialToHelpReconstruct(const LPoly& /*poly*/, LPolysResult& /*reducers*/)
-			{
-				//TODO
-			}
-			void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& /*left_parts*/, const LPoly& /*right_part*/, MultLPolysQueue& /*queue*/)
-			{
-				//TODO
-			}
-			void InsertInResult(const LPoly& /*poly*/, LPolysResult& /*result*/)
-			{
-				//TODO
-			}
-
-		};
-		bool ConstructAndInsertNormalized(const PolysSet& /*in*/, const ReconstructionInfo& /*info*/, PolysSet& /*out*/)
+		bool ConstructAndInsertNormalized(const PolysSet& /*in*/, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>&/*info*/, PolysSet& /*out*/)
 		{
 			//TODO
 			return true;
 		}
 
+		void ExtendWithMonomial(const std::unique_ptr<const CrossRingInfo::SingleMonomial<MonomialMetadata>>&/*info*/)
+		{
+		}
+
+		std::unique_ptr<const CrossRingInfo::MonomialListList<MonomialMetadata>> GetCrossRingInfoForInput(const PolysSet& /*in*/)const
+		{
+			return nullptr;
+		}
 		static std::unique_ptr<IOData<Ring>> Create(const std::string& /*in*/);
 
 		static std::string ConvertResult(std::unique_ptr<IOData<Ring>>& /*result*/)
@@ -123,10 +45,65 @@ namespace Mock
 			return "";
 		}
 	};
-	struct RingIOData: IOData<Ring> {};
-	inline std::unique_ptr<IOData<Ring>> Ring::Create(const std::string& /*in*/)
+
+	template <class MonomialMetadata>
+	class FastRingWithTracking : NoCopy
+	{
+	public:
+		struct LPoly{};
+		struct MultLPolysQueue{};
+		struct	LPolysResult{};
+
+		FastRingWithTracking()
+		{}
+		bool QueueEmpty(const MultLPolysQueue& /*queue*/)
+		{
+			return true;
+		}
+		LPoly DequeueSigSmallest(MultLPolysQueue& /*queue*/)
+		{
+			return LPoly();
+		}
+		MultLPolysQueue PutInQueueExtendLabeledPolys(const std::unique_ptr<const CrossRingInfo::MonomialListList<MonomialMetadata>>& /*in*/)
+		{
+			return MultLPolysQueue();
+		}
+		LPolysResult FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& /*queue*/)
+		{
+			return LPolysResult();
+		}
+		void ReduceCheckingSignatures(LPoly& /*poly*/, LPolysResult& /*reducers*/)
+		{
+		}
+		std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>  FieldAgnosticReconstructionInfo(const LPoly& /*poly*/)
+		{
+			return nullptr;
+		}
+		bool IsZero(const LPoly& /*poly*/)
+		{
+			return true;
+		}
+		void Normalize(LPoly& /*poly*/)
+		{
+		}
+		std::unique_ptr<const CrossRingInfo::SingleMonomial<MonomialMetadata>>  ExtendRingWithMonomialToHelpReconstruct(const LPoly& /*poly*/, LPolysResult& /*reducers*/)
+		{
+			return nullptr;
+		}
+		void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& /*left_parts*/, const LPoly& /*right_part*/, MultLPolysQueue& /*queue*/)
+		{
+		}
+		void InsertInResult(const LPoly& /*poly*/, LPolysResult& /*result*/)
+		{
+		}
+	};
+
+	typedef CrossRingInfo::MonimailMetaData<CrossRingInfo::MonomialOrder::DegRevLex> MockMonOrder;
+	struct RingIOData: IOData<Ring<MockMonOrder>> {};
+	template<>
+	inline std::unique_ptr<IOData<Ring<MockMonOrder>>> Ring<MockMonOrder>::Create(const std::string& /*in*/)
 	{
 		auto* data = new RingIOData();
-		return std::unique_ptr<IOData<Ring>>(data);
+		return std::unique_ptr<IOData<Ring<MockMonOrder>>>(data);
 	}
 }

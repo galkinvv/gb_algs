@@ -15,7 +15,7 @@ namespace F4MPI{
 			F4,
 			F5Orig::IncrementalF5,
 			PerryOrig::F5ByPerry,
-			GBwithRingAlgo<RingZ2Slow, ApproxSignatureGroebner>
+			//GBwithRingAlgo<RingZ2Slow, ApproxSignatureGroebner>
 		};
 		if (countof(funcs) > f4options->selectedAlgo)
 		{
