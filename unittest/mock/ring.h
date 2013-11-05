@@ -32,7 +32,7 @@ namespace Mock
 
 		void ExtendWithMonomial(const std::unique_ptr<const CrossRingInfo::SingleMonomial<MonomialMetadata>>&/*info*/)
 		{
-		}
+			}
 
 		std::unique_ptr<const CrossRingInfo::MonomialListList<MonomialMetadata>> GetCrossRingInfoForInput(const PolysSet& /*in*/)const
 		{

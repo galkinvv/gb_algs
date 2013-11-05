@@ -217,9 +217,10 @@ namespace CrossRingInfo
 	};
 
 	template <class MonomialMetadata>
-	struct MonomialListList
+	struct MonomialListListBase
 	{
-		MonomialListList(const MonomialMetadata& metadata)
+		protected:
+		MonomialListListBase(const MonomialMetadata& metadata)
 			:metadata_(metadata)
 		{}
 		void BeginPolynomialConstruction(int monomial_count)
@@ -231,10 +232,9 @@ namespace CrossRingInfo
 		{
 			BuiltPolynomial().AddVariable(data);
 		}
-		void MonomialAdditionDone()
-		{
-			BuiltPolynomial().MonomialAdditionDone();
-		}
+
+		DECLARE_FORWARDING_METHOD(void, MonomialAdditionDone, BuiltPolynomial())
+
 		const MonomialMetadata& MetaData()const
 		{
 			return metadata_;
@@ -266,6 +266,20 @@ namespace CrossRingInfo
 			return input_poly_infos_.back();
 		}
 	};
+	
+	template <class MonomialMetadata>
+	struct MonomialListList:private MonomialListListBase<MonomialMetadata>
+	{	
+		typedef MonomialListListBase<MonomialMetadata> Base;
+		DECLARE_FORWARDING_CONSTRUCTOR(MonomialListList, Base);
+		using Base::begin;
+		using Base::end;
+		using Base::AddVariable;
+		using Base::MonomialAdditionDone;
+		using Base::BeginPolynomialConstruction;
+		using Base::MetaData;
+	};
+
 	
 	template <class MonomialMetadata>
 	struct MonomialListListWithTopInfo: private MonomialListList<MonomialMetadata>

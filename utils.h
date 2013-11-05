@@ -23,6 +23,10 @@ constexpr int countof( T ( & /*arr*/ )[ N ] )
 #define DECLARE_FORWARDING_CONSTRUCTOR(Self, forward_to)\
 		template <class... TA> Self(TA&&... args): forward_to(std::forward<TA>(args)...) {}
 
+#define DECLARE_FORWARDING_METHOD(return_type, method, forward_to_expr)\
+		template <class... TA> return_type method(TA&&... args){ return (forward_to_expr).method(std::forward<TA>(args)...); }
+
+
 
 template <class T>
 class PseudoPointer
