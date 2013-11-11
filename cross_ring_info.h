@@ -67,6 +67,29 @@ namespace CrossRingInfo
 	{
 		return s << "(" << OutputContainer(data, "*") << ")";
 	}
+
+	template <class ContainerIterator, class Coef>
+	struct MonomialDataWithCoef:MonomialData<ContainerIterator>{
+		typedef MonomialData<ContainerIterator> Base;
+		MonomialDataWithCoef(const ContainerIterator& begin, const ContainerIterator& end, const Coef& coef)
+			:Base(begin,end)
+			,coef_(coef)
+		{
+		}
+		const Coef& coef()
+		{
+			return coef_;
+		}
+	private:
+	  const Coef& coef_;
+	};
+
+	template <class ContainerIterator, class Coef>
+	std::ostream& operator << (std::ostream& s, const MonomialDataWithCoef<ContainerIterator, Coef>& data)
+	{
+		return s << "(" << data.coef() << " * " << OutputContainer(data, "*") << ")";
+	}
+
 	typedef std::vector<int> DegreesContainer;
 		
 	template <class MonomialMetadata>
@@ -127,19 +150,14 @@ namespace CrossRingInfo
 		}
 	};
 
-	class MonomialCollection{
+	class MonomialCollectionBase{
 	  protected:
-		MonomialCollection(int expected_monomial_count, DegreesContainer& container, const MonimailMetaDataWithoutOrder& monomial_metadata)
+		MonomialCollectionBase(int expected_monomial_count, DegreesContainer& container, const MonimailMetaDataWithoutOrder& monomial_metadata)
 			:interval{int(container.size()), int(container.size())}
 			,monomial_metadata_(monomial_metadata)
 			,container_(container)
 		{
 			container_.resize(interval.end + expected_monomial_count*monomial_metadata.var_count);
-		}
-		void MonomialAdditionDone()
-		{
-			interval.end += monomial_metadata_.var_count;
-			assert(interval.end <= int(container_.size()));
 		}
 		void AddVariable(const PerVariableData& data)
 		{
@@ -155,35 +173,62 @@ namespace CrossRingInfo
 		{
 			return (interval.end - interval.begin)/monomial_metadata_.var_count;
 		}
-		template <class BaseIterator>
-		struct Iterator
+	protected:
+		template <class DegIterator>
+		struct IteratorBase
 		{
-			BaseIterator position;
-			const MonimailMetaDataWithoutOrder& monomial_metadata;
-			typedef MonomialData<BaseIterator> Item;
-			Item operator*()const
-			{
-				return Item(position, NextPosition());
-			}
+			IteratorBase(DegIterator a_position, const MonimailMetaDataWithoutOrder& a_monomial_metadata):
+				position(a_position), monomial_metadata(a_monomial_metadata)
+			{}
 			
-			PseudoPointer<Item> operator->()const
-			{
-				return PseudoPointer<Item>(position, NextPosition());
-			}
+			DegIterator position;
+			const MonimailMetaDataWithoutOrder& monomial_metadata;
 
 			void operator++()
 			{
 				position = NextPosition();
 			}
 			
-			bool operator !=(const Iterator& other)const
+			bool operator !=(const IteratorBase& other)const
 			{
 				return position != other.position;
 			}
-		private:
-			BaseIterator NextPosition()const
+		protected:
+			DegIterator NextPosition()const
 			{
 				return position + monomial_metadata.var_count;
+			}
+		};
+
+		ArrayInterval interval;
+		const MonimailMetaDataWithoutOrder& monomial_metadata_;
+		DegreesContainer& container_;
+	};
+
+	class MonomialCollection:protected MonomialCollectionBase
+	{
+		public:
+		using MonomialCollectionBase::MonomialCollectionBase;
+		void MonomialAdditionDone()
+		{
+			interval.end += monomial_metadata_.var_count;
+			assert(interval.end <= int(container_.size()));
+		}
+		
+		template <class DegIterator>
+		struct Iterator:IteratorBase<DegIterator>
+		{
+			using IteratorBase<DegIterator>::IteratorBase;
+			typedef MonomialData<DegIterator> Item;
+			
+			Item operator*()const
+			{
+				return Item(this->position, this->NextPosition());
+			}
+			
+			PseudoPointer<Item> operator->()const
+			{
+				return PseudoPointer<Item>(this->position, this->NextPosition());
 			}
 		};
 	  public:
@@ -196,12 +241,69 @@ namespace CrossRingInfo
 		{
 			return const_iterator{container_.begin() + interval.end, monomial_metadata_};
 		}
-	private:
-		ArrayInterval interval;
-		const MonimailMetaDataWithoutOrder& monomial_metadata_;
-		DegreesContainer& container_;
 	};
+	
+	template <class Coef>
+	class MonomialCollectionWithCoef:protected MonomialCollectionBase
+	{
+		public:
+		typedef std::vector<Coef> CoefContainer;
+		MonomialCollectionWithCoef(CoefContainer& coef_container, int expected_monomial_count, DegreesContainer& container, const MonimailMetaDataWithoutOrder& monomial_metadata):
+			MonomialCollectionBase(expected_monomial_count, container, monomial_metadata), coef_data_(coef_container), first_coef_pos_(coef_data_.size())
+			{
+				coef_data_.reserve(first_coef_pos_ + expected_monomial_count);
+			}
+		void MonomialAdditionDone(const Coef& coef)
+		{
+			interval.end += monomial_metadata_.var_count;
+			assert(interval.end <= int(container_.size()));
+			assert(coef_data_.size() < coef_data_.capacity());
+			coef_data_.push_back(coef);
+		}
+		
+		template <class DegIterator, class CoefIterator>
+		struct Iterator:IteratorBase<DegIterator>
+		{
+			typedef IteratorBase<DegIterator> Base;
+			Iterator(CoefIterator a_coef_postition, DegIterator a_position, const MonimailMetaDataWithoutOrder& a_monomial_metadata):
+				Base(a_position, a_monomial_metadata), coef_postition(a_coef_postition)
+			{}
+			typedef MonomialDataWithCoef<DegIterator, Coef> Item;
+			
+			Item operator*()const
+			{
+				return Item(this->position, this->NextPosition(), *coef_postition);
+			}
+			
+			PseudoPointer<Item> operator->()const
+			{
+				return PseudoPointer<Item>(this->position, this->NextPosition(), *coef_postition);
+			}
+			
+			void operator++()
+			{
+				Base::operator ++();
+				++coef_postition;
+			}
 
+			CoefIterator coef_postition;
+		};
+	public:
+		typedef Iterator<DegreesContainer::const_iterator, typename CoefContainer::const_iterator> const_iterator;
+		const_iterator begin()const
+		{
+			return const_iterator{coef_data_.begin() + first_coef_pos_, container_.begin() + interval.begin, monomial_metadata_};
+		}
+		const_iterator end()const
+		{
+			return const_iterator{coef_data_.begin() + first_coef_pos_, container_.begin() + interval.end, monomial_metadata_};
+		}
+	  private:
+	   CoefContainer& coef_data_;
+	   int first_coef_pos_;
+	};
+	
+	
 	inline std::ostream& operator << (std::ostream& s, const MonomialCollection& data)
 	{
 		return s << '(' << OutputContainer(data, "+") << ')';
