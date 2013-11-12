@@ -70,11 +70,27 @@ template <class SubComparator> ContainerEqualExpect<SubComparator> ExpecterConta
 	return ContainerEqualExpect<SubComparator>(equal);
 }
 
+class StrangeFieldInitializer
+{
+};
+
+class StrangeField
+{
+	void operator=(const StrangeField&) = delete;
+	StrangeField(const StrangeField&) = delete;
+
+  public:
+	StrangeField(StrangeField&&) = default;
+	StrangeField(const StrangeFieldInitializer&){}
+};
+
 class CrossRingInfoTest: public ::testing::Test
 {
 public:
 	const int initial_var_count_ = 7;
 	DegRevLex order_ = [&]{DegRevLex order; order.var_count = initial_var_count_; return order;}();
+	CrossRingInfo::MonomialListListWithCoef<DegRevLex, StrangeField> strange_field_basis_info_{order_};
+	CrossRingInfo::MonomialListListWithCoef<DegRevLex, int> int_field_basis_info_{order_};
 	CrossRingInfo::MonomialListList<DegRevLex> basis_info_{order_};
 	CrossRingInfo::MonomialListListWithTopInfo<DegRevLex> poly_rec_info_{order_};
 	CrossRingInfo::SingleMonomial<DegRevLex> single_mon_{order_};
@@ -241,4 +257,12 @@ TEST_F(CrossRingInfoTest, 3x3)
 	single_mon_.AddVariable(V(6,1));
 	single_mon_.AddVariable(V(5,5));
 	ExpecterContainerEqual(VarDegEqual)(const_single_mon_, ilist({V(6,1), V(3,3), V(5,5)}));
+}
+
+TEST_F(CrossRingInfoTest, SimpleAdditionWithCoef)
+{
+	strange_field_basis_info_.BeginPolynomialConstruction(1);
+	strange_field_basis_info_.MonomialAdditionDone(StrangeFieldInitializer());
+	int_field_basis_info_.BeginPolynomialConstruction(1);
+	int_field_basis_info_.MonomialAdditionDone(42);
 }
