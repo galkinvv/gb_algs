@@ -11,7 +11,7 @@ protected:
 	NoCopy(){}
 };
 
-template <class... Args> void IgnoreIfUnused(Args...){}
+template <class... Args> void IgnoreIfUnused(Args&&...){}
 
 template < typename T, size_t N >
 constexpr int countof( T ( & /*arr*/ )[ N ] )

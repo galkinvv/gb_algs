@@ -70,33 +70,61 @@ template <class SubComparator> ContainerEqualExpect<SubComparator> ExpecterConta
 	return ContainerEqualExpect<SubComparator>(equal);
 }
 
+class StrangeFieldValueInitializer
+{
+};
+
 class StrangeFieldInitializer
 {
 };
 
+class StrangeFieldValue
+{
+	void operator=(const StrangeFieldValue&) = delete;
+	StrangeFieldValue(const StrangeFieldValue&) = delete;
+
+public:
+	StrangeFieldValue(StrangeFieldValue&&) = default;
+	StrangeFieldValue(const StrangeFieldValueInitializer&){}
+};
+
+inline std::ostream& operator << (std::ostream& s, const StrangeFieldValue& data)
+{
+	IgnoreIfUnused(data);
+	return s << "qu";
+}
+
 class StrangeField
 {
 	void operator=(const StrangeField&) = delete;
-	StrangeField(const StrangeField&) = delete;
+	StrangeField(StrangeField&&) = delete;
 
   public:
-	StrangeField(StrangeField&&) = default;
+	typedef StrangeFieldValue Value;
+	StrangeField(const StrangeField&) = default;
 	StrangeField(const StrangeFieldInitializer&){}
 };
 
+struct IntField
+{
+	typedef int Value;
+	int field_option;
+};
 class CrossRingInfoTest: public ::testing::Test
 {
 public:
 	const int initial_var_count_ = 7;
+	const int initial_field_option_ = 7;
+	StrangeField strange_field_{StrangeFieldInitializer()};
+	IntField int_field_ = [&]{IntField int_field; int_field.field_option = initial_field_option_; return int_field;}();
 	DegRevLex order_ = [&]{DegRevLex order; order.var_count = initial_var_count_; return order;}();
-	CrossRingInfo::MonomialListListWithCoef<DegRevLex, StrangeField> strange_field_basis_info_{order_};
-	CrossRingInfo::MonomialListListWithCoef<DegRevLex, int> int_field_basis_info_{order_};
-	CrossRingInfo::MonomialListList<DegRevLex> basis_info_{order_};
+	CrossRingInfo::MonomialListListWithCoef<DegRevLex, StrangeField> strange_field_basis_info_{order_, strange_field_};
+	CrossRingInfo::MonomialListListWithCoef<DegRevLex, IntField> int_field_basis_info_{order_, int_field_};
 	CrossRingInfo::MonomialListListWithTopInfo<DegRevLex> poly_rec_info_{order_};
 	CrossRingInfo::SingleMonomial<DegRevLex> single_mon_{order_};
-	const CrossRingInfo::MonomialListList<DegRevLex>& const_basis_info_ = basis_info_;
+	const CrossRingInfo::MonomialListListWithCoef<DegRevLex, StrangeField>& const_basis_info_ = strange_field_basis_info_;
 	const CrossRingInfo::MonomialListListWithTopInfo<DegRevLex>& const_poly_rec_info_ = poly_rec_info_;
-	const	CrossRingInfo::SingleMonomial<DegRevLex>& const_single_mon_ = single_mon_;
+	const CrossRingInfo::SingleMonomial<DegRevLex>& const_single_mon_ = single_mon_;
 	CrossRingInfoTest()
 	{
 		++order_.var_count;
@@ -106,7 +134,7 @@ typedef CrossRingInfoTest CrossRingInfoDeathTest;
 
 TEST_F(CrossRingInfoDeathTest, AddToEmpty)
 {
-	EXPECT_DEATH(basis_info_.AddVariable(V(2,0)), "");
+	EXPECT_DEATH(strange_field_basis_info_.AddVariable(V(2,0)), "");
 }
 
 TEST_F(CrossRingInfoDeathTest, AddToEmptyWithTopInfo)
@@ -135,11 +163,11 @@ TEST_F(CrossRingInfoDeathTest, DoubleAddVarToSingle)
 
 TEST_F(CrossRingInfoDeathTest, AddVarPastEnd)
 {
-	basis_info_.BeginPolynomialConstruction(3);
-	basis_info_.MonomialAdditionDone();
-	basis_info_.MonomialAdditionDone();
-	basis_info_.MonomialAdditionDone();
-	EXPECT_DEATH(basis_info_.AddVariable(V(1,6)), "");
+	strange_field_basis_info_.BeginPolynomialConstruction(3);
+	strange_field_basis_info_.MonomialAdditionDone(StrangeFieldValueInitializer());
+	strange_field_basis_info_.MonomialAdditionDone(StrangeFieldValueInitializer());
+	strange_field_basis_info_.MonomialAdditionDone(StrangeFieldValueInitializer());
+	EXPECT_DEATH(strange_field_basis_info_.AddVariable(V(1,6)), "");
 }
 
 TEST_F(CrossRingInfoDeathTest, AddVarPastEndWithTopInfo)
@@ -222,20 +250,20 @@ TEST_F(CrossRingInfoTest, 3x3)
 	++monomial_it ;
 	EXPECT_FALSE(monomial_it  != first_poly.end());
 
-	basis_info_.BeginPolynomialConstruction(1);
-	basis_info_.AddVariable(V(4,1));
-	basis_info_.AddVariable(V(1,3));
-	basis_info_.MonomialAdditionDone();
-	basis_info_.BeginPolynomialConstruction(0);
-	basis_info_.BeginPolynomialConstruction(3);
-	basis_info_.AddVariable(V(1,1));
-	basis_info_.AddVariable(V(2,3));
-	basis_info_.MonomialAdditionDone();
-	basis_info_.AddVariable(V(1,6));
-	basis_info_.AddVariable(V(99,5));
-	basis_info_.AddVariable(V(2,4));
-	basis_info_.MonomialAdditionDone();
-	basis_info_.MonomialAdditionDone();
+	strange_field_basis_info_.BeginPolynomialConstruction(1);
+	strange_field_basis_info_.AddVariable(V(4,1));
+	strange_field_basis_info_.AddVariable(V(1,3));
+	strange_field_basis_info_.MonomialAdditionDone(StrangeFieldValueInitializer());
+	strange_field_basis_info_.BeginPolynomialConstruction(0);
+	strange_field_basis_info_.BeginPolynomialConstruction(3);
+	strange_field_basis_info_.AddVariable(V(1,1));
+	strange_field_basis_info_.AddVariable(V(2,3));
+	strange_field_basis_info_.MonomialAdditionDone(StrangeFieldValueInitializer());
+	strange_field_basis_info_.AddVariable(V(1,6));
+	strange_field_basis_info_.AddVariable(V(99,5));
+	strange_field_basis_info_.AddVariable(V(2,4));
+	strange_field_basis_info_.MonomialAdditionDone(StrangeFieldValueInitializer());
+	strange_field_basis_info_.MonomialAdditionDone(StrangeFieldValueInitializer());
 	
 	EXPECT_NE(const_basis_info_.begin(), const_basis_info_.end());
 
@@ -262,7 +290,7 @@ TEST_F(CrossRingInfoTest, 3x3)
 TEST_F(CrossRingInfoTest, SimpleAdditionWithCoef)
 {
 	strange_field_basis_info_.BeginPolynomialConstruction(1);
-	strange_field_basis_info_.MonomialAdditionDone(StrangeFieldInitializer());
+	strange_field_basis_info_.MonomialAdditionDone(StrangeFieldValueInitializer());
 	int_field_basis_info_.BeginPolynomialConstruction(1);
 	int_field_basis_info_.MonomialAdditionDone(42);
 }

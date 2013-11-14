@@ -76,7 +76,7 @@ namespace CrossRingInfo
 			,coef_(coef)
 		{
 		}
-		const Coef& coef()
+		const Coef& coef()const
 		{
 			return coef_;
 		}
@@ -243,6 +243,11 @@ namespace CrossRingInfo
 		}
 	};
 	
+	inline std::ostream& operator << (std::ostream& s, const MonomialCollectionPlain& data)
+	{
+		return s << '(' << OutputContainer(data, "+") << ')';
+	}
+
 	template <class Coef>
 	class MonomialCollectionWithCoef:protected MonomialCollectionBase
 	{
@@ -305,7 +310,8 @@ namespace CrossRingInfo
 	   int first_coef_pos_;
 	};
 		
-	inline std::ostream& operator << (std::ostream& s, const MonomialCollectionPlain& data)
+	template <class Coef>
+	inline std::ostream& operator << (std::ostream& s, const MonomialCollectionWithCoef<Coef>& data)
 	{
 		return s << '(' << OutputContainer(data, "+") << ')';
 	}
@@ -323,7 +329,6 @@ namespace CrossRingInfo
 	template <class MonomialMetadata, class SpecificMonomialCollection>
 	struct MonomialListListBase
 	{
-	  protected:
 		MonomialListListBase(const MonomialMetadata& metadata)
 			:metadata_(metadata)
 		{}
@@ -331,7 +336,6 @@ namespace CrossRingInfo
 		{
 			BuiltPolynomial().AddVariable(data);
 		}
-
 		DECLARE_FORWARDING_METHOD(void, MonomialAdditionDone, BuiltPolynomial())
 
 		const MonomialMetadata& MetaData()const
@@ -365,27 +369,9 @@ namespace CrossRingInfo
 	};
 	
 	template <class MonomialMetadata>
-	struct MonomialListList:private MonomialListListBase<MonomialMetadata, MonomialCollectionPlain>
-	{	
-		typedef MonomialListListBase<MonomialMetadata, MonomialCollectionPlain> Base;
-		DECLARE_FORWARDING_CONSTRUCTOR(MonomialListList, Base);
-		using Base::begin;
-		using Base::end;
-		using Base::AddVariable;
-		using Base::MonomialAdditionDone;
-		void BeginPolynomialConstruction(int monomial_count)
-		{
-			assert(this->TotalMonomials() * this->metadata_.var_count == this->degrees_.size());
-			this->input_poly_infos_.emplace_back(monomial_count, this->degrees_, this->metadata_);
-		}
-		using Base::MetaData;
-	};
-
-	
-	template <class MonomialMetadata>
-	struct MonomialListListWithTopInfo: private MonomialListList<MonomialMetadata>
+	struct MonomialListListWithTopInfo: private MonomialListListBase<MonomialMetadata, MonomialCollectionPlain>
 	{
-		typedef  MonomialListList<MonomialMetadata> Base;
+		typedef MonomialListListBase<MonomialMetadata, MonomialCollectionPlain> Base;
 		MonomialListListWithTopInfo(const MonomialMetadata& metadata)
 			:Base(metadata)
 		{
@@ -402,9 +388,14 @@ namespace CrossRingInfo
 			assert(result != Base::end());
 			return result + 1;
 		}
+		void BeginPolynomialConstruction(int monomial_count)
+		{
+			assert(this->TotalMonomials() * this->metadata_.var_count == this->degrees_.size());
+			this->input_poly_infos_.emplace_back(monomial_count, this->degrees_, this->metadata_);
+		}
+
 		using Base::end;
 		using Base::MetaData;
-		using Base::BeginPolynomialConstruction;
 		using Base::AddVariable;
 		void MonomialAdditionDone()
 		{
@@ -419,11 +410,15 @@ namespace CrossRingInfo
 		}
 	};
 	
-	template <class MonomialMetadata, class Coef>
-	struct MonomialListListWithCoef:private MonomialListListBase<MonomialMetadata, MonomialCollectionWithCoef<Coef>>
+	template <class MonomialMetadata, class TField>
+	struct MonomialListListWithCoef:private MonomialListListBase<MonomialMetadata, MonomialCollectionWithCoef<typename TField::Value>>
 	{	
+		typedef typename TField::Value Coef;
 		typedef MonomialListListBase<MonomialMetadata, MonomialCollectionWithCoef<Coef>> Base;
-		DECLARE_FORWARDING_CONSTRUCTOR(MonomialListListWithCoef, Base);
+		MonomialListListWithCoef(const MonomialMetadata& metadata, const TField& field)
+			:Base(metadata)
+			,field_(field)
+		{}
 		using Base::begin;
 		using Base::end;
 		using Base::AddVariable;
@@ -434,13 +429,18 @@ namespace CrossRingInfo
 			this->input_poly_infos_.emplace_back(coefs_, monomial_count, this->degrees_, this->metadata_);
 		}
 		using Base::MetaData;
+		const TField& Field()const
+		{
+			return field_;
+		};
 	  private:
+		TField field_;
 		std::vector<Coef> coefs_;
 	};
 
 
-	template <class MonomialMetadata>
-	std::ostream& operator << (std::ostream& s, const MonomialListList<MonomialMetadata>& data)
+	template <class MonomialMetadata, class Coef>
+	std::ostream& operator << (std::ostream& s, const MonomialListListWithCoef<MonomialMetadata, Coef>& data)
 	{
 		return s << '{' << OutputContainer(data, ", ") << '}';
 	}
@@ -450,6 +450,5 @@ namespace CrossRingInfo
 	{
 		return s << "{data:{" << OutputContainer(data, ", ") << "}, top:" << OutputContainer(data.TopInfo(), ", ") << "}";
 	}
-
 }
 

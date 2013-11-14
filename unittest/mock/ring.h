@@ -20,6 +20,7 @@ namespace Mock
 
 	public:
 
+		struct Value:NoCopy{};
 		struct PolysSet:NoCopy{};
 		
 		void CopyTo(Ring& /*to*/)const{}
@@ -32,9 +33,9 @@ namespace Mock
 
 		void ExtendWithMonomial(const std::unique_ptr<const CrossRingInfo::SingleMonomial<MonomialMetadata>>&/*info*/)
 		{
-			}
+		}
 
-		std::unique_ptr<const CrossRingInfo::MonomialListList<MonomialMetadata>> GetCrossRingInfoForInput(const PolysSet& /*in*/)const
+		std::unique_ptr<const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Ring>> GetCrossRingInfoForInput(const PolysSet& /*in*/)const
 		{
 			return nullptr;
 		}
@@ -64,7 +65,7 @@ namespace Mock
 		{
 			return LPoly();
 		}
-		MultLPolysQueue PutInQueueExtendLabeledPolys(const std::unique_ptr<const CrossRingInfo::MonomialListList<MonomialMetadata>>& /*in*/)
+		MultLPolysQueue PutInQueueExtendLabeledPolys(const std::unique_ptr<const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Ring<MonomialMetadata>>>& /*in*/)
 		{
 			return MultLPolysQueue();
 		}
