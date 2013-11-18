@@ -46,9 +46,9 @@ class ApproxSignatureGroebner
 		}
 	}
 public:
-	static void Do(IOData<TRing>& io_data)
+	static void Do(typename TRing::IOData& io_data)
 	{
-		io_data.in_ring.CopyTo(io_data.out_ring);
+		io_data.out_order = io_data.in_ring.CopyTo();
 		TFastRing fast_ring;
 		ApproxSignatureGroebner calculator(io_data, fast_ring);
 		calculator.CalcGB();

@@ -1,16 +1,27 @@
 #pragma once
-template <class TRing>
-struct IOData
+#include "cross_ring_info.h"
+template <class TMonomialMetadata, class TField>
+struct Ring
 {
-	const TRing& in_ring;
-	const typename TRing::PolysSet& in;
-	TRing out_ring;
-	typename TRing::PolysSet out;
-	virtual ~IOData(){};
+	typedef TField Field;
+	typedef TMonomialMetadata MonomialMetadata;
+
+	struct IOData
+	{
 protected:
-	TRing in_ring_;
-	typename TRing::PolysSet in_;
+	Field field_;
+	MonomialMetadata in_order_;
+	CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field> in_data_;
 	IOData():
-		in_ring(in_ring_), in(in_)
+		field(field_), in_order(in_order_), in_data(in_data_)
 	{}
+	
+	public:
+		const Field& field;
+		const MonomialMetadata& in_order;
+		const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& in_data;
+		MonomialMetadata out_order;
+		CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field> out_data;
+		virtual ~IOData(){};
+	};
 };
