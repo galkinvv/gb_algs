@@ -5,12 +5,13 @@
       <File Name="unittest/mock/mock_base.h"/>
       <File Name="unittest/mock/ring.h"/>
     </VirtualDirectory>
-    <File Name="unittest/test_base.h"/>
     <File Name="unittest/run-gt.cpp"/>
     <File Name="unittest/ssg_approx.cpp"/>
     <File Name="unittest/cmodular.cpp"/>
     <File Name="unittest/zero_skipping_indexed_iterator.cpp"/>
     <File Name="unittest/cross_ring_info.cpp"/>
+    <File Name="unittest/test_base.h"/>
+    <File Name="unittest/field.cpp"/>
   </VirtualDirectory>
   <Description/>
   <Dependencies/>
@@ -144,6 +145,8 @@
     <File Name="cross_ring_info.h"/>
     <File Name="zero_skipping_indexed_iterator.h"/>
     <File Name="utils.h"/>
+    <File Name="finite_field.h"/>
+    <File Name="z_field.h"/>
   </VirtualDirectory>
   <VirtualDirectory Name="mpi">
     <File Name="mpi/mpimatrix.cpp"/>
