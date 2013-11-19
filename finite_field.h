@@ -6,6 +6,11 @@ struct FiniteField
 	FiniteField(Value mod)
 		: mod_(mod)
 	{}
+	bool IsFiniteZpFieldWithChar(Value mod)
+	{
+		return mod == mod_;
+	}
+
 private:
 	Value mod_;
 };

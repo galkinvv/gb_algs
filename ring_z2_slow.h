@@ -5,11 +5,18 @@
 #include <memory>
 #include "algs.h"
 #include "ringbase.h"
+#include "z_field.h"
+#include "finite_field.h"
 namespace F4MPI
 {
 	class IOPolynomSet;
 }
-class RingZ2Slow: NoCopy
+template <class TMonomialMetadata, class TField>
+class RingZ2Slow: public Ring<TMonomialMetadata, TField>, public RingZ2SlowBase
+{
+	
+};
+class RingZ2SlowBase
 {
 	//Z_2 ring with degrevlex oredr on variables
 	struct Monomial : std::map<char,int>{

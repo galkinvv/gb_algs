@@ -11,7 +11,7 @@
 
 namespace Mock
 {
-	template <class MonomialMetadata>
+	template <class MonomialMetadata, class Field>
 	class Ring: NoCopy
 	{
 

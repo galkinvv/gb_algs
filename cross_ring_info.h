@@ -12,13 +12,13 @@ namespace CrossRingInfo
 	{
 		DegRevLex
 	};
-	struct MonimailMetaDataWithoutOrder
+	struct MonomialMetadataWithoutOrder
 	{
 		int var_count;
 	};
 	
 	template <MonomialOrder t_order>
-	struct MonimailMetaData:MonimailMetaDataWithoutOrder
+	struct MonomialMetadata:MonomialMetadataWithoutOrder
 	{
 		static const MonomialOrder order = t_order;
 	};
@@ -152,7 +152,7 @@ namespace CrossRingInfo
 
 	class MonomialCollectionBase{
 	  protected:
-		MonomialCollectionBase(int expected_monomial_count, DegreesContainer& container, const MonimailMetaDataWithoutOrder& monomial_metadata)
+		MonomialCollectionBase(int expected_monomial_count, DegreesContainer& container, const MonomialMetadataWithoutOrder& monomial_metadata)
 			:interval{int(container.size()), int(container.size())}
 			,monomial_metadata_(monomial_metadata)
 			,container_(container)
@@ -177,12 +177,12 @@ namespace CrossRingInfo
 		template <class DegIterator>
 		struct IteratorBase
 		{
-			IteratorBase(DegIterator a_position, const MonimailMetaDataWithoutOrder& a_monomial_metadata):
+			IteratorBase(DegIterator a_position, const MonomialMetadataWithoutOrder& a_monomial_metadata):
 				position(a_position), monomial_metadata(a_monomial_metadata)
 			{}
 			
 			DegIterator position;
-			const MonimailMetaDataWithoutOrder& monomial_metadata;
+			const MonomialMetadataWithoutOrder& monomial_metadata;
 
 			void operator++()
 			{
@@ -201,7 +201,7 @@ namespace CrossRingInfo
 		};
 
 		ArrayInterval interval;
-		const MonimailMetaDataWithoutOrder& monomial_metadata_;
+		const MonomialMetadataWithoutOrder& monomial_metadata_;
 		DegreesContainer& container_;
 	};
 
@@ -253,7 +253,7 @@ namespace CrossRingInfo
 	{
 		public:
 		typedef std::vector<Coef> CoefContainer;
-		MonomialCollectionWithCoef(CoefContainer& coef_container, int expected_monomial_count, DegreesContainer& container, const MonimailMetaDataWithoutOrder& monomial_metadata):
+		MonomialCollectionWithCoef(CoefContainer& coef_container, int expected_monomial_count, DegreesContainer& container, const MonomialMetadataWithoutOrder& monomial_metadata):
 			MonomialCollectionBase(expected_monomial_count, container, monomial_metadata), coef_data_(coef_container), first_coef_pos_(coef_data_.size())
 		{
 			coef_data_.reserve(first_coef_pos_ + expected_monomial_count);
@@ -272,7 +272,7 @@ namespace CrossRingInfo
 		struct Iterator:IteratorBase<DegIterator>
 		{
 			typedef IteratorBase<DegIterator> Base;
-			Iterator(CoefIterator a_coef_postition, DegIterator a_position, const MonimailMetaDataWithoutOrder& a_monomial_metadata):
+			Iterator(CoefIterator a_coef_postition, DegIterator a_position, const MonomialMetadataWithoutOrder& a_monomial_metadata):
 				Base(a_position, a_monomial_metadata), coef_postition(a_coef_postition)
 			{}
 			typedef MonomialDataWithCoef<DegIterator, Coef> Item;

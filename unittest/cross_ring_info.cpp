@@ -2,7 +2,7 @@
 #include <functional>
 #include "cross_ring_info.h"
 
-typedef CrossRingInfo::MonimailMetaData<CrossRingInfo::MonomialOrder::DegRevLex> DegRevLex;
+typedef CrossRingInfo::MonomialMetadata<CrossRingInfo::MonomialOrder::DegRevLex> DegRevLex;
 typedef CrossRingInfo::PerVariableData V;
 
 bool VarDegEqual(const V& v0, const V& v1)
