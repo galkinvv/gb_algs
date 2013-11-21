@@ -7,19 +7,35 @@
 #include "ringbase.h"
 #include "z_field.h"
 #include "finite_field.h"
+#include "utils.h"
+
 namespace F4MPI
 {
 	class IOPolynomSet;
 }
-template <class TMonomialMetadata, class TField>
-class RingZ2Slow: public Ring<TMonomialMetadata, TField>, public RingZ2SlowBase
-{
-	
-};
+
 class RingZ2SlowBase
 {
+  public:
+	struct InPolysSetWithOrigMetadata:NoCopy
+	{
+		
+	};
+	
+	struct OutPolysSetForVariyingMetadata:NoCopy
+	{
+		
+	};
+
+	std::unique_ptr<OutPolysSetForVariyingMetadata> PrepareEmptyResult()
+	{
+		return nullptr;
+	}
+	
+  protected:
 	//Z_2 ring with degrevlex oredr on variables
-	struct Monomial : std::map<char,int>{
+	struct Monomial : std::map<char,int>
+	{
 		friend bool operator<(const Monomial&, const Monomial&); //undefined
 	};
 	
@@ -35,7 +51,8 @@ class RingZ2SlowBase
 	};
 public:
 	class FastAssociatedLabeledRingWithTracking;
-	class ReconstructionInfo: ReconstructionInfoImpl{
+	class ReconstructionInfo: ReconstructionInfoImpl
+	{
 		friend class RingZ2Slow;
 		friend class FastAssociatedLabeledRingWithTracking;
 	};
@@ -98,9 +115,44 @@ public:
 		void ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult& reducers);
 		void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue);
 	};
-	bool ConstructAndInsertNormalized(const PolysSet& in, const ReconstructionInfo& info, PolysSet& out);
-
+	
 	static std::unique_ptr<IOData<RingZ2Slow>> Create(const F4MPI::IOPolynomSet& in);
 
 	static F4MPI::IOPolynomSet ConvertResult(std::unique_ptr<IOData<RingZ2Slow>>& result);
 };
+
+template <class MonomialMetadata, class Field>
+class RingZ2Slow: public RingBase<MonomialMetadata, Field>, public RingZ2SlowBase
+{
+		RingZ2Slow(const RingZ2Slow& copy_from)
+			:RingZ2SlowBase(copy_from)
+		{
+			
+		}
+		
+		RingZ2Slow(const MonomialMetadata& monomial_metadata, const Field& field)
+		{
+			
+		}
+		
+		RingZ2Slow& operator=(const RingZ2Slow& copy_from) = delete;
+		
+		bool ConstructAndInsertNormalized(const std::unique_ptr<const InPolysSetWithOrigMetadata>& prepared_input, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info, const std::unique_ptr<OutPolysSetForVariyingMetadata>& result)
+		{
+			return true;
+		}
+		
+		void ExtendWithMonomial(const std::unique_ptr<const CrossRingInfo::SingleMonomial<MonomialMetadata>>& info)
+		{
+		}
+		
+		std::unique_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstruction(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input)
+		{
+			return nullptr;
+		}
+		
+		void ConvertResultToFoxedMetadata(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result, std::unique_ptr<const typename Base::IOData::IOPolynomSet>& final_result)
+		{
+		}
+};
+
