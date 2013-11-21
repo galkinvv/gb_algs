@@ -58,9 +58,10 @@ namespace F4MPI
 		Field field {CModular::getMOD()};
 		assert(field.IsFiniteZpFieldWithChar(CModular::getMOD()));
 		TRing ring {monomial_metadata, field};
+		TRing out_ring{ring};
 		IOPolynomSet io_poly_set_in {monomial_metadata, field};
 		ConvertF4MPIInputData(F, io_poly_set_in);
-		IOData io_data {ring, io_poly_set_in};
+		IOData io_data {ring, io_poly_set_in, out_ring};
 		TAlgoT<TRing>::Do(io_data);
 		PolynomSet result;
 		CreateF4MPIResult(io_data.out_data, result);

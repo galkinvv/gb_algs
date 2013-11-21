@@ -7,23 +7,25 @@ template<class TRing, template <class Metadata> class TFastRing>
 class ApproxSignatureGroebner
 {
 	typedef typename TRing::IOData IOData;
-	typedef typename IOData::IOPolynomialSet IOPolysSet;
+	typedef typename IOData::IOPolynomSet IOPolysSet;
 	template <class TExactFastRing>
 	struct ApproxSignatureGroebnerCalculator
 	{
 		ApproxSignatureGroebnerCalculator(IOData& io_data, TExactFastRing& fast_ring):
-			in_ring_(io_data.in_ring), in_(io_data.in), out_ring_(io_data.out_ring), out_(io_data.out), fast_ring_(fast_ring)
+			in_ring_(io_data.in_ring), in_(io_data.in_data), out_ring_(io_data.out_ring), out_(io_data.out_data), fast_ring_(fast_ring)
 		{}
 
 		const TRing& in_ring_;
 		const IOPolysSet& in_;
 		TRing& out_ring_;
-		IOPolysSet& out_;
+		std::unique_ptr<const IOPolysSet>& out_;
 		TExactFastRing& fast_ring_;
 		void CalcGB()
 		{
 			auto B = fast_ring_.PutInQueueExtendLabeledPolys(in_);
 			auto R = fast_ring_.FillWithTrivialSyzygiesOfNonMultElements(B);
+			auto reconstruction_basis = out_ring_.PrepareForReconstruction(in_);
+			auto reconstructed_result = out_ring_.PrepareEmptyResult();
 			
 			while(!fast_ring_.QueueEmpty(B))
 			{
@@ -32,7 +34,7 @@ class ApproxSignatureGroebner
 				{
 					fast_ring_.ReduceCheckingSignatures(labeled_poly_to_reduce, R);
 					auto reconstruction_info = fast_ring_.FieldAgnosticReconstructionInfo(labeled_poly_to_reduce);
-					if (out_ring_.ConstructAndInsertNormalized(in_, reconstruction_info, out_))
+					if (out_ring_.ConstructAndInsertNormalized(reconstruction_basis, reconstruction_info, reconstructed_result))
 					{
 						//normalized polynomial was reconstructed in base ring
 						break;
@@ -47,15 +49,15 @@ class ApproxSignatureGroebner
 				}
 				fast_ring_.InsertInResult(labeled_poly_to_reduce, R);
 			}
+			out_ring_.ConvertResultToFoxedMetadata(reconstructed_result, out_);
 		}
 	};
 public:
 	static void Do(typename TRing::IOData& io_data)
 	{
-		io_data.in_ring.CopyTo(io_data.out_ring);
 		typedef TFastRing<typename TRing::MonomialMetadata> TExactFastRing;
-		TExactFastRing fast_ring {io_data.in.metadata()};
-		ApproxSignatureGroebnerCalculator<TExactFastRing> calculator(io_data, fast_ring);
+		TExactFastRing fast_ring {io_data.in_data.Metadata()};
+		ApproxSignatureGroebnerCalculator<TExactFastRing> calculator {io_data, fast_ring};
 		calculator.CalcGB();
 	}
 };

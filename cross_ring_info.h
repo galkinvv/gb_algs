@@ -112,7 +112,7 @@ namespace CrossRingInfo
 		{
 			return AsMonomialData().end();
 		}
-		const MonomialMetadata& MetaData()const
+		const MonomialMetadata& Metadata()const
 		{
 			return metadata_;
 		}		
@@ -338,7 +338,7 @@ namespace CrossRingInfo
 		}
 		DECLARE_FORWARDING_METHOD(void, MonomialAdditionDone, BuiltPolynomial())
 
-		const MonomialMetadata& MetaData()const
+		const MonomialMetadata& Metadata()const
 		{
 			return metadata_;
 		}		
@@ -395,7 +395,7 @@ namespace CrossRingInfo
 		}
 
 		using Base::end;
-		using Base::MetaData;
+		using Base::Metadata;
 		using Base::AddVariable;
 		void MonomialAdditionDone()
 		{
@@ -428,7 +428,7 @@ namespace CrossRingInfo
 			assert(this->TotalMonomials() * this->metadata_.var_count == this->degrees_.size());
 			this->input_poly_infos_.emplace_back(coefs_, monomial_count, this->degrees_, this->metadata_);
 		}
-		using Base::MetaData;
+		using Base::Metadata;
 		const TField& Field()const
 		{
 			return field_;

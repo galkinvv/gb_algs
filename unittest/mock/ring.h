@@ -7,43 +7,50 @@
 #include "mock_base.h"
 #include "ringbase.h"
 #include "algs.h"
+#include "utils.h"
 #include "cross_ring_info.h"
 
 namespace Mock
 {
 	template <class MonomialMetadata, class Field>
-	class Ring: NoCopy
+	class Ring: public RingBase<MonomialMetadata, Field, Ring<MonomialMetadata, Field>>
 	{
-
-		Ring(){}
-		friend class IOData<Ring>;
-
+		typedef RingBase<MonomialMetadata, Field, Ring<MonomialMetadata, Field>> Base;
 	public:
 
-		struct Value:NoCopy{};
-		struct PolysSet:NoCopy{};
-		
-		void CopyTo(Ring& /*to*/)const{}
+		struct InPolysSetWithOrigMetadata:NoCopy{};
+		struct OutPolysSetForVariyingMetadata:NoCopy{};
+		Ring(const Ring& copy_from){IgnoreIfUnused(copy_from);}
+		Ring(const MonomialMetadata& monomial_metadata, const Field& field){
+			IgnoreIfUnused(monomial_metadata, field);
+		}
+		Ring& operator=(const Ring& copy_from) = delete;
 
-		bool ConstructAndInsertNormalized(const PolysSet& /*in*/, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>&/*info*/, PolysSet& /*out*/)
+		bool ConstructAndInsertNormalized(const std::unique_ptr<const InPolysSetWithOrigMetadata>& prepared_input, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info, const std::unique_ptr<OutPolysSetForVariyingMetadata>& result)
 		{
-			//TODO
+			IgnoreIfUnused(prepared_input, info, result);
 			return true;
 		}
 
-		void ExtendWithMonomial(const std::unique_ptr<const CrossRingInfo::SingleMonomial<MonomialMetadata>>&/*info*/)
+		void ExtendWithMonomial(const std::unique_ptr<const CrossRingInfo::SingleMonomial<MonomialMetadata>>& info)
 		{
+			IgnoreIfUnused(info);
 		}
 
-		std::unique_ptr<const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Ring>> GetCrossRingInfoForInput(const PolysSet& /*in*/)const
+		std::unique_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstruction(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input)
+		{
+			IgnoreIfUnused(input);
+			return nullptr;
+		}
+		
+		std::unique_ptr<OutPolysSetForVariyingMetadata> PrepareEmptyResult()
 		{
 			return nullptr;
 		}
-		static std::unique_ptr<IOData<Ring>> Create(const std::string& /*in*/);
-
-		static std::string ConvertResult(std::unique_ptr<IOData<Ring>>& /*result*/)
+		
+		void ConvertResultToFoxedMetadata(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result, std::unique_ptr<const typename Base::IOData::IOPolynomSet>& final_result)
 		{
-			return "";
+			IgnoreIfUnused(constructed_result, final_result);
 		}
 	};
 
@@ -53,58 +60,64 @@ namespace Mock
 	public:
 		struct LPoly{};
 		struct MultLPolysQueue{};
-		struct	LPolysResult{};
+		struct LPolysResult{};
 
-		FastRingWithTracking()
-		{}
-		bool QueueEmpty(const MultLPolysQueue& /*queue*/)
+		FastRingWithTracking(const MonomialMetadata& metadata)
 		{
+			IgnoreIfUnused(metadata);
+		}
+		bool QueueEmpty(const MultLPolysQueue& queue)
+		{
+			IgnoreIfUnused(queue);
 			return true;
 		}
-		LPoly DequeueSigSmallest(MultLPolysQueue& /*queue*/)
+		LPoly DequeueSigSmallest(MultLPolysQueue& queue)
 		{
+			IgnoreIfUnused(queue);
 			return LPoly();
 		}
-		MultLPolysQueue PutInQueueExtendLabeledPolys(const std::unique_ptr<const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Ring<MonomialMetadata>>>& /*in*/)
+		
+		template <class Field>
+		MultLPolysQueue PutInQueueExtendLabeledPolys(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input)
 		{
+			IgnoreIfUnused(input);
 			return MultLPolysQueue();
 		}
-		LPolysResult FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& /*queue*/)
+		LPolysResult FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue)
 		{
+			IgnoreIfUnused(queue);
 			return LPolysResult();
 		}
-		void ReduceCheckingSignatures(LPoly& /*poly*/, LPolysResult& /*reducers*/)
+		void ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
 		{
+			IgnoreIfUnused(poly, reducers);
 		}
-		std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>  FieldAgnosticReconstructionInfo(const LPoly& /*poly*/)
+		std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>  FieldAgnosticReconstructionInfo(const LPoly& poly)
 		{
+			IgnoreIfUnused(poly);
 			return nullptr;
 		}
-		bool IsZero(const LPoly& /*poly*/)
+		bool IsZero(const LPoly& poly)
 		{
+			IgnoreIfUnused(poly);
 			return true;
 		}
-		void Normalize(LPoly& /*poly*/)
+		void Normalize(LPoly& poly)
 		{
+			IgnoreIfUnused(poly);
 		}
-		std::unique_ptr<const CrossRingInfo::SingleMonomial<MonomialMetadata>>  ExtendRingWithMonomialToHelpReconstruct(const LPoly& /*poly*/, LPolysResult& /*reducers*/)
+		std::unique_ptr<const CrossRingInfo::SingleMonomial<MonomialMetadata>>  ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult& reducers)
 		{
+			IgnoreIfUnused(poly, reducers);
 			return nullptr;
 		}
-		void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& /*left_parts*/, const LPoly& /*right_part*/, MultLPolysQueue& /*queue*/)
+		void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
 		{
+			IgnoreIfUnused(left_parts, right_part, queue);
 		}
-		void InsertInResult(const LPoly& /*poly*/, LPolysResult& /*result*/)
+		void InsertInResult(const LPoly& poly, LPolysResult& result)
 		{
+			IgnoreIfUnused(poly, result);
 		}
 	};
-
-	typedef CrossRingInfo::MonimailMetaData<CrossRingInfo::MonomialOrder::DegRevLex> MockMonOrder;
-	struct RingIOData: IOData<Ring<MockMonOrder>> {};
-	template<>
-	inline std::unique_ptr<IOData<Ring<MockMonOrder>>> Ring<MockMonOrder>::Create(const std::string& /*in*/)
-	{
-		auto* data = new RingIOData();
-		return std::unique_ptr<IOData<Ring<MockMonOrder>>>(data);
-	}
 }
