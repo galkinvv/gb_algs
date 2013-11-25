@@ -9,11 +9,6 @@
 #include "finite_field.h"
 #include "utils.h"
 
-namespace F4MPI
-{
-	class IOPolynomSet;
-}
-
 class RingZ2SlowBase
 {
   public:
@@ -27,12 +22,14 @@ class RingZ2SlowBase
 		
 	};
 
-	std::unique_ptr<OutPolysSetForVariyingMetadata> PrepareEmptyResult()
-	{
-		return nullptr;
-	}
+	std::unique_ptr<OutPolysSetForVariyingMetadata> PrepareEmptyResult();
 	
   protected:
+	bool ConstructAndInsertNormalizedImpl(const std::unique_ptr<const InPolysSetWithOrigMetadata>& prepared_input, 
+		const Enumerator<CrossRingInfo::PerVariableData>& top_info,  
+		const Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>>& input_polys_mons, 
+		const std::unique_ptr<OutPolysSetForVariyingMetadata>& result);
+
 	//Z_2 ring with degrevlex oredr on variables
 	struct Monomial : std::map<char,int>
 	{
@@ -40,119 +37,127 @@ class RingZ2SlowBase
 	};
 	
 	struct Polynomial : std::vector<Monomial>{};
-	RingZ2Slow();
-	~RingZ2Slow();
-	friend class IOData<RingZ2Slow>;
+	explicit RingZ2SlowBase(int var_count);
+	RingZ2SlowBase(const RingZ2SlowBase&);
+	~RingZ2SlowBase();
 	struct Impl;
 	std::unique_ptr<Impl> impl_;
-	struct ReconstructionInfoImpl: std::vector<std::vector<Monomial>>
-	{
-		Monomial top;
-	};
+
 public:
-	class FastAssociatedLabeledRingWithTracking;
-	class ReconstructionInfo: ReconstructionInfoImpl
-	{
-		friend class RingZ2Slow;
-		friend class FastAssociatedLabeledRingWithTracking;
-	};
-
-	void CopyTo(RingZ2Slow& to)const;
-
 	struct PolysSet: private std::vector<Polynomial>
 	{
-		friend class RingZ2Slow;
+		friend class RingZ2SlowBase;
 	};
 
-	class FastAssociatedLabeledRingWithTracking : NoCopy
-	{
-		struct FastPoly : std::vector<Monomial> {};
-		struct LPolyImpl
-		{
-			FastPoly value;
-			std::vector<FastPoly> reconstruction_info;
-			double sig_index;
-			Monomial sig_mon;
-		};
-		struct MultLPoly
-		{
-			LPolyImpl poly;
-			Monomial mul_by;
-		};
-		
-	public:
-		class LPoly:LPolyImpl
-		{
-			friend class FastAssociatedLabeledRingWithTracking;
-		};
-		class MultLPolysQueue:std::vector<MultLPoly>
-		{
-			friend class FastAssociatedLabeledRingWithTracking;
-		};
-		class LPolysResult:std::vector<LPolyImpl>
-		{
-			friend class FastAssociatedLabeledRingWithTracking;
-		};
-
-		FastAssociatedLabeledRingWithTracking(const RingZ2Slow&)
-		{}
-		bool QueueEmpty(const MultLPolysQueue& queue)
-		{
-			return queue.empty();
-		}
-		LPoly DequeueSigSmallest(MultLPolysQueue& queue);
-		void PutInQueueExtendLabeledPolys(const PolysSet& in, MultLPolysQueue& queue);
-		void FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue, LPolysResult& to_fill);
-		void ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers);
-		
-		ReconstructionInfo FieldAgnosticReconstructionInfo(const LPoly& poly);
-
-		bool IsZero(const LPoly& poly);
-		
-		void Normalize(LPoly& poly);
-		
-		void InsertInResult(const LPoly& poly, LPolysResult& result);
-		void ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult& reducers);
-		void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue);
-	};
-	
-	static std::unique_ptr<IOData<RingZ2Slow>> Create(const F4MPI::IOPolynomSet& in);
-
-	static F4MPI::IOPolynomSet ConvertResult(std::unique_ptr<IOData<RingZ2Slow>>& result);
 };
 
 template <class MonomialMetadata, class Field>
-class RingZ2Slow: public RingBase<MonomialMetadata, Field>, public RingZ2SlowBase
+struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialMetadata, Field>>, public RingZ2SlowBase
 {
-		RingZ2Slow(const RingZ2Slow& copy_from)
-			:RingZ2SlowBase(copy_from)
-		{
-			
-		}
+	typedef  RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialMetadata, Field>> Base;
+	RingZ2Slow(const RingZ2Slow& copy_from)
+		:RingZ2SlowBase(copy_from)
+	{}
+	
+	RingZ2Slow(const MonomialMetadata& monomial_metadata, const Field& field):
+		RingZ2SlowBase(monomial_metadata.var_count)
+	{
+		assert(field.IsFiniteZpFieldWithChar(2));
+		assert(MonomialMetadata::order ==  CrossRingInfo::MonomialOrder::DegRevLex);
+	}
+	
+	RingZ2Slow& operator=(const RingZ2Slow& copy_from) = delete;
+	
+	bool ConstructAndInsertNormalized(const std::unique_ptr<const InPolysSetWithOrigMetadata>& prepared_input, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info, const std::unique_ptr<OutPolysSetForVariyingMetadata>& result)
+	{			
+		auto poly_enumerator = FullRangeEnumerator(*info);
+		typedef typename decltype(poly_enumerator)::value_type IterablePoly;
+		typedef Enumerator<decltype(FullRangeEnumerator(std::declval<IterablePoly>()))> MonEnumerator;
+		auto mon_enumerator = MonEnumerator::Converter(poly_enumerator, FullRangeEnumerator<IterablePoly>);
+		return ConstructAndInsertNormalizedImpl(
+			prepared_input,
+			FullRangeEnumerator(info->TopInfo()),
+			mon_enumerator,
+			result
+		);
+	}
 		
-		RingZ2Slow(const MonomialMetadata& monomial_metadata, const Field& field)
-		{
-			
-		}
+	void ExtendWithMonomial(const std::unique_ptr<const CrossRingInfo::SingleMonomial<MonomialMetadata>>& info)
+	{
+	}
 		
-		RingZ2Slow& operator=(const RingZ2Slow& copy_from) = delete;
-		
-		bool ConstructAndInsertNormalized(const std::unique_ptr<const InPolysSetWithOrigMetadata>& prepared_input, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info, const std::unique_ptr<OutPolysSetForVariyingMetadata>& result)
-		{
-			return true;
-		}
-		
-		void ExtendWithMonomial(const std::unique_ptr<const CrossRingInfo::SingleMonomial<MonomialMetadata>>& info)
-		{
-		}
-		
-		std::unique_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstruction(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input)
-		{
-			return nullptr;
-		}
-		
-		void ConvertResultToFoxedMetadata(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result, std::unique_ptr<const typename Base::IOData::IOPolynomSet>& final_result)
-		{
-		}
+	std::unique_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstruction(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input)
+	{
+		return nullptr;
+	}
+	
+	void ConvertResultToFoxedMetadata(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result, std::unique_ptr<const typename Base::IOData::IOPolynomSet>& final_result)
+	{
+	}
 };
 
+struct  FastZ2SlowBasedRingBase:NoCopy
+{
+	struct Monomial : std::map<char,int>
+	{
+		friend bool operator<(const Monomial&, const Monomial&); //undefined
+	};
+	struct FastPoly : std::vector<Monomial> {};
+	struct LPolyImpl
+	{
+		FastPoly value;
+		std::vector<FastPoly> reconstruction_info;
+		double sig_index;
+		Monomial sig_mon;
+	};
+	struct MultLPoly
+	{
+		LPolyImpl poly;
+		Monomial mul_by;
+	};	
+};
+
+template <class MonomialMetadata>
+class FastZ2SlowBasedRing: private FastZ2SlowBasedRingBase
+{
+	
+public:
+	class LPoly:LPolyImpl
+	{
+		friend class FastZ2SlowBasedRing;
+	};
+	class MultLPolysQueue:std::vector<MultLPoly>
+	{
+		friend class FastZ2SlowBasedRing;
+	};
+	class LPolysResult:std::vector<LPolyImpl>
+	{
+		friend class FastZ2SlowBasedRing;
+	};
+
+	bool QueueEmpty(const MultLPolysQueue& queue)
+	{
+		return queue.empty();
+	}
+
+	FastZ2SlowBasedRing(const MonomialMetadata&){}
+
+	LPoly DequeueSigSmallest(MultLPolysQueue& queue);
+
+	template <class Field>
+	MultLPolysQueue PutInQueueExtendLabeledPolys(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input);
+	//{return MultLPolysQueue();}
+
+	LPolysResult FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue);
+	void ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers);
+	
+	std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>> FieldAgnosticReconstructionInfo(const LPoly& poly);
+
+	bool IsZero(const LPoly& poly);
+	
+	void Normalize(LPoly& poly);
+	
+	std::unique_ptr<const CrossRingInfo::SingleMonomial<MonomialMetadata>> ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult& reducers);
+	void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue);
+	void InsertInResult(const LPoly& poly, LPolysResult& result);
+};

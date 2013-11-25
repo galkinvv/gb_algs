@@ -6,7 +6,7 @@ struct FiniteField
 	FiniteField(Value mod)
 		: mod_(mod)
 	{}
-	bool IsFiniteZpFieldWithChar(Value mod)
+	bool IsFiniteZpFieldWithChar(Value mod)const
 	{
 		return mod == mod_;
 	}

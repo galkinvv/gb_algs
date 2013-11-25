@@ -1,5 +1,4 @@
 #include "ring_z2_slow.h"
-#include "iopolynomset.h"
 #include <algorithm>
 #include <cassert>
 #include <unordered_set>
@@ -220,15 +219,10 @@ bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by)
 	return true; // HM/S for maybe_supded is not smaller
 }
 
-typedef RingZ2Slow::FastAssociatedLabeledRingWithTracking FR;
-
-struct RingZ2SlowIoData: IOData<RingZ2Slow> {
-	using IOData<RingZ2Slow>::in_;
-	using IOData<RingZ2Slow>::in_ring_;
-};
 static const char kFirstVar = 'a';
 }
 
+/*
 FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)
 {
 	auto min = std::min_element(queue.begin(), queue.end(), SigLess<MultLPoly>);
@@ -318,7 +312,7 @@ RingZ2Slow::ReconstructionInfo FR::FieldAgnosticReconstructionInfo(const LPoly& 
 	return result;
 }
 
-void FR::ExtendRingWithMonomialToHelpReconstruct(const LPoly& /*poly*/, LPolysResult& /*reducers*/)
+void FR::ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult& reducers)
 {
 	throw std::logic_error("ring extension requsted for Z2");
 }
@@ -328,7 +322,7 @@ bool FR::IsZero(const LPoly& poly)
 	return IsZeroImpl(poly.value);
 }
 
-void FR::Normalize(LPoly& /*poly*/)
+void FR::Normalize(LPoly& poly)
 {
 	//Always normalized in Z2
 }
@@ -460,3 +454,4 @@ F4MPI::IOPolynomSet RingZ2Slow::ConvertResult(std::unique_ptr<IOData<RingZ2Slow>
 	result.reset();
 	return converted_result;
 }
+*/

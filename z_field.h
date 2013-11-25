@@ -4,7 +4,7 @@ template <class Integer>
 struct ZField
 {
 	typedef Integer Value;
-	bool IsZField()
+	bool IsZField()const
 	{
 		return true;
 	}

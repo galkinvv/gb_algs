@@ -92,6 +92,7 @@ namespace Mock
 		{
 			IgnoreIfUnused(poly, reducers);
 		}
+
 		std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>  FieldAgnosticReconstructionInfo(const LPoly& poly)
 		{
 			IgnoreIfUnused(poly);

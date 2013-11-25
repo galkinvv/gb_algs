@@ -21,7 +21,7 @@ namespace F4MPI
 						out.AddVariable(CrossRingInfo::PerVariableData(deg, var_idx));
 					}
 				}
-				out.MonomialAdditonDone(coeff->toint());
+				out.MonomialAdditionDone(coeff->toint());
 			}
 		}
 	}
@@ -42,7 +42,7 @@ namespace F4MPI
 		}
 	}
 
-	template <class TRing, template <class> class TAlgoT>
+	template <class TRing, template <class Metadata> class TFastRing, template <class, template <class> class> class TAlgoT>
 	PolynomSet GBwithRingAlgo(PolynomSet F, const F4AlgData* /*f4options*/){
 		typedef typename TRing::IOData IOData;
 		typedef typename IOData::IOPolynomSet IOPolynomSet;
@@ -55,16 +55,16 @@ namespace F4MPI
 		MonomialMetadata monomial_metadata;
 		monomial_metadata.var_count = CMonomial::theNumberOfVariables;
 		assert(CModular::getMOD() <= std::numeric_limits<typename Field::Value>::max());
-		Field field {CModular::getMOD()};
+		Field field {static_cast<typename Field::Value>(CModular::getMOD())};
 		assert(field.IsFiniteZpFieldWithChar(CModular::getMOD()));
 		TRing ring {monomial_metadata, field};
 		TRing out_ring{ring};
 		IOPolynomSet io_poly_set_in {monomial_metadata, field};
 		ConvertF4MPIInputData(F, io_poly_set_in);
 		IOData io_data {ring, io_poly_set_in, out_ring};
-		TAlgoT<TRing>::Do(io_data);
+		TAlgoT<TRing, TFastRing>::Do(io_data);
 		PolynomSet result;
-		CreateF4MPIResult(io_data.out_data, result);
+		CreateF4MPIResult(*io_data.out_data, result);
 		return result;
 	}
 }

@@ -4,6 +4,9 @@
 #include <utility>
 #include <initializer_list>
 #include <ostream>
+#include <functional>
+#include <memory>
+
 class NoCopy
 {
 	void operator=(const NoCopy&);
@@ -87,4 +90,97 @@ template <class T>
 std::ostream& operator<<(std::ostream& s, const std::initializer_list<T>& ilist)
 {
 	return s << "{" << OutputContainer(ilist, ", ") << "}";
+}
+
+template <class T>
+struct Enumerator
+{
+	typedef T value_type;
+	struct Impl
+	{
+		virtual T GetAndMove() = 0;
+		virtual bool AtEnd() = 0;
+		virtual ~Impl(){}
+	};
+	
+	template <class Iterator>
+	struct RangeImpl:Impl
+	{
+		RangeImpl(Iterator a_current, Iterator a_end)
+			:current(a_current), end(a_end)
+		{}
+		Iterator current, end;
+		
+		T GetAndMove() override
+		{
+			T result = *current;
+			++current;
+			return result;
+		}
+		bool AtEnd() override
+		{
+			return !(current != end);
+		}
+	};
+	
+	template <class ConvertFrom>
+	struct ConverterImpl:Impl
+	{
+		Enumerator<ConvertFrom> orig_enumerator;
+		std::function<T(const ConvertFrom&)> converter;
+		
+		T GetAndMove() override
+		{
+			return converter(orig_enumerator.GetAndMove());
+		}
+		
+		bool AtEnd() override
+		{
+			return orig_enumerator.AtEnd();
+		}
+	};
+	
+	template <class Iterator>
+	static Enumerator<T> Range(Iterator begin, Iterator end)
+	{
+		auto impl = std::make_shared<RangeImpl<Iterator>>(begin, end);
+		return Enumerator(impl);
+	}
+
+	template <class ConvertFrom>
+	static Enumerator<T> Converter(Enumerator<ConvertFrom> orig_enumerator,	std::function<T(const ConvertFrom&)> converter)
+	{
+		auto impl = std::make_shared<ConverterImpl<ConvertFrom>>();
+		impl->orig_enumerator = orig_enumerator;
+		impl->converter = converter;
+		return Enumerator(impl);
+	}
+	
+	template <class ConvertFrom, T(*c_func)(const ConvertFrom&)>
+	static Enumerator<T> ConverterCFunc(Enumerator<ConvertFrom> orig_enumerator)
+	{
+		return Converter(orig_enumerator, c_func);
+	}
+
+	T GetAndMove()
+	{
+		return impl_->GetAndMove();
+	}
+	
+	bool AtEnd()
+	{
+		return impl_->AtEnd();
+	}
+  private:
+	Enumerator(const std::shared_ptr<Impl>& impl)
+		:impl_(impl)
+	{}
+	
+	const std::shared_ptr<Impl> impl_;
+};
+
+template <class TRange>
+Enumerator<decltype(*std::begin(std::declval<TRange>()))> FullRangeEnumerator(const TRange& range)
+{
+	return Enumerator<decltype(*std::begin(std::declval<TRange>()))>::Range(range.begin(), range.end());
 }
