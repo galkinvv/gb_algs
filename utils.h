@@ -126,6 +126,9 @@ struct Enumerator
 	template <class ConvertFrom>
 	struct ConverterImpl:Impl
 	{
+		ConverterImpl(Enumerator<ConvertFrom> a_orig_enumerator)
+			:orig_enumerator(a_orig_enumerator)
+		{}
 		Enumerator<ConvertFrom> orig_enumerator;
 		std::function<T(const ConvertFrom&)> converter;
 		
@@ -150,18 +153,11 @@ struct Enumerator
 	template <class ConvertFrom>
 	static Enumerator<T> Converter(Enumerator<ConvertFrom> orig_enumerator,	std::function<T(const ConvertFrom&)> converter)
 	{
-		auto impl = std::make_shared<ConverterImpl<ConvertFrom>>();
-		impl->orig_enumerator = orig_enumerator;
+		auto impl = std::make_shared<ConverterImpl<ConvertFrom>>(orig_enumerator);
 		impl->converter = converter;
 		return Enumerator(impl);
 	}
 	
-	template <class ConvertFrom, T(*c_func)(const ConvertFrom&)>
-	static Enumerator<T> ConverterCFunc(Enumerator<ConvertFrom> orig_enumerator)
-	{
-		return Converter(orig_enumerator, c_func);
-	}
-
 	T GetAndMove()
 	{
 		return impl_->GetAndMove();
@@ -184,3 +180,17 @@ Enumerator<decltype(*std::begin(std::declval<TRange>()))> FullRangeEnumerator(co
 {
 	return Enumerator<decltype(*std::begin(std::declval<TRange>()))>::Range(range.begin(), range.end());
 }
+
+template <class Func, class ConvertFrom>
+static auto ConverterEnumerator(Enumerator<ConvertFrom> orig_enumerator, Func converter) -> Enumerator<decltype(converter(orig_enumerator.GetAndMove()))>
+{
+	return Enumerator<decltype(converter(orig_enumerator.GetAndMove()))>::template Converter<ConvertFrom>(orig_enumerator, converter);
+}
+
+template <class Func, Func converter, class ConvertFrom>
+static auto ConverterEnumeratorCFunc(Enumerator<ConvertFrom> orig_enumerator) -> decltype(ConverterEnumerator(orig_enumerator, converter))
+{
+	return ConverterEnumerator(orig_enumerator, converter);
+}
+
+#define FUNCTION_WITHTYPE_AS_TEMPLATE_PARAM(f) decltype(&(f)), (f)

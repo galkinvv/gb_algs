@@ -71,9 +71,18 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 	bool ConstructAndInsertNormalized(const std::unique_ptr<const InPolysSetWithOrigMetadata>& prepared_input, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info, const std::unique_ptr<OutPolysSetForVariyingMetadata>& result)
 	{			
 		auto poly_enumerator = FullRangeEnumerator(*info);
-		typedef typename decltype(poly_enumerator)::value_type IterablePoly;
-		typedef Enumerator<decltype(FullRangeEnumerator(std::declval<IterablePoly>()))> MonEnumerator;
-		auto mon_enumerator = MonEnumerator::Converter(poly_enumerator, FullRangeEnumerator<IterablePoly>);
+		typedef typename decltype(poly_enumerator)::value_type IterablePolySet;
+		auto mon_enumerator = ConverterEnumeratorCFunc<FUNCTION_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<IterablePolySet>)>(poly_enumerator);
+		typedef typename decltype(mon_enumerator.GetAndMove())::value_type IterablePoly;
+
+		auto var_enumerator = 
+			ConverterEnumeratorCFunc<FUNCTION_WITHTYPE_AS_TEMPLATE_PARAM((
+						ConverterEnumeratorCFunc<
+						FUNCTION_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<IterablePoly>),
+						decltype(FullRangeEnumerator<IterablePoly>(std::declval<IterablePoly>()))>
+						))>(mon_enumerator);
+		
+
 		return ConstructAndInsertNormalizedImpl(
 			prepared_input,
 			FullRangeEnumerator(info->TopInfo()),
