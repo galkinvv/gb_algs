@@ -193,4 +193,4 @@ static auto ConverterEnumeratorCFunc(Enumerator<ConvertFrom> orig_enumerator) ->
 	return ConverterEnumerator(orig_enumerator, converter);
 }
 
-#define FUNCTION_WITHTYPE_AS_TEMPLATE_PARAM(f) decltype(&(f)), (f)
+#define STATIC_WITHTYPE_AS_TEMPLATE_PARAM(f) decltype(&(f)), (&(f))
