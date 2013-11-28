@@ -167,7 +167,7 @@ struct Enumerator
 		explicit WrapperIterator(Enumerator& enumerator)
 			:enumerator_(enumerator), last_value_()
 		{
-			(*this)++;
+			++(*this);
 		}
 		T operator*()const
 		{
@@ -226,9 +226,9 @@ struct Enumerator
 };
 
 template <class TRange>
-Enumerator<decltype(*std::begin(std::declval<TRange>()))> FullRangeEnumerator(const TRange& range)
+Enumerator<typename std::add_lvalue_reference<typename std::add_const<decltype(*std::begin(std::declval<TRange>()))>::type>::type> FullRangeEnumerator(const TRange& range)
 {
-	return Enumerator<decltype(*std::begin(std::declval<TRange>()))>::Range(range.begin(), range.end());
+	return Enumerator<typename std::add_lvalue_reference<typename std::add_const<decltype(*std::begin(std::declval<TRange>()))>::type>::type>::Range(range.begin(), range.end());
 }
 
 template <class Func, class ConvertFrom>
