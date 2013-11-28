@@ -6,6 +6,7 @@
 #include <ostream>
 #include <functional>
 #include <memory>
+#include <cassert>
 
 class NoCopy
 {
@@ -156,6 +157,55 @@ struct Enumerator
 		auto impl = std::make_shared<ConverterImpl<ConvertFrom>>(orig_enumerator);
 		impl->converter = converter;
 		return Enumerator(impl);
+	}
+	
+	struct WrapperIterator
+	{
+		WrapperIterator()
+			:enumerator_(nullptr), last_value_()
+		{}
+		explicit WrapperIterator(Enumerator& enumerator)
+			:enumerator_(enumerator), last_value_()
+		{
+			(*this)++;
+		}
+		T operator*()const
+		{
+			return last_value_;
+		}
+		T* operator->()const
+		{
+			return &last_value_;
+		}
+		bool operator!=(const WrapperIterator& other)const
+		{
+			return enumerator_ != other.enumerator_;
+		}
+		void operator++()
+		{
+			assert(enumerator_);
+			if(enumerator_->AtEnd())
+			{
+				enumerator_ = nullptr;
+			}
+			else
+			{
+				last_value_ = enumerator_->GetAndMove();
+			}
+		}
+	private:
+		Enumerator* enumerator_;
+		T last_value_;
+	};
+	
+	WrapperIterator begin()
+	{
+		return WrapperIterator(*this);
+	}
+
+	WrapperIterator end()
+	{
+		return WrapperIterator();
 	}
 	
 	T GetAndMove()

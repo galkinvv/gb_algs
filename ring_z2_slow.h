@@ -26,8 +26,8 @@ class RingZ2SlowBase
 	
   protected:
 	bool ConstructAndInsertNormalizedImpl(const std::unique_ptr<const InPolysSetWithOrigMetadata>& prepared_input, 
-		const Enumerator<CrossRingInfo::PerVariableData>& top_info,  
-		const Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>>& input_polys_mons, 
+		Enumerator<CrossRingInfo::PerVariableData> top_info,  
+		Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input_polys_mons, 
 		const std::unique_ptr<OutPolysSetForVariyingMetadata>& result);
 
 	//Z_2 ring with degrevlex oredr on variables

@@ -222,6 +222,33 @@ bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by)
 static const char kFirstVar = 'a';
 }
 
+RingZ2SlowBase::RingZ2SlowBase(int var_count){}
+RingZ2SlowBase::RingZ2SlowBase(const RingZ2SlowBase&){}
+
+
+RingZ2SlowBase::~RingZ2SlowBase(){}
+
+bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const std::unique_ptr<const InPolysSetWithOrigMetadata>& prepared_input, 
+		Enumerator<CrossRingInfo::PerVariableData> top_info,  
+		Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input_polys_mons, 
+		const std::unique_ptr<OutPolysSetForVariyingMetadata>& result)
+		{
+			for (auto top_var: top_info)
+			{
+				
+			}
+			for (auto poly: input_polys_mons)
+			{
+				for (auto mon: poly)
+				{
+					for (auto var: mon)
+					{
+						
+					}
+				}				
+			}
+
+		}
 /*
 FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)
 {
