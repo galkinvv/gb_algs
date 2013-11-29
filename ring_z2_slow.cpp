@@ -222,6 +222,10 @@ bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by)
 static const char kFirstVar = 'a';
 }
 
+struct RingZ2SlowBase::Impl
+{
+};
+
 RingZ2SlowBase::RingZ2SlowBase(int var_count){}
 RingZ2SlowBase::RingZ2SlowBase(const RingZ2SlowBase&){}
 

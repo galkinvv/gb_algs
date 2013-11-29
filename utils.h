@@ -94,6 +94,44 @@ std::ostream& operator<<(std::ostream& s, const std::initializer_list<T>& ilist)
 }
 
 template <class T>
+class constructible_reference_wrapper: private std::reference_wrapper<T>
+{
+	typedef std::reference_wrapper<T> Base;
+  public:
+	using typename Base::type;
+	
+	constructible_reference_wrapper():Base(*static_cast<T*>(nullptr)){}
+	
+	constructible_reference_wrapper(T& val):Base(val){}
+
+	constructible_reference_wrapper(T&&) = delete;
+
+	constructible_reference_wrapper(const constructible_reference_wrapper<T>& other):Base(other){}
+
+	constructible_reference_wrapper& operator=(const constructible_reference_wrapper<T>& other)
+	{
+		Base::operator=(other);
+		return *this;
+	}
+
+	operator T&() const
+	{
+		return this->get();
+	}
+
+	T& get() const
+	{
+		T& result = Base::get();
+		assert(&result);
+		return result;
+	}
+
+	bool has_value()
+	{
+		return nullptr != &Base::get();
+	}
+};
+template <class T>
 struct Enumerator
 {
 	typedef T value_type;
@@ -161,11 +199,13 @@ struct Enumerator
 	
 	struct WrapperIterator
 	{
+		typedef typename std::remove_reference<T>::type TNoReference;
+		typedef typename std::conditional<std::is_reference<T>::value, constructible_reference_wrapper<TNoReference>, T>::type TStorage;
 		WrapperIterator()
 			:enumerator_(nullptr), last_value_()
 		{}
 		explicit WrapperIterator(Enumerator& enumerator)
-			:enumerator_(enumerator), last_value_()
+			:enumerator_(&enumerator), last_value_()
 		{
 			++(*this);
 		}
@@ -173,7 +213,7 @@ struct Enumerator
 		{
 			return last_value_;
 		}
-		T* operator->()const
+		TNoReference* operator->()const
 		{
 			return &last_value_;
 		}
@@ -195,7 +235,7 @@ struct Enumerator
 		}
 	private:
 		Enumerator* enumerator_;
-		T last_value_;
+		TStorage last_value_;
 	};
 	
 	WrapperIterator begin()
@@ -217,12 +257,19 @@ struct Enumerator
 	{
 		return impl_->AtEnd();
 	}
+  
+	Enumerator(){}
+	
+	void operator=(const Enumerator& other)
+	{
+		impl_ = other.impl_;
+	}
   private:
 	Enumerator(const std::shared_ptr<Impl>& impl)
 		:impl_(impl)
 	{}
 	
-	const std::shared_ptr<Impl> impl_;
+	std::shared_ptr<Impl> impl_;
 };
 
 template <class TRange>
