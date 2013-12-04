@@ -57,11 +57,10 @@ namespace F4MPI
 		assert(CModular::getMOD() <= std::numeric_limits<typename Field::Value>::max());
 		Field field {static_cast<typename Field::Value>(CModular::getMOD())};
 		assert(field.IsFiniteZpFieldWithChar(CModular::getMOD()));
-		TRing ring {monomial_metadata, field};
-		TRing out_ring{ring};
+		TRing out_ring{monomial_metadata, field};
 		IOPolynomSet io_poly_set_in {monomial_metadata, field};
 		ConvertF4MPIInputData(F, io_poly_set_in);
-		IOData io_data {ring, io_poly_set_in, out_ring};
+		IOData io_data {io_poly_set_in, out_ring};
 		TAlgoT<TRing, TFastRing>::Do(io_data);
 		PolynomSet result;
 		CreateF4MPIResult(*io_data.out_data, result);

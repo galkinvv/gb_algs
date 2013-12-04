@@ -25,12 +25,25 @@ class RingZ2SlowBase
 	std::unique_ptr<OutPolysSetForVariyingMetadata> PrepareEmptyResult();
 	
   protected:
+	typedef CrossRingInfo::MonomialMetadata<CrossRingInfo::MonomialOrder::DegRevLex> ImplementedOrder;
+	struct ImplementedField: FiniteField<ZField8>
+	{
+		ImplementedField():
+			FiniteField<ZField8>(2)
+		{}
+	};
+
 	bool ConstructAndInsertNormalizedImpl(const std::unique_ptr<const InPolysSetWithOrigMetadata>& prepared_input, 
-		Enumerator<const CrossRingInfo::PerVariableData&> top_info,  
-		Enumerator<Enumerator<Enumerator<const CrossRingInfo::PerVariableData&>>> input_polys_mons, 
+		Enumerator<CrossRingInfo::PerVariableData> top_info,
+		Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input_polys_mons, 
 		const std::unique_ptr<OutPolysSetForVariyingMetadata>& result);
 
-	//Z_2 ring with degrevlex oredr on variables
+	void ExtendWithMonomialImpl(Enumerator<CrossRingInfo::PerVariableData> info);
+
+	std::unique_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstructionImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input);
+
+	void ConvertResultToFixedMetadataImpl(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result, CrossRingInfo::MonomialListListWithCoef<ImplementedOrder, ImplementedField>& basic_result);
+
 	struct Monomial : std::map<char,int>
 	{
 		friend bool operator<(const Monomial&, const Monomial&); //undefined
@@ -51,19 +64,19 @@ public:
 
 };
 
+//Z_2 ring with degrevlex oredr on variables
 template <class MonomialMetadata, class Field>
 struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialMetadata, Field>>, public RingZ2SlowBase
 {
 	typedef  RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialMetadata, Field>> Base;
-	RingZ2Slow(const RingZ2Slow& copy_from)
-		:RingZ2SlowBase(copy_from)
-	{}
+	RingZ2Slow(const RingZ2Slow& copy_from) = default;
 	
-	RingZ2Slow(const MonomialMetadata& monomial_metadata, const Field& field):
-		RingZ2SlowBase(monomial_metadata.var_count)
+	RingZ2Slow(const MonomialMetadata& monomial_metadata, const Field& field)
+		: Base(monomial_metadata, field)
+		, RingZ2SlowBase(monomial_metadata.var_count)
 	{
 		assert(field.IsFiniteZpFieldWithChar(2));
-		assert(MonomialMetadata::order ==  CrossRingInfo::MonomialOrder::DegRevLex);
+		assert(MonomialMetadata::order == CrossRingInfo::MonomialOrder::DegRevLex);
 	}
 	
 	RingZ2Slow& operator=(const RingZ2Slow& copy_from) = delete;
@@ -93,15 +106,52 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		
 	void ExtendWithMonomial(const std::unique_ptr<const CrossRingInfo::SingleMonomial<MonomialMetadata>>& info)
 	{
+		ExtendWithMonomialImpl(FullRangeEnumerator(*info));
 	}
 		
 	std::unique_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstruction(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input)
 	{
-		return nullptr;
+		auto poly_enumerator = FullRangeEnumerator(input);
+		typedef decltype(poly_enumerator.GetAndMove()) PolynomialAsRange;
+		auto mon_enumerator = ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<PolynomialAsRange>)>(poly_enumerator);
+		typedef decltype(mon_enumerator.GetAndMove().GetAndMove()) MonomialAsRange;
+
+		//TODO: add checking for coefficient is equal to one
+		auto nochecking_var_enumerator = 
+			ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM((
+						ConverterEnumeratorCFunc<
+						STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<MonomialAsRange>),
+						MonomialAsRange>
+						))>(mon_enumerator);
+
+
+
+		return PrepareForReconstructionImpl(nochecking_var_enumerator);
 	}
 	
-	void ConvertResultToFoxedMetadata(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result, std::unique_ptr<const typename Base::IOData::IOPolynomSet>& final_result)
+	void ConvertResultToFixedMetadata(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result, std::unique_ptr<const typename Base::IOData::IOPolynomSet>& final_result)
 	{
+		ImplementedOrder implemented_order;
+		implemented_order.var_count = Base::monomial_metadata_.var_count;
+		ImplementedField implemented_field;
+		CrossRingInfo::MonomialListListWithCoef<ImplementedOrder, ImplementedField> basic_result{implemented_order, implemented_field};
+		ConvertResultToFixedMetadataImpl(constructed_result, basic_result);
+		auto result_ptr = new typename Base::IOData::IOPolynomSet{Base::monomial_metadata_, Base::field_};
+		//convert from ImplementedOrder, ImplementedField to actual
+		for(auto poly:basic_result)
+		{
+			result_ptr->BeginPolynomialConstruction(slow_distance(poly.begin(), poly.end()));
+			for(auto mon:poly)
+			{
+				for(auto var:mon)
+				{
+					result_ptr->AddVariable(CrossRingInfo::PerVariableData(var.degree, var.index));
+				}
+				assert(implemented_field.IsIdentity(mon.coef()));
+				result_ptr->MonomialAdditionDone(mon.coef());
+			}
+		}
+		final_result.reset(result_ptr);
 	}
 };
 

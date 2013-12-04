@@ -94,42 +94,71 @@ std::ostream& operator<<(std::ostream& s, const std::initializer_list<T>& ilist)
 }
 
 template <class T>
-class constructible_reference_wrapper: private std::reference_wrapper<T>
+struct optionalof
 {
-	typedef std::reference_wrapper<T> Base;
-  public:
-	using typename Base::type;
+	optionalof(): has_value_(false)
+	{}
+
+	~optionalof()
+	{
+		DestructIfNeeded();
+	}
+
+	optionalof(optionalof&&) = delete;
+
+	optionalof(const optionalof& other)
+		:has_value_(other.has_value_)
+	{
+		if (has_value_)
+		{
+			new (TypedPtr()) T(other.get());
+		}
+	}
+
+	optionalof& operator=(const optionalof& other) = delete;
+
+	void operator=(const T& other)
+	{
+		DestructIfNeeded();
+		new (TypedPtr()) T(other);
+		has_value_ = true;
+	}
+
+	T& get()
+	{
+		assert(has_value());
+		return *TypedPtr();
+	}
 	
-	constructible_reference_wrapper():Base(*static_cast<T*>(nullptr)){}
-	
-	constructible_reference_wrapper(T& val):Base(val){}
-
-	constructible_reference_wrapper(T&&) = delete;
-
-	constructible_reference_wrapper(const constructible_reference_wrapper<T>& other):Base(other){}
-
-	constructible_reference_wrapper& operator=(const constructible_reference_wrapper<T>& other)
+	const T& get() const
 	{
-		Base::operator=(other);
-		return *this;
+		assert(has_value());
+		return *TypedPtr();
 	}
 
-	operator T&() const
+	bool has_value()const
 	{
-		return this->get();
+		return has_value_;
 	}
-
-	T& get() const
+  private:
+	T* TypedPtr()
 	{
-		T& result = Base::get();
-		assert(&result);
-		return result;
+		return reinterpret_cast<T*>(data_);
 	}
-
-	bool has_value()
+	const T* TypedPtr()const
 	{
-		return nullptr != &Base::get();
+		return reinterpret_cast<const T*>(data_);
 	}
+	void DestructIfNeeded()
+	{
+		if (has_value_)
+		{
+			get().~T();
+			has_value_ = false;
+		}
+	}
+	char data_[sizeof(T)];
+	bool has_value_;
 };
 template <class T>
 struct Enumerator
@@ -200,7 +229,7 @@ struct Enumerator
 	struct WrapperIterator
 	{
 		typedef typename std::remove_reference<T>::type TNoReference;
-		typedef typename std::conditional<std::is_reference<T>::value, constructible_reference_wrapper<TNoReference>, T>::type TStorage;
+		typedef optionalof<T> TStorage;
 		WrapperIterator()
 			:enumerator_(nullptr), last_value_()
 		{}
@@ -211,11 +240,11 @@ struct Enumerator
 		}
 		T operator*()const
 		{
-			return last_value_;
+			return last_value_.get();
 		}
 		TNoReference* operator->()const
 		{
-			return &last_value_;
+			return &last_value_.get();
 		}
 		bool operator!=(const WrapperIterator& other)const
 		{
@@ -273,9 +302,9 @@ struct Enumerator
 };
 
 template <class TRange>
-Enumerator<typename std::add_lvalue_reference<typename std::add_const<decltype(*std::begin(std::declval<TRange>()))>::type>::type> FullRangeEnumerator(const TRange& range)
+Enumerator<decltype(*std::begin(std::declval<TRange>()))> FullRangeEnumerator(const TRange& range)
 {
-	return Enumerator<typename std::add_lvalue_reference<typename std::add_const<decltype(*std::begin(std::declval<TRange>()))>::type>::type>::Range(range.begin(), range.end());
+	return Enumerator<decltype(*std::begin(std::declval<TRange>()))>::Range(range.begin(), range.end());
 }
 
 template <class Func, class ConvertFrom>
@@ -291,3 +320,15 @@ static auto ConverterEnumeratorCFunc(Enumerator<ConvertFrom> orig_enumerator) ->
 }
 
 #define STATIC_WITHTYPE_AS_TEMPLATE_PARAM(f) decltype(&(f)), (&(f))
+
+template <class Iterator>
+int slow_distance(Iterator from, Iterator to)
+{
+	int result = 0;
+	while(from != to)
+	{
+		++from;
+		++result;
+	}
+	return result;
+}

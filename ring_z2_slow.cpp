@@ -233,8 +233,8 @@ RingZ2SlowBase::RingZ2SlowBase(const RingZ2SlowBase&){}
 RingZ2SlowBase::~RingZ2SlowBase(){}
 
 bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const std::unique_ptr<const InPolysSetWithOrigMetadata>& prepared_input, 
-		Enumerator<const CrossRingInfo::PerVariableData&> top_info,  
-		Enumerator<Enumerator<Enumerator<const CrossRingInfo::PerVariableData&>>> input_polys_mons, 
+		Enumerator<CrossRingInfo::PerVariableData> top_info,  
+		Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input_polys_mons, 
 		const std::unique_ptr<OutPolysSetForVariyingMetadata>& result)
 {
 	for (auto top_var: top_info)
@@ -251,7 +251,7 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const std::unique_ptr<cons
 			}
 		}				
 	}
-
+	return true;
 }
 /*
 FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)

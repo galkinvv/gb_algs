@@ -21,9 +21,9 @@ namespace Mock
 		struct InPolysSetWithOrigMetadata:NoCopy{};
 		struct OutPolysSetForVariyingMetadata:NoCopy{};
 		Ring(const Ring& copy_from){IgnoreIfUnused(copy_from);}
-		Ring(const MonomialMetadata& monomial_metadata, const Field& field){
-			IgnoreIfUnused(monomial_metadata, field);
-		}
+		Ring(const MonomialMetadata& monomial_metadata, const Field& field):
+			Base(monomial_metadata, field)
+		{}
 		Ring& operator=(const Ring& copy_from) = delete;
 
 		bool ConstructAndInsertNormalized(const std::unique_ptr<const InPolysSetWithOrigMetadata>& prepared_input, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info, const std::unique_ptr<OutPolysSetForVariyingMetadata>& result)
@@ -48,7 +48,7 @@ namespace Mock
 			return nullptr;
 		}
 		
-		void ConvertResultToFoxedMetadata(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result, std::unique_ptr<const typename Base::IOData::IOPolynomSet>& final_result)
+		void ConvertResultToFixedMetadata(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result, std::unique_ptr<const typename Base::IOData::IOPolynomSet>& final_result)
 		{
 			IgnoreIfUnused(constructed_result, final_result);
 		}

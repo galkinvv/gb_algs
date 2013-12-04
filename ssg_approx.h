@@ -12,10 +12,9 @@ class ApproxSignatureGroebner
 	struct ApproxSignatureGroebnerCalculator
 	{
 		ApproxSignatureGroebnerCalculator(IOData& io_data, TExactFastRing& fast_ring):
-			in_ring_(io_data.in_ring), in_(io_data.in_data), out_ring_(io_data.out_ring), out_(io_data.out_data), fast_ring_(fast_ring)
+			in_(io_data.in_data), out_ring_(io_data.out_ring), out_(io_data.out_data), fast_ring_(fast_ring)
 		{}
 
-		const TRing& in_ring_;
 		const IOPolysSet& in_;
 		TRing& out_ring_;
 		std::unique_ptr<const IOPolysSet>& out_;
@@ -49,7 +48,7 @@ class ApproxSignatureGroebner
 				}
 				fast_ring_.InsertInResult(labeled_poly_to_reduce, R);
 			}
-			out_ring_.ConvertResultToFoxedMetadata(reconstructed_result, out_);
+			out_ring_.ConvertResultToFixedMetadata(reconstructed_result, out_);
 		}
 	};
 public:
