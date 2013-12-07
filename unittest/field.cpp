@@ -1,6 +1,6 @@
 #include <limits>
 #include "test_base.h"
-#include "z_field.h"
+#include "z_ring.h"
 #include "finite_field.h"
 
 template <class Field>
@@ -40,10 +40,7 @@ TYPED_TEST_P(FieldTest, UseValueType)
 
 REGISTER_TYPED_TEST_CASE_P(FieldTest, UseValueType);
 
-INSTANTIATE_TYPED_TEST_CASE_P(ZField8, FieldTest, ZField8);
-INSTANTIATE_TYPED_TEST_CASE_P(ZField16, FieldTest, ZField16);
-INSTANTIATE_TYPED_TEST_CASE_P(ZField32, FieldTest, ZField32);
-INSTANTIATE_TYPED_TEST_CASE_P(ZField64, FieldTest, ZField64);
-INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField8, FieldTest, FiniteField<ZField8>);
-INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField16, FieldTest, FiniteField<ZField16>);
-INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32, FieldTest, FiniteField<ZField32>);
+
+INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField8, FieldTest, FiniteField<ZRing8>);
+INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField16, FieldTest, FiniteField<ZRing16>);
+INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32, FieldTest, FiniteField<ZRing32>);

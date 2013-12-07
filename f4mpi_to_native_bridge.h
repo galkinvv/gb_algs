@@ -5,7 +5,7 @@
 #include "cross_ring_info.h"
 #include "cmonomial.h"
 #include "finite_field.h"
-#include "z_field.h"
+#include "z_ring.h"
 
 namespace F4MPI
 {

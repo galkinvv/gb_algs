@@ -1,13 +1,13 @@
 #define PRIVATE_TEST ApproxSignatureGroebnerUT
 #include "test_base.h"
 #include "ssg_approx.h"
-#include "z_field.h"
+#include "z_ring.h"
 #include "mock/ring.h"
 
 struct PRIVATE_TEST: ::testing::Test{
 	void ZeroPolys()
 	{
-		typedef Mock::Ring<CrossRingInfo::MonomialMetadata<CrossRingInfo::MonomialOrder::DegRevLex>, ZField8> R;
+		typedef Mock::Ring<CrossRingInfo::MonomialMetadata<CrossRingInfo::MonomialOrder::DegRevLex>, ZRing8> R;
 		typedef R::Field Field;
 		typedef R::MonomialMetadata MonomialMetadata;
 		Field field;

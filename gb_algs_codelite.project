@@ -145,7 +145,9 @@
     <File Name="zero_skipping_indexed_iterator.h"/>
     <File Name="utils.h"/>
     <File Name="finite_field.h"/>
-    <File Name="z_field.h"/>
+    <File Name="z_ring.h"/>
+    <File Name="field_base.h"/>
+    <File Name="combined_field.h"/>
   </VirtualDirectory>
   <VirtualDirectory Name="mpi">
     <File Name="mpi/mpimatrix.cpp"/>

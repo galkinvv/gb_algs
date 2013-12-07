@@ -1,27 +1,47 @@
 #pragma once
 #include <cassert>
-template <class ZField>
+#include "field_base.h"
+
+template <class ZRing>
 struct FiniteField
 {
-	typedef typename ZField::Value Value;
-	FiniteField(Value mod)
+	typedef typename ZRing::Value Value;
+	typedef Value Frac;
+	
+	explicit FiniteField(Value mod)
 		: mod_(mod)
 	{}
 	bool IsFiniteZpFieldWithChar(Value mod)const
 	{
 		return mod == mod_;
 	}
-	bool IsIdentity(const Value& value)const
+	template <class F>
+	void SetRandom(F random_functor, Value& value)
 	{
-		AssertNormalized(value);
-		return value == 1;
+		z_.SetRandom(random_functor, value);
+		Normalize(value);
 	}
-
-private:
-	void AssertNormalized(const Value& value)const
+	void Divide(const Value& numerator, const Value& denominator, Frac& result)
 	{
-		assert(value >= 0);
-		assert(value < mod_);
+		
+	}
+	ExactSubtractionResultInfo Subtract(const Value& from, const Value& what, const Frac& multiplier, Value& result)
+	{
+		return ExactSubtractionResultInfo::Zero;
+	}
+	void SetZero(Value& result)
+	{
+		z_.SetOne(result);
+	}
+	void SetOne(Value& result)
+	{
+		z_.SetOne(result);		
+	}
+private:
+	void Normalize(Value& value)
+	{
+		
 	}
 	Value mod_;
+	ZRing z_;
 };

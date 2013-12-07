@@ -11,7 +11,7 @@
 namespace F4MPI{
 	PolynomSet GB(PolynomSet F, const F4AlgData* f4options)
 	{
-		typedef  RingZ2Slow<CrossRingInfo::MonomialMetadata<CrossRingInfo::MonomialOrder::DegRevLex>, FiniteField<ZField8>> UsedRingZ2;
+		typedef  RingZ2Slow<CrossRingInfo::MonomialMetadata<CrossRingInfo::MonomialOrder::DegRevLex>, FiniteField<ZRing8>> UsedRingZ2;
 		const decltype(GB) *funcs[] = {
 			F4,
 			F5Orig::IncrementalF5,

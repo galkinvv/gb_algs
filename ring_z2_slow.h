@@ -5,7 +5,7 @@
 #include <memory>
 #include "algs.h"
 #include "ringbase.h"
-#include "z_field.h"
+#include "z_ring.h"
 #include "finite_field.h"
 #include "utils.h"
 
@@ -26,10 +26,10 @@ class RingZ2SlowBase
 	
   protected:
 	typedef CrossRingInfo::MonomialMetadata<CrossRingInfo::MonomialOrder::DegRevLex> ImplementedOrder;
-	struct ImplementedField: FiniteField<ZField8>
+	struct ImplementedField: FiniteField<ZRing8>
 	{
 		ImplementedField():
-			FiniteField<ZField8>(2)
+			FiniteField<ZRing8>(2)
 		{}
 	};
 
@@ -147,7 +147,6 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 				{
 					result_ptr->AddVariable(CrossRingInfo::PerVariableData(var.degree, var.index));
 				}
-				assert(implemented_field.IsIdentity(mon.coef()));
 				result_ptr->MonomialAdditionDone(mon.coef());
 			}
 		}
