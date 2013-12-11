@@ -54,9 +54,11 @@ namespace F4MPI
 		assert(MonomialMetadata::order == CrossRingInfo::MonomialOrder::DegRevLex);
 		MonomialMetadata monomial_metadata;
 		monomial_metadata.var_count = CMonomial::theNumberOfVariables;
-		assert(CModular::getMOD() <= std::numeric_limits<typename Field::Value>::max());
-		Field field {static_cast<typename Field::Value>(CModular::getMOD())};
-		assert(field.IsFiniteZpFieldWithChar(CModular::getMOD()));
+		typename Field::Value mod_as_value;
+		mod_as_value.Import(CModular::getMOD());
+		assert(CModular::getMOD() == mod_as_value.Export());
+		Field field {mod_as_value};
+		assert(field.IsFiniteZpFieldWithChar(mod_as_value));
 		TRing out_ring{monomial_metadata, field};
 		IOPolynomSet io_poly_set_in {monomial_metadata, field};
 		ConvertF4MPIInputData(F, io_poly_set_in);

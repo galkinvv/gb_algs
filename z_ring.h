@@ -9,7 +9,15 @@ struct ZRing
 		Value():
 			i()
 		{}
-	  private:
+		void Import(const Integer& ext)
+		{
+			i = ext;
+		}
+		Integer Export()const
+		{
+			return i;
+		}
+		private:
 		friend struct ZRing;
 		Integer i;
 	};
@@ -18,15 +26,6 @@ struct ZRing
 		return true;
 	}
 	
-	void ImportInteger(const Integer& i, Value& v)
-	{
-		v.i = i;
-	}
-	void ExportInteger(Integer& i, const Value& v)
-	{
-		i = v.i;
-	}
-
 	template <class F>
 	void SetRandom(F random_functor, Value& value)
 	{
