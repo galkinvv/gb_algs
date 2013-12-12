@@ -9,9 +9,10 @@
 
 namespace F4MPI
 {
-	template <class IOPolynomSet>
+	template <class Value, class IOPolynomSet>
 	void ConvertF4MPIInputData(const PolynomSet& in, IOPolynomSet& out)
 	{
+		Value coeff_as_value;
 		for(auto poly:in) {
 			out.BeginPolynomialConstruction(poly.size());
 			auto coeff = poly.c_begin();
@@ -21,7 +22,8 @@ namespace F4MPI
 						out.AddVariable(CrossRingInfo::PerVariableData(deg, var_idx));
 					}
 				}
-				out.MonomialAdditionDone(coeff->toint());
+				coeff_as_value.Import(coeff->toint());
+				out.MonomialAdditionDone(coeff_as_value);
 			}
 		}
 	}
@@ -36,7 +38,7 @@ namespace F4MPI
 				for (auto var:mon_in_ring) {
 					mon[var.index] = var.degree;
 				}
-				poly.addTerm(F4MPI::CModular(mon_in_ring.coef()), F4MPI::CMonomial(mon));
+				poly.addTerm(F4MPI::CModular(mon_in_ring.coef().Export()), F4MPI::CMonomial(mon));
 			}
 			out.push_back(poly);
 		}
@@ -61,7 +63,7 @@ namespace F4MPI
 		assert(field.IsFiniteZpFieldWithChar(mod_as_value));
 		TRing out_ring{monomial_metadata, field};
 		IOPolynomSet io_poly_set_in {monomial_metadata, field};
-		ConvertF4MPIInputData(F, io_poly_set_in);
+		ConvertF4MPIInputData<Value>(F, io_poly_set_in);
 		IOData io_data {io_poly_set_in, out_ring};
 		TAlgoT<TRing, TFastRing>::Do(io_data);
 		PolynomSet result;
