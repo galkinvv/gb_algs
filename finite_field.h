@@ -5,12 +5,13 @@
 template <class ZRing>
 struct FiniteField
 {
-	typedef typename ZRing::Value Value;
+	typedef typename ZRing::Value ModulusValue;
+	struct Value: private ModulusValue
+	{
+		friend class FiniteField;
+	};
 	typedef Value Frac;
 	
-	explicit FiniteField(Value mod)
-		: mod_(mod)
-	{}
 	bool IsFiniteZpFieldWithChar(Value mod)const
 	{
 		return mod == mod_;
@@ -29,6 +30,18 @@ struct FiniteField
 	{
 		return ExactSubtractionResultInfo::Zero;
 	}
+	template <class Integer>
+	void Import(const Integer& value, Value& result)const
+	{
+		result.Import(value);
+		Normalize(result);
+	}
+	template <class Integer>
+	Integer Export(const Value& value)const
+	{
+		return value.template Export<Integer>();
+	}
+
 	void SetZero(Value& result)
 	{
 		z_.SetOne(result);
@@ -37,11 +50,20 @@ struct FiniteField
 	{
 		z_.SetOne(result);		
 	}
-private:
-	void Normalize(Value& value)
+	static FiniteField CreateZpFieldWithChar(const ModulusValue& mod)
 	{
-		
+		FiniteField result;
+		//mod must be prime
+		result.mod_ = mod;
+		return result;
 	}
-	Value mod_;
+private:
+	FiniteField(){}
+
+	void Normalize(Value& value)const
+	{
+		//TODO:add division
+	}
+	 ModulusValue mod_;
 	ZRing z_;
 };

@@ -22,7 +22,7 @@ namespace F4MPI
 						out.AddVariable(CrossRingInfo::PerVariableData(deg, var_idx));
 					}
 				}
-				coeff_as_value.Import(coeff->toint());
+				out.Field().Import(coeff->toint(), coeff_as_value);
 				out.MonomialAdditionDone(coeff_as_value);
 			}
 		}
@@ -38,7 +38,8 @@ namespace F4MPI
 				for (auto var:mon_in_ring) {
 					mon[var.index] = var.degree;
 				}
-				poly.addTerm(F4MPI::CModular(mon_in_ring.coef().Export()), F4MPI::CMonomial(mon));
+				int exported_coef = in.Field().template Export<int>(mon_in_ring.coef());
+				poly.addTerm(F4MPI::CModular(exported_coef), F4MPI::CMonomial(mon));
 			}
 			out.push_back(poly);
 		}
@@ -54,16 +55,13 @@ namespace F4MPI
 		//to handle other orders and felds add template call
 		assert(CMonomial::getOrder() == CMonomial::degrevlexOrder);
 		assert(MonomialMetadata::order == CrossRingInfo::MonomialOrder::DegRevLex);
+
 		MonomialMetadata monomial_metadata;
 		monomial_metadata.var_count = CMonomial::theNumberOfVariables;
-		typename Field::Value mod_as_value;
-		mod_as_value.Import(CModular::getMOD());
-		assert(CModular::getMOD() == mod_as_value.Export());
-		Field field {mod_as_value};
-		assert(field.IsFiniteZpFieldWithChar(mod_as_value));
+		Field field = Field::CreateZpFieldWithChar(typename Field::ModulusValue().Import(CModular::getMOD()));
 		TRing out_ring{monomial_metadata, field};
 		IOPolynomSet io_poly_set_in {monomial_metadata, field};
-		ConvertF4MPIInputData<Value>(F, io_poly_set_in);
+		ConvertF4MPIInputData<typename Field::Value>(F, io_poly_set_in);
 		IOData io_data {io_poly_set_in, out_ring};
 		TAlgoT<TRing, TFastRing>::Do(io_data);
 		PolynomSet result;

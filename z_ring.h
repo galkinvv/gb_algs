@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cassert>
 template <class Integer>
 struct ZRing
 {
@@ -9,22 +10,24 @@ struct ZRing
 		Value():
 			i()
 		{}
-		void Import(const Integer& ext)
+		template <class Integer2>
+		Value Import(const Integer2& ext)
 		{
 			i = ext;
+			assert(Integer2(i) == ext);
+			return *this;
 		}
-		Integer Export()const
+		template <class Integer2>
+		Integer2 Export()const
 		{
-			return i;
+			Integer2 result = i;
+			assert(Integer(result) == i);
+			return result;
 		}
-		private:
+	  private:
 		friend struct ZRing;
 		Integer i;
 	};
-	bool IsZField()const
-	{
-		return true;
-	}
 	
 	template <class F>
 	void SetRandom(F random_functor, Value& value)

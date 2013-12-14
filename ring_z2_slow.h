@@ -29,7 +29,7 @@ class RingZ2SlowBase
 	struct ImplementedField: FiniteField<ZRing8>
 	{
 		ImplementedField():
-			FiniteField<ZRing8>(2)
+			FiniteField<ZRing8>(FiniteField<ZRing8>::CreateZpFieldWithChar(ZRing8::Value().Import(2)))
 		{}
 	};
 
@@ -75,7 +75,7 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		: Base(monomial_metadata, field)
 		, RingZ2SlowBase(monomial_metadata.var_count)
 	{
-		assert(field.IsFiniteZpFieldWithChar(2));
+		//assert(field.IsFiniteZpFieldWithChar(2));
 		assert(MonomialMetadata::order == CrossRingInfo::MonomialOrder::DegRevLex);
 	}
 	
