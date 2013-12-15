@@ -10,7 +10,7 @@ struct FiniteField
 	{
 		friend class FiniteField;
 	};
-	typedef Value Frac;
+	typedef Value DivResult;
 	
 	bool IsFiniteZpFieldWithChar(Value mod)const
 	{
@@ -22,11 +22,11 @@ struct FiniteField
 		z_.SetRandom(random_functor, value);
 		Normalize(value);
 	}
-	void Divide(const Value& numerator, const Value& denominator, Frac& result)
+	void Divide(const Value& numerator, const Value& denominator, DivResult& result)
 	{
 		
 	}
-	ExactSubtractionResultInfo Subtract(const Value& from, const Value& what, const Frac& multiplier, Value& result)
+	ExactSubtractionResultInfo Subtract(const Value& from, const Value& what, const DivResult& multiplier, Value& result)
 	{
 		return ExactSubtractionResultInfo::Zero;
 	}

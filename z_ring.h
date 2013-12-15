@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <limits>
 #include <cassert>
 template <class Integer>
 struct ZRing
@@ -29,6 +30,11 @@ struct ZRing
 		Integer i;
 	};
 	
+	struct DivResult
+	{
+		Value quot;
+		Value rem;
+	};
 	template <class F>
 	void SetRandom(F random_functor, Value& value)
 	{
@@ -45,13 +51,33 @@ struct ZRing
 			}
 		}
 	}
-	void SetZero(Value& result)
+	
+	static_assert(std::is_unsigned<Integer>::value, "Integer must be unsigned for use with ZRing");
+	void Divide(const Value& numerator, const Value& denominator, DivResult& result)
+	{
+		//division never overflows for unsigned integers
+		result.quot.i = divident/divider;
+		result.rem.i = divident%divider;
+	}
+	
+	void Subtract(const Value& from, const Value& what, const DivResult& multiplier, Value& result)
+	{
+		assert(std::numeric_limits<Integer>::max() / what.i > multiplier.quot.i); //check for mul overflow
+		result.i = from.i - what.i * multiplier.quot.i;
+		assert(result.i <= from.i)//check for subtract overflow
+	}
+
+	void SetZero(Value& result)const 
 	{
 		result.i = 0;
 	}
-	void SetOne(Value& result)
+	void SetOne(Value& result)const 
 	{
 		result.i = 1;		
+	}
+	bool IsZero(const Value& result)const 
+	{
+		return 0 == result.i;
 	}
 };
 typedef ZRing<std::uint8_t> ZRing8;
