@@ -17,7 +17,7 @@ struct CreateFiledForTest<FiniteField<BaseForFiniteField>>
 {
 	static FiniteField<BaseForFiniteField> Create()
 	{
-		return FiniteField<BaseForFiniteField>(std::numeric_limits<typename BaseForFiniteField::Value>::max());
+		return FiniteField<BaseForFiniteField>::CreateZpFieldWithChar(BaseForFiniteField::numeric_limits::max());
 	}
 };
 
@@ -41,6 +41,6 @@ TYPED_TEST_P(FieldTest, UseValueType)
 REGISTER_TYPED_TEST_CASE_P(FieldTest, UseValueType);
 
 
-INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField8, FieldTest, FiniteField<ZRing8>);
-INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField16, FieldTest, FiniteField<ZRing16>);
-INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32, FieldTest, FiniteField<ZRing32>);
+INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField8, FieldTest, FiniteField<ZPlusRing8>);
+INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField16, FieldTest, FiniteField<ZPlusRing16>);
+INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32, FieldTest, FiniteField<ZPlusRing32>);

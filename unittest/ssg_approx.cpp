@@ -7,7 +7,7 @@
 struct PRIVATE_TEST: ::testing::Test{
 	void ZeroPolys()
 	{
-		typedef Mock::Ring<CrossRingInfo::MonomialMetadata<CrossRingInfo::MonomialOrder::DegRevLex>, ZRing8> R;
+		typedef Mock::Ring<CrossRingInfo::MonomialMetadata<CrossRingInfo::MonomialOrder::DegRevLex>, ZPlusRing8> R;
 		typedef R::Field Field;
 		typedef R::MonomialMetadata MonomialMetadata;
 		Field field;

@@ -2,10 +2,10 @@
 #include <cassert>
 #include "field_base.h"
 
-template <class ZRing>
+template <class ZPlusRing>
 struct FiniteField
 {
-	typedef typename ZRing::Value ModulusValue;
+	typedef typename ZPlusRing::Value ModulusValue;
 	struct Value: private ModulusValue
 	{
 		friend class FiniteField;
@@ -22,7 +22,7 @@ struct FiniteField
 		z_.SetRandom(random_functor, value);
 		Normalize(value);
 	}
-	void Divide(const Value& numerator, const Value& denominator, DivResult& result)
+	void Divide(const Value& divident, const Value& divider, DivResult& result)
 	{
 		
 	}
@@ -30,16 +30,18 @@ struct FiniteField
 	{
 		return ExactSubtractionResultInfo::Zero;
 	}
+
 	template <class Integer>
 	void Import(const Integer& value, Value& result)const
 	{
-		result.Import(value);
+		z_.Import(result, value);
 		Normalize(result);
 	}
+	
 	template <class Integer>
 	Integer Export(const Value& value)const
 	{
-		return value.template Export<Integer>();
+		return z_.template Export<Integer>(value);
 	}
 
 	void SetZero(Value& result)
@@ -50,11 +52,13 @@ struct FiniteField
 	{
 		z_.SetOne(result);		
 	}
-	static FiniteField CreateZpFieldWithChar(const ModulusValue& mod)
+	
+	template <class Integer>
+	static FiniteField CreateZpFieldWithChar(const Integer& value)
 	{
 		FiniteField result;
-		//mod must be prime
-		result.mod_ = mod;
+		result.z_.Import(result.mod_, value);
+		//result.mod_ must be prime
 		return result;
 	}
 private:
@@ -64,6 +68,27 @@ private:
 	{
 		//TODO:add division
 	}
-	 ModulusValue mod_;
-	ZRing z_;
+	
+	//Finds non-both-zero x and y for equation a*x = b*y using calculation wih only positive numbers
+	void ExtendedEuclid(const Value& a, const Value& b, Value& x, Value& y)
+	{
+		if (z_.Less(a, b))
+		{
+			ExtendedEuclid(b, a, y, x);
+		}
+		else if (z_.IsZero(b))
+		{
+			z_.SetZero(x);
+			z_.SetOne(y);
+		}
+		else
+		{            
+			typename ZPlusRing::DivResult abDivResult;
+			z_.Divide(a, b, abDivResult);
+			ExtendedEuclid(b, abDivResult.rem, y, x);
+			z_.Add(CopyValue(y), x, abDivResult.qout, y);
+		}
+	}
+	ModulusValue mod_;
+	ZPlusRing z_;
 };

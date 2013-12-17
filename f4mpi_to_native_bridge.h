@@ -58,7 +58,7 @@ namespace F4MPI
 
 		MonomialMetadata monomial_metadata;
 		monomial_metadata.var_count = CMonomial::theNumberOfVariables;
-		Field field = Field::CreateZpFieldWithChar(typename Field::ModulusValue().Import(CModular::getMOD()));
+		Field field = Field::CreateZpFieldWithChar(CModular::getMOD());
 		TRing out_ring{monomial_metadata, field};
 		IOPolynomSet io_poly_set_in {monomial_metadata, field};
 		ConvertF4MPIInputData<typename Field::Value>(F, io_poly_set_in);

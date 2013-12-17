@@ -3,7 +3,7 @@
 #include <limits>
 #include <cassert>
 template <class Integer>
-struct ZRing
+struct ZPlusRing
 {
 	class Value
 	{
@@ -11,22 +11,8 @@ struct ZRing
 		Value():
 			i()
 		{}
-		template <class Integer2>
-		Value Import(const Integer2& ext)
-		{
-			i = ext;
-			assert(Integer2(i) == ext);
-			return *this;
-		}
-		template <class Integer2>
-		Integer2 Export()const
-		{
-			Integer2 result = i;
-			assert(Integer(result) == i);
-			return result;
-		}
 	  private:
-		friend struct ZRing;
+		friend struct ZPlusRing;
 		Integer i;
 	};
 	
@@ -52,19 +38,19 @@ struct ZRing
 		}
 	}
 	
-	static_assert(std::is_unsigned<Integer>::value, "Integer must be unsigned for use with ZRing");
-	void Divide(const Value& numerator, const Value& denominator, DivResult& result)
+	static_assert(std::is_unsigned<Integer>::value, "Integer must be unsigned for use with ZPlusRing");
+	void Divide(const Value& divident, const Value& divider, DivResult& result)
 	{
-		//division never overflows for unsigned integers
+		//division never overflows for unsigned integers and always is positive
 		result.quot.i = divident/divider;
 		result.rem.i = divident%divider;
 	}
 	
-	void Subtract(const Value& from, const Value& what, const DivResult& multiplier, Value& result)
+	void Add(const Value& from, const Value& what, const Value& multiplier, Value& result)
 	{
-		assert(std::numeric_limits<Integer>::max() / what.i > multiplier.quot.i); //check for mul overflow
-		result.i = from.i - what.i * multiplier.quot.i;
-		assert(result.i <= from.i)//check for subtract overflow
+		assert(std::numeric_limits<Integer>::max() / what.i > multiplier.i); //check for mul overflow
+		result.i = from.i + what.i * multiplier.i;
+		assert(result.i >= from.i);//check for add overflow
 	}
 
 	void SetZero(Value& result)const 
@@ -75,11 +61,34 @@ struct ZRing
 	{
 		result.i = 1;		
 	}
+	
+	bool Less(const Value& v1, const Value& v2)const
+	{
+		return v1.i < v2.i;
+	}
+	
 	bool IsZero(const Value& result)const 
 	{
 		return 0 == result.i;
 	}
+	
+	template <class Integer2>
+	void Import(Value& value, const Integer2& ext)const
+	{
+		value.i = ext;
+		assert(Integer2(value.i) == ext);
+	}
+	
+	template <class Integer2 = Integer>
+	Integer2 Export(const Value& value)const
+	{
+		Integer2 result = value.i;
+		assert(Integer(result) == value.i);
+		return result;
+	}
+	
+	typedef std::numeric_limits<Integer> numeric_limits;
 };
-typedef ZRing<std::uint8_t> ZRing8;
-typedef ZRing<std::uint16_t> ZRing16;
-typedef ZRing<std::uint32_t> ZRing32;
+typedef ZPlusRing<std::uint8_t> ZPlusRing8;
+typedef ZPlusRing<std::uint16_t> ZPlusRing16;
+typedef ZPlusRing<std::uint32_t> ZPlusRing32;

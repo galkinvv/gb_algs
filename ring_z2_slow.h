@@ -26,10 +26,10 @@ class RingZ2SlowBase
 	
   protected:
 	typedef CrossRingInfo::MonomialMetadata<CrossRingInfo::MonomialOrder::DegRevLex> ImplementedOrder;
-	struct ImplementedField: FiniteField<ZRing8>
+	struct ImplementedField: FiniteField<ZPlusRing8>
 	{
 		ImplementedField():
-			FiniteField<ZRing8>(FiniteField<ZRing8>::CreateZpFieldWithChar(ZRing8::Value().Import(2)))
+			FiniteField<ZPlusRing8>(FiniteField<ZPlusRing8>::CreateZpFieldWithChar(2))
 		{}
 	};
 
