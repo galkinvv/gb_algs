@@ -75,7 +75,7 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		: Base(monomial_metadata, field)
 		, RingZ2SlowBase(monomial_metadata.var_count)
 	{
-		//assert(field.IsFiniteZpFieldWithChar(2));
+		assert(field.template ExportZpModulus<int>() == 2);
 		assert(MonomialMetadata::order == CrossRingInfo::MonomialOrder::DegRevLex);
 	}
 	

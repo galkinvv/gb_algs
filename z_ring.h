@@ -39,29 +39,43 @@ struct ZPlusRing
 	}
 	
 	static_assert(std::is_unsigned<Integer>::value, "Integer must be unsigned for use with ZPlusRing");
-	void Divide(const Value& divident, const Value& divider, DivResult& result)
+
+	void Divide(const Value& divident, const Value& divider, DivResult& result)const
 	{
 		//division never overflows for unsigned integers and always is positive
-		result.quot.i = divident/divider;
-		result.rem.i = divident%divider;
+		result.quot.i = divident.i/divider.i;
+		result.rem.i = divident.i%divider.i;
 	}
 	
-	void Add(const Value& from, const Value& what, const Value& multiplier, Value& result)
+	void Add(const Value& from, const Value& what, const Value& multiplier, Value& result)const
 	{
-		assert(std::numeric_limits<Integer>::max() / what.i > multiplier.i); //check for mul overflow
-		result.i = from.i + what.i * multiplier.i;
+		Mul(what, multiplier, result);
+		result.i = from.i + result.i;
 		assert(result.i >= from.i);//check for add overflow
+	}
+
+	void Mul(const Value& mult0, const Value& mult1,  Value& result)const
+	{
+		assert(numeric_limits::max() / mult0.i >= mult1.i); //check for mul overflow
+		result.i =mult0.i * mult1.i;
 	}
 
 	void SetZero(Value& result)const 
 	{
 		result.i = 0;
 	}
+	
 	void SetOne(Value& result)const 
 	{
 		result.i = 1;		
 	}
 	
+	void Decrement(Value& result)const 
+	{
+		assert(result.i > 0);
+		--result.i;
+	}
+
 	bool Less(const Value& v1, const Value& v2)const
 	{
 		return v1.i < v2.i;
@@ -72,9 +86,15 @@ struct ZPlusRing
 		return 0 == result.i;
 	}
 	
+	bool IsOne(const Value& result)const 
+	{
+		return 1 == result.i;
+	}
 	template <class Integer2>
 	void Import(Value& value, const Integer2& ext)const
 	{
+		assert(ext >= numeric_limits::min());
+		assert(ext <= numeric_limits::max());
 		value.i = ext;
 		assert(Integer2(value.i) == ext);
 	}
@@ -82,6 +102,9 @@ struct ZPlusRing
 	template <class Integer2 = Integer>
 	Integer2 Export(const Value& value)const
 	{
+		typedef std::numeric_limits<Integer2> numeric_limits2;
+		assert(value.i >= numeric_limits2::min());
+		assert(value.i <= numeric_limits2::max());
 		Integer2 result = value.i;
 		assert(Integer(result) == value.i);
 		return result;
