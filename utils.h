@@ -160,6 +160,7 @@ struct optionalof
 	char data_[sizeof(T)];
 	bool has_value_;
 };
+
 template <class T>
 struct Enumerator
 {
@@ -331,4 +332,24 @@ int slow_distance(Iterator from, Iterator to)
 		++result;
 	}
 	return result;
+}
+
+template <class T>
+struct unique_deleter_ptr: std::unique_ptr<T, void(*)(T*)>
+{
+	unique_deleter_ptr() = delete;
+	unique_deleter_ptr(T* ptr, void(deleter)(T*)):
+		std::unique_ptr<T, void(*)(T*)>(ptr, deleter)
+	{}
+	static void Delete(T* ptr)
+	{
+		std::default_delete<T> cheking_incomplete_type_deleter;
+		cheking_incomplete_type_deleter(ptr);
+	}
+};
+
+template <class T>
+unique_deleter_ptr<T> create_deleter_ptr(T* ptr)
+{
+	return unique_deleter_ptr<T>(ptr, unique_deleter_ptr<T>::Delete);
 }

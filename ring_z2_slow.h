@@ -12,17 +12,10 @@
 class RingZ2SlowBase
 {
   public:
-	struct InPolysSetWithOrigMetadata:NoCopy
-	{
-		
-	};
-	
-	struct OutPolysSetForVariyingMetadata:NoCopy
-	{
-		
-	};
+	struct InPolysSetWithOrigMetadata;
+	struct OutPolysSetForVariyingMetadata;
 
-	std::unique_ptr<OutPolysSetForVariyingMetadata> PrepareEmptyResult();
+	unique_deleter_ptr<OutPolysSetForVariyingMetadata> PrepareEmptyResult();
 	
   protected:
 	typedef CrossRingInfo::MonomialMetadata<CrossRingInfo::MonomialOrder::DegRevLex> ImplementedOrder;
@@ -33,16 +26,16 @@ class RingZ2SlowBase
 		{}
 	};
 
-	bool ConstructAndInsertNormalizedImpl(const std::unique_ptr<const InPolysSetWithOrigMetadata>& prepared_input, 
+	bool ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<const InPolysSetWithOrigMetadata>& prepared_input, 
 		Enumerator<CrossRingInfo::PerVariableData> top_info,
 		Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input_polys_mons, 
-		const std::unique_ptr<OutPolysSetForVariyingMetadata>& result);
+		const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& result);
 
 	void ExtendWithMonomialImpl(Enumerator<CrossRingInfo::PerVariableData> info);
 
-	std::unique_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstructionImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input);
+	unique_deleter_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstructionImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input);
 
-	void ConvertResultToFixedMetadataImpl(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result, CrossRingInfo::MonomialListListWithCoef<ImplementedOrder, ImplementedField>& basic_result);
+	void ConvertResultToFixedMetadataImpl(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result, CrossRingInfo::MonomialListListWithCoef<ImplementedOrder, ImplementedField>& basic_result);
 
 	struct Monomial : std::map<char,int>
 	{
@@ -51,10 +44,8 @@ class RingZ2SlowBase
 	
 	struct Polynomial : std::vector<Monomial>{};
 	explicit RingZ2SlowBase(int var_count);
-	RingZ2SlowBase(const RingZ2SlowBase&);
-	~RingZ2SlowBase();
 	struct Impl;
-	std::unique_ptr<Impl> impl_;
+	unique_deleter_ptr<Impl> impl_;
 
 public:
 	struct PolysSet: private std::vector<Polynomial>
@@ -81,7 +72,7 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 	
 	RingZ2Slow& operator=(const RingZ2Slow& copy_from) = delete;
 	
-	bool ConstructAndInsertNormalized(const std::unique_ptr<const InPolysSetWithOrigMetadata>& prepared_input, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info, const std::unique_ptr<OutPolysSetForVariyingMetadata>& result)
+	bool ConstructAndInsertNormalized(const unique_deleter_ptr<const InPolysSetWithOrigMetadata>& prepared_input, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info, const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& result)
 	{			
 		auto poly_enumerator = FullRangeEnumerator(*info);
 		typedef decltype(poly_enumerator.GetAndMove()) PolynomialAsRange;
@@ -109,7 +100,7 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		ExtendWithMonomialImpl(FullRangeEnumerator(*info));
 	}
 		
-	std::unique_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstruction(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input)
+	unique_deleter_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstruction(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input)
 	{
 		auto poly_enumerator = FullRangeEnumerator(input);
 		typedef decltype(poly_enumerator.GetAndMove()) PolynomialAsRange;
@@ -129,7 +120,7 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		return PrepareForReconstructionImpl(nochecking_var_enumerator);
 	}
 	
-	void ConvertResultToFixedMetadata(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result, std::unique_ptr<const typename Base::IOData::IOPolynomSet>& final_result)
+	void ConvertResultToFixedMetadata(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result, std::unique_ptr<const typename Base::IOData::IOPolynomSet>& final_result)
 	{
 		ImplementedOrder implemented_order;
 		implemented_order.var_count = Base::monomial_metadata_.var_count;
