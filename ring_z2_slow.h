@@ -120,6 +120,12 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		return PrepareForReconstructionImpl(nochecking_var_enumerator);
 	}
 	
+	std::unique_ptr<const CrossRingInfo::MonomialMapping<MonomialMetadata>> MonMapping()const
+	{
+		auto result_ptr = new CrossRingInfo::MonomialMapping<MonomialMetadata>(Base::monomial_metadata_, 0);
+		//TODO
+		return std::unique_ptr<const CrossRingInfo::MonomialMapping<MonomialMetadata>>(result_ptr);
+	}
 	void ConvertResultToFixedMetadata(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result, std::unique_ptr<const typename Base::IOData::IOPolynomSet>& final_result)
 	{
 		ImplementedOrder implemented_order;

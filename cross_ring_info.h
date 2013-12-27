@@ -173,7 +173,6 @@ namespace CrossRingInfo
 		{
 			return (interval.end - interval.begin)/monomial_metadata_.var_count;
 		}
-	protected:
 		template <class DegIterator>
 		struct IteratorBase
 		{
@@ -186,7 +185,7 @@ namespace CrossRingInfo
 
 			void operator++()
 			{
-				position = NextPosition();
+				position = NextPosition(1);
 			}
 			
 			bool operator !=(const IteratorBase& other)const
@@ -194,9 +193,9 @@ namespace CrossRingInfo
 				return position != other.position;
 			}
 		protected:
-			DegIterator NextPosition()const
+			DegIterator NextPosition(int steps)const
 			{
-				return position + monomial_metadata.var_count;
+				return position + monomial_metadata.var_count * steps;
 			}
 		};
 
@@ -207,7 +206,7 @@ namespace CrossRingInfo
 
 	class MonomialCollectionPlain:protected MonomialCollectionBase
 	{
-		public:
+	  public:
 		using MonomialCollectionBase::MonomialCollectionBase;
 		void MonomialAdditionDone()
 		{
@@ -223,15 +222,14 @@ namespace CrossRingInfo
 			
 			Item operator*()const
 			{
-				return Item(this->position, this->NextPosition());
+				return Item(this->position, this->NextPosition(1));
 			}
 			
 			PseudoPointer<Item> operator->()const
 			{
-				return PseudoPointer<Item>(this->position, this->NextPosition());
+				return PseudoPointer<Item>(this->position, this->NextPosition(1));
 			}
 		};
-	  public:
 		typedef Iterator<DegreesContainer::const_iterator> const_iterator;
 		const_iterator begin()const
 		{
@@ -273,27 +271,27 @@ namespace CrossRingInfo
 		{
 			typedef IteratorBase<DegIterator> Base;
 			Iterator(CoefIterator a_coef_postition, DegIterator a_position, const MonomialMetadataWithoutOrder& a_monomial_metadata):
-				Base(a_position, a_monomial_metadata), coef_postition(a_coef_postition)
+				Base(a_position, a_monomial_metadata), coef_postition_(a_coef_postition)
 			{}
 			typedef MonomialDataWithCoef<DegIterator, Coef> Item;
 			
 			Item operator*()const
 			{
-				return Item(this->position, this->NextPosition(), *coef_postition);
+				return Item(this->position, this->NextPosition(1), *coef_postition_);
 			}
 			
 			PseudoPointer<Item> operator->()const
 			{
-				return PseudoPointer<Item>(this->position, this->NextPosition(), *coef_postition);
+				return PseudoPointer<Item>(this->position, this->NextPosition(1), *coef_postition_);
 			}
 			
 			void operator++()
 			{
 				Base::operator ++();
-				++coef_postition;
+				++coef_postition_;
 			}
-
-			CoefIterator coef_postition;
+		  private:
+			CoefIterator coef_postition_;
 		};
 	  public:
 		typedef Iterator<DegreesContainer::const_iterator, typename CoefContainer::const_iterator> const_iterator;
@@ -326,6 +324,45 @@ namespace CrossRingInfo
 		using SpecificMonomialCollection::size;
 	};
 
+	template <class MonomialMetadata>
+	struct MonomialMapping: private DegreesContainer, private MonomialCollectionPlain
+	{
+		MonomialMapping(const MonomialMetadata& oldMetaData, int newMonomialsCount)
+			:MonomialCollectionPlain(newMonomialsCount, *this, oldMetaData)
+			,oldMetadata_(oldMetaData)
+		{}
+
+		using MonomialCollectionPlain::MonomialAdditionDone;
+		using MonomialCollectionPlain::AddVariable;
+		using MonomialCollectionPlain::size;
+		
+		const MonomialMetadata& OldMetadata()const
+		{
+			return oldMetadata_;
+		}
+
+	  private:
+		struct SingleMonIteratorPosition:MonomialCollectionPlain::const_iterator
+		{
+			SingleMonIteratorPosition(const DegreesContainer::const_iterator& begin, const MonomialMetadataWithoutOrder& a_monomial_metadata, int monomial_idx)
+				:MonomialCollectionPlain::const_iterator(begin, a_monomial_metadata)
+			{
+				NextPosition(monomial_idx);
+			}
+		};
+	  public:
+		decltype(*std::declval<SingleMonIteratorPosition>()) operator[](int idx)const
+		{
+			assert(idx >= 0);
+			assert(idx < size());
+			return *SingleMonIteratorPosition(static_cast<const DegreesContainer*>(this)->begin(), oldMetadata_, idx);
+		}
+
+	  
+	  private:
+		const MonomialMetadata oldMetadata_;
+	};
+	
 	template <class MonomialMetadata, class SpecificMonomialCollection>
 	struct MonomialListListBase
 	{
@@ -358,6 +395,7 @@ namespace CrossRingInfo
 		{
 			return res + poly.size();
 		}
+	  protected:
 		const MonomialMetadata metadata_;
 		DegreesContainer degrees_;
 		std::vector<MonomialCollectionImpl<SpecificMonomialCollection>> input_poly_infos_;
@@ -375,18 +413,18 @@ namespace CrossRingInfo
 		MonomialListListWithTopInfo(const MonomialMetadata& metadata)
 			:Base(metadata)
 		{
-			BeginPolynomialConstruction(1);
+			BeginPolynomialConstruction(kMonomialsForTopInfo);
 		}
 		void TopInfoAdditionDone()
 		{
 			Base::MonomialAdditionDone();
-			assert((Base::begin() + 1) == Base::end());
+			assert((Base::begin() + kMonomialsForTopInfo) == Base::end());
 		}
 		const MonomialCollectionPlain* begin()const
 		{
 			auto result = Base::begin();
 			assert(result != Base::end());
-			return result + 1;
+			return result + kMonomialsForTopInfo;
 		}
 		void BeginPolynomialConstruction(int monomial_count)
 		{
@@ -399,7 +437,7 @@ namespace CrossRingInfo
 		using Base::AddVariable;
 		void MonomialAdditionDone()
 		{
-			assert((Base::begin() + 1) != Base::end());
+			assert((Base::begin() + kMonomialsForTopInfo) != Base::end());
 			Base::MonomialAdditionDone();
 		}
 		decltype(*(std::declval<Base>().begin()->begin())) TopInfo()const
@@ -408,6 +446,8 @@ namespace CrossRingInfo
 			assert(result_poly != Base::end());
 			return *result_poly->begin();
 		}
+	  private:
+		static const int kMonomialsForTopInfo = 1;
 	};
 	
 	template <class MonomialMetadata, class TField>

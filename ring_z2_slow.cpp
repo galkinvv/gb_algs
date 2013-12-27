@@ -222,6 +222,12 @@ bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by)
 static const char kFirstVar = 'a';
 }
 
+struct SlowMon : std::map<char,int>
+{
+	friend bool operator<(const SlowMon&, const SlowMon&); //undefined
+};
+struct SLowPol : std::vector<SlowMon> {};
+
 struct RingZ2SlowBase::Impl
 {
 };
@@ -243,7 +249,7 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<c
 		Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input_polys_mons, 
 		const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& result)
 {
-	//TODO: solve via matrix and fast field
+	//TODO: solve via matrix
 	for (auto top_var: top_info)
 	{
 		
@@ -280,7 +286,7 @@ unique_deleter_ptr<const RingZ2SlowBase::InPolysSetWithOrigMetadata> RingZ2SlowB
 {
 	//TODO
 	auto result = create_deleter_ptr(new InPolysSetWithOrigMetadata());
-	return result;
+	return std::move(result);
 }
 /*
 FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)

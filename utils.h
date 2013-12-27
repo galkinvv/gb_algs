@@ -337,10 +337,16 @@ int slow_distance(Iterator from, Iterator to)
 template <class T>
 struct unique_deleter_ptr: std::unique_ptr<T, void(*)(T*)>
 {
+	typedef typename std::remove_cv<T>::type NonConstT;
+	typedef std::unique_ptr<T, void(*)(T*)> BasePtr;
 	unique_deleter_ptr() = delete;
 	unique_deleter_ptr(T* ptr, void(deleter)(T*)):
-		std::unique_ptr<T, void(*)(T*)>(ptr, deleter)
+		BasePtr(ptr, deleter)
 	{}
+	unique_deleter_ptr(unique_deleter_ptr<NonConstT>&& other):
+		BasePtr(other.release(), reinterpret_cast<typename BasePtr::deleter_type>(other.get_deleter()))
+	{
+	}
 	static void Delete(T* ptr)
 	{
 		std::default_delete<T> cheking_incomplete_type_deleter;

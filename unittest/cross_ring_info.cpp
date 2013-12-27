@@ -133,6 +133,13 @@ TEST_F(CrossRingInfoDeathTest, ExtraTopInfo)
 	EXPECT_DEATH(poly_rec_info_.TopInfoAdditionDone(), "");
 }
 
+TEST_F(CrossRingInfoDeathTest, MapGetPostEnd)
+{
+	CrossRingInfo::MonomialMapping<DegRevLex> mapping{order_, 1};
+	mapping.MonomialAdditionDone();
+	EXPECT_DEATH(mapping[2], "");
+}
+
 TEST_F(CrossRingInfoTest, Empty)
 {
 	poly_rec_info_.TopInfoAdditionDone();

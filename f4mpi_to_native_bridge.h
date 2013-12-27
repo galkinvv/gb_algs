@@ -28,15 +28,18 @@ namespace F4MPI
 		}
 	}
 
-	template <class IOPolynomSet>
-	void CreateF4MPIResult(const IOPolynomSet& in, PolynomSet& out)
+	template <class IOPolynomSet, class MonomialMapping>
+	void CreateF4MPIResult(const IOPolynomSet& in, const MonomialMapping& new2old, PolynomSet& out)
 	{
 		for(auto poly_in_ring:in) {
 			F4MPI::CPolynomial poly;
 			for(auto mon_in_ring: poly_in_ring) {
 				std::vector<F4MPI::CMonomialBase::Deg> mon(CMonomial::theNumberOfVariables);
 				for (auto var:mon_in_ring) {
-					mon[var.index] = var.degree;
+					for (auto old_var:new2old[var.index])
+					{
+						mon[old_var.index] += var.degree * old_var.degree;
+					}
 				}
 				int exported_coef = in.Field().template Export<int>(mon_in_ring.coef());
 				poly.addTerm(F4MPI::CModular(exported_coef), F4MPI::CMonomial(mon));
@@ -65,7 +68,7 @@ namespace F4MPI
 		IOData io_data {io_poly_set_in, out_ring};
 		TAlgoT<TRing, TFastRing>::Do(io_data);
 		PolynomSet result;
-		CreateF4MPIResult(*io_data.out_data, result);
+		CreateF4MPIResult(*io_data.out_data, *io_data.out_ring.MonMapping(), result);
 		return result;
 	}
 }
