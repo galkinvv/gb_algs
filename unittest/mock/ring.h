@@ -52,6 +52,11 @@ namespace Mock
 		{
 			IgnoreIfUnused(constructed_result, final_result);
 		}
+		
+		std::unique_ptr<const CrossRingInfo::MonomialMapping<MonomialMetadata>> MonMapping()const
+		{
+			return nullptr;
+		}
 	};
 
 	template <class MonomialMetadata>
