@@ -6,12 +6,17 @@
 #include "mock/ring.h"
 
 struct PRIVATE_TEST: ::testing::Test{
+	typedef Mock::Ring<CrossRingInfo::MonomialMetadata<CrossRingInfo::MonomialOrder::DegRevLex>, FiniteField<ZPlusRing8>> R;
+	typedef R::Field Field;
+	typedef R::MonomialMetadata MonomialMetadata;
+
+	static Field CreateField()
+	{
+		return Field::CreateZpFieldWithChar(2);
+	}
 	void ZeroPolys()
 	{
-		typedef Mock::Ring<CrossRingInfo::MonomialMetadata<CrossRingInfo::MonomialOrder::DegRevLex>, FiniteField<ZPlusRing8>> R;
-		typedef R::Field Field;
-		typedef R::MonomialMetadata MonomialMetadata;
-		Field field;
+		auto field = CreateField();
 		MonomialMetadata monomial_metadata;
 		monomial_metadata.var_count = 1;
 		R out_ring{monomial_metadata, field};

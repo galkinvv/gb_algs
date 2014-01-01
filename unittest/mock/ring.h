@@ -48,14 +48,15 @@ namespace Mock
 			return nullptr;
 		}
 		
-		void ConvertResultToFixedMetadata(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result, std::unique_ptr<const typename Base::IOData::IOPolynomSet>& final_result)
+		std::unique_ptr<const typename Base::IOData::IOPolynomSet> ConvertResultToFixedMetadata(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result)
 		{
-			IgnoreIfUnused(constructed_result, final_result);
+			IgnoreIfUnused(constructed_result);
+			return std::unique_ptr<const typename Base::IOData::IOPolynomSet>(new typename Base::IOData::IOPolynomSet(this->monomial_metadata_, this->field_));
 		}
 		
 		std::unique_ptr<const CrossRingInfo::MonomialMapping<MonomialMetadata>> MonMapping()const
 		{
-			return nullptr;
+			return std::unique_ptr<const CrossRingInfo::MonomialMapping<MonomialMetadata>>(new CrossRingInfo::MonomialMapping<MonomialMetadata>(this->monomial_metadata_, this->monomial_metadata_.var_count));
 		}
 	};
 

@@ -48,7 +48,7 @@ class ApproxSignatureGroebner
 				}
 				fast_ring_.InsertInResult(labeled_poly_to_reduce, R);
 			}
-			out_ring_.ConvertResultToFixedMetadata(reconstructed_result, out_);
+			out_ = out_ring_.ConvertResultToFixedMetadata(reconstructed_result);
 		}
 	};
 public:

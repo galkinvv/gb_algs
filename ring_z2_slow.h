@@ -122,18 +122,18 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 	
 	std::unique_ptr<const CrossRingInfo::MonomialMapping<MonomialMetadata>> MonMapping()const
 	{
-		auto result_ptr = new CrossRingInfo::MonomialMapping<MonomialMetadata>(Base::monomial_metadata_, 0);
+		std::unique_ptr<CrossRingInfo::MonomialMapping<MonomialMetadata>> result_ptr {new CrossRingInfo::MonomialMapping<MonomialMetadata>(Base::monomial_metadata_, 0)};
 		//TODO
-		return std::unique_ptr<const CrossRingInfo::MonomialMapping<MonomialMetadata>>(result_ptr);
+		return std::move(result_ptr);
 	}
-	void ConvertResultToFixedMetadata(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result, std::unique_ptr<const typename Base::IOData::IOPolynomSet>& final_result)
+	std::unique_ptr<const typename Base::IOData::IOPolynomSet> ConvertResultToFixedMetadata(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result)
 	{
 		ImplementedOrder implemented_order;
 		implemented_order.var_count = Base::monomial_metadata_.var_count;
 		ImplementedField implemented_field;
 		CrossRingInfo::MonomialListListWithCoef<ImplementedOrder, ImplementedField> basic_result{implemented_order, implemented_field};
 		ConvertResultToFixedMetadataImpl(constructed_result, basic_result);
-		auto result_ptr = new typename Base::IOData::IOPolynomSet{Base::monomial_metadata_, Base::field_};
+		std::unique_ptr<typename Base::IOData::IOPolynomSet> result_ptr{new typename Base::IOData::IOPolynomSet{Base::monomial_metadata_, Base::field_}};
 		//convert from ImplementedOrder, ImplementedField to actual
 		for(auto poly:basic_result)
 		{
@@ -147,7 +147,7 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 				result_ptr->MonomialAdditionDone(mon.coef());
 			}
 		}
-		final_result.reset(result_ptr);
+		return std::move(result_ptr);
 	}
 };
 
