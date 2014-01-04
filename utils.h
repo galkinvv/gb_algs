@@ -340,6 +340,9 @@ struct unique_deleter_ptr: std::unique_ptr<T, void(*)(T*)>
 	typedef typename std::remove_cv<T>::type NonConstT;
 	typedef std::unique_ptr<T, void(*)(T*)> BasePtr;
 	unique_deleter_ptr() = delete;
+	explicit unique_deleter_ptr(T* ptr):
+		BasePtr(ptr, &unique_deleter_ptr::Delete)
+	{}
 	unique_deleter_ptr(T* ptr, void(deleter)(T*)):
 		BasePtr(ptr, deleter)
 	{}
@@ -359,3 +362,25 @@ unique_deleter_ptr<T> create_deleter_ptr(T* ptr)
 {
 	return unique_deleter_ptr<T>(ptr, unique_deleter_ptr<T>::Delete);
 }
+
+template <class T>
+struct ImplicitlyConvertible 
+{
+	explicit ImplicitlyConvertible(T value):
+		value_(std::forward<T>(value))
+	{}
+	template <class T2>
+	operator T2()
+	{
+		return T2(std::forward<T>(value_));
+	}
+private:
+  T value_;
+};
+
+template <class T>
+ImplicitlyConvertible<typename std::remove_reference<T>::type&&> MoveToResultType(T&& value)
+{
+	return ImplicitlyConvertible<typename std::remove_reference<T>::type&&>(std::move(value));
+}
+

@@ -241,7 +241,7 @@ struct RingZ2SlowBase::OutPolysSetForVariyingMetadata
 };
 
 RingZ2SlowBase::RingZ2SlowBase(int var_count):
-	impl_(create_deleter_ptr(new Impl))
+	impl_(new Impl)
 {}
 
 bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<const InPolysSetWithOrigMetadata>& prepared_input, 
@@ -279,14 +279,14 @@ void RingZ2SlowBase::ExtendWithMonomialImpl(Enumerator<CrossRingInfo::PerVariabl
 
 unique_deleter_ptr<RingZ2SlowBase::OutPolysSetForVariyingMetadata> RingZ2SlowBase::PrepareEmptyResult()
 {
-	return create_deleter_ptr(new OutPolysSetForVariyingMetadata());
+	return MoveToResultType(new OutPolysSetForVariyingMetadata());
 }
 
 unique_deleter_ptr<const RingZ2SlowBase::InPolysSetWithOrigMetadata> RingZ2SlowBase::PrepareForReconstructionImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input)
 {
 	//TODO
 	auto result = create_deleter_ptr(new InPolysSetWithOrigMetadata());
-	return std::move(result);
+	return MoveToResultType(result);
 }
 /*
 FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)
