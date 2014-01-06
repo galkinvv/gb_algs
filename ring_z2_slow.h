@@ -120,9 +120,9 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		return PrepareForReconstructionImpl(nochecking_var_enumerator);
 	}
 	
-	std::unique_ptr<const CrossRingInfo::MonomialMapping<MonomialMetadata>> MonMapping()const
+	std::unique_ptr<const CrossRingInfo::VariableMapping<MonomialMetadata>> MonMapping()const
 	{
-		std::unique_ptr<CrossRingInfo::MonomialMapping<MonomialMetadata>> result_ptr {new CrossRingInfo::MonomialMapping<MonomialMetadata>(Base::monomial_metadata_, 0)};
+		std::unique_ptr<CrossRingInfo::VariableMapping<MonomialMetadata>> result_ptr {new CrossRingInfo::VariableMapping<MonomialMetadata>(Base::monomial_metadata_, 0)};
 		//TODO
 		return MoveToResultType(result_ptr);
 	}

@@ -28,8 +28,8 @@ namespace F4MPI
 		}
 	}
 
-	template <class IOPolynomSet, class MonomialMapping>
-	void CreateF4MPIResult(const IOPolynomSet& in, const MonomialMapping& new2old, PolynomSet& out)
+	template <class IOPolynomSet, class VariableMapping>
+	void CreateF4MPIResult(const IOPolynomSet& in, const VariableMapping& new2old, PolynomSet& out)
 	{
 		for(auto poly_in_ring:in) {
 			F4MPI::CPolynomial poly;

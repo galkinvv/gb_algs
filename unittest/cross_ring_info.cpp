@@ -135,7 +135,7 @@ TEST_F(CrossRingInfoDeathTest, ExtraTopInfo)
 
 TEST_F(CrossRingInfoDeathTest, MapGetPostEnd)
 {
-	CrossRingInfo::MonomialMapping<DegRevLex> mapping{order_, 1};
+	CrossRingInfo::VariableMapping<DegRevLex> mapping{order_, 1};
 	mapping.MonomialAdditionDone();
 	EXPECT_DEATH(mapping[2], "");
 }

@@ -325,9 +325,9 @@ namespace CrossRingInfo
 	};
 
 	template <class MonomialMetadata>
-	struct MonomialMapping: private DegreesContainer, private MonomialCollectionPlain
+	struct VariableMapping: private DegreesContainer, private MonomialCollectionPlain
 	{
-		MonomialMapping(const MonomialMetadata& oldMetaData, int newMonomialsCount)
+		VariableMapping(const MonomialMetadata& oldMetaData, int newMonomialsCount)
 			:MonomialCollectionPlain(newMonomialsCount, *this, oldMetaData)
 			,oldMetadata_(oldMetaData)
 		{}
