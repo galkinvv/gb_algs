@@ -219,7 +219,7 @@ bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by)
 	return true; // HM/S for maybe_supded is not smaller
 }
 
-static const char kFirstVar = 'a';
+static const char kFirstVarOnOutput = 'a';
 }
 
 struct SlowMon : std::map<char,int>
@@ -230,6 +230,8 @@ struct SLowPol : std::vector<SlowMon> {};
 
 struct RingZ2SlowBase::Impl
 {
+	int keeped_vars_count_;
+	std::vector<SlowMon> new_variables;
 };
 
 struct RingZ2SlowBase::InPolysSetWithOrigMetadata
