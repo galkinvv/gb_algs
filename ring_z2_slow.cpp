@@ -230,6 +230,7 @@ struct SLowPol : std::vector<SlowMon> {};
 
 struct RingZ2SlowBase::Impl
 {
+	//this struct shoulld contain data corresponding to polynomial ring, but not to some polynomials of this ring
 	int keeped_vars_count_;
 	std::vector<SlowMon> new_variables;
 };
