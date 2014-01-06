@@ -54,7 +54,7 @@ namespace Mock
 			return MoveToResultType(new typename Base::IOData::IOPolynomSet(this->monomial_metadata_, this->field_));
 		}
 		
-		std::unique_ptr<const CrossRingInfo::VariableMapping<MonomialMetadata>> MonMapping()const
+		std::unique_ptr<const CrossRingInfo::VariableMapping<MonomialMetadata>> VarMapping()const
 		{
 			auto mapping = new CrossRingInfo::VariableMapping<MonomialMetadata>(this->monomial_metadata_, this->monomial_metadata_.var_count);
 			for (int i =0; i < this->monomial_metadata_.var_count; ++i)

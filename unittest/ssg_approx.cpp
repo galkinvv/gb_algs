@@ -24,7 +24,7 @@ struct PRIVATE_TEST: ::testing::Test{
 		R::IOData io_data {io_poly_set_in, out_ring};
 		ApproxSignatureGroebner<R, Mock::FastRingWithTracking>::Do(io_data);
 		EXPECT_EQ(io_data.out_data->begin(), io_data.out_data->end());
-		auto mapping = io_data.out_ring.MonMapping();
+		auto mapping = io_data.out_ring.VarMapping();
 		int out_var_count = io_data.out_data->Metadata().var_count;
 		for(int i=0; i<out_var_count; ++i)
 		{

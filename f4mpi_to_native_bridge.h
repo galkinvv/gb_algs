@@ -68,7 +68,7 @@ namespace F4MPI
 		IOData io_data {io_poly_set_in, out_ring};
 		TAlgoT<TRing, TFastRing>::Do(io_data);
 		PolynomSet result;
-		CreateF4MPIResult(*io_data.out_data, *io_data.out_ring.MonMapping(), result);
+		CreateF4MPIResult(*io_data.out_data, *io_data.out_ring.VarMapping(), result);
 		return result;
 	}
 }
