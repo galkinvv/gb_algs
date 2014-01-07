@@ -384,3 +384,4 @@ ImplicitlyConvertible<typename std::remove_reference<T>::type&&> MoveToResultTyp
 	return ImplicitlyConvertible<typename std::remove_reference<T>::type&&>(std::move(value));
 }
 
+#define DECLARE_PIMPL  struct Impl; unique_deleter_ptr<Impl> impl_

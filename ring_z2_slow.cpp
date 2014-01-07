@@ -231,7 +231,10 @@ struct SLowPol : std::vector<SlowMon> {};
 struct RingZ2SlowBase::Impl
 {
 	//this struct shoulld contain data corresponding to polynomial ring, but not to some polynomials of this ring
-	int keeped_vars_count_;
+	Impl(int keeped_vars_count)
+		:keeped_vars_count_(keeped_vars_count)
+	{}
+	const int keeped_vars_count_;
 	std::vector<SlowMon> new_variables;
 };
 
@@ -244,7 +247,7 @@ struct RingZ2SlowBase::OutPolysSetForVariyingMetadata
 };
 
 RingZ2SlowBase::RingZ2SlowBase(int var_count):
-	impl_(new Impl)
+	impl_(new Impl(var_count))
 {}
 
 bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<const InPolysSetWithOrigMetadata>& prepared_input, 
@@ -291,6 +294,44 @@ unique_deleter_ptr<const RingZ2SlowBase::InPolysSetWithOrigMetadata> RingZ2SlowB
 	auto result = create_deleter_ptr(new InPolysSetWithOrigMetadata());
 	return MoveToResultType(result);
 }
+
+/*
+struct Monomial : std::map<char,int>
+{
+	friend bool operator<(const Monomial&, const Monomial&); //undefined
+};
+
+struct FastPoly : std::vector<Monomial> {};
+*/
+
+struct FastZ2SlowBasedRingBase::LPoly::Impl
+{
+	/*
+	FastPoly value;
+	std::vector<FastPoly> reconstruction_info;
+	double sig_index;
+	Monomial sig_mon;
+	*/
+};
+
+/*
+struct MultLPoly
+{
+	LPoly poly;
+	Monomial mul_by;
+};	
+*/
+
+struct FastZ2SlowBasedRingBase::MultLPolysQueue::Impl /*:std::vector<MultLPoly>*/
+{
+};
+
+
+struct FastZ2SlowBasedRingBase::LPolysResult::Impl /*:std::vector<LPolyImpl>*/
+{
+	//friend class FastZ2SlowBasedRingBase;
+};
+
 /*
 FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)
 {

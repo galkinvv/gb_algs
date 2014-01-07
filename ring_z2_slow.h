@@ -44,9 +44,8 @@ class RingZ2SlowBase
 	
 	struct Polynomial : std::vector<Monomial>{};
 	explicit RingZ2SlowBase(int var_count);
-	struct Impl;
-	unique_deleter_ptr<Impl> impl_;
 
+	DECLARE_PIMPL;
 public:
 	struct PolysSet: private std::vector<Polynomial>
 	{
@@ -151,68 +150,40 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 	}
 };
 
-struct  FastZ2SlowBasedRingBase:NoCopy
+class  FastZ2SlowBasedRingBase:NoCopy
 {
-	struct Monomial : std::map<char,int>
-	{
-		friend bool operator<(const Monomial&, const Monomial&); //undefined
-	};
-	struct FastPoly : std::vector<Monomial> {};
-	struct LPolyImpl
-	{
-		FastPoly value;
-		std::vector<FastPoly> reconstruction_info;
-		double sig_index;
-		Monomial sig_mon;
-	};
-	struct MultLPoly
-	{
-		LPolyImpl poly;
-		Monomial mul_by;
-	};	
+  public:
+	struct LPoly{	DECLARE_PIMPL;};
+	struct MultLPolysQueue{ DECLARE_PIMPL;};
+	struct LPolysResult { DECLARE_PIMPL;};
+	
+	bool QueueEmpty(const MultLPolysQueue& queue);
+	
+	LPoly DequeueSigSmallest(MultLPolysQueue& queue);
+	
+	LPolysResult FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue);
+	void ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers);	
+
+	bool IsZero(const LPoly& poly);	
+	void Normalize(LPoly& poly);	
+	
+	void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue);
+	void InsertInResult(const LPoly& poly, LPolysResult& result);
 };
 
 template <class MonomialMetadata>
-class FastZ2SlowBasedRing: private FastZ2SlowBasedRingBase
+class FastZ2SlowBasedRing: public FastZ2SlowBasedRingBase
 {
-	
-public:
-	class LPoly:LPolyImpl
-	{
-		friend class FastZ2SlowBasedRing;
-	};
-	class MultLPolysQueue:std::vector<MultLPoly>
-	{
-		friend class FastZ2SlowBasedRing;
-	};
-	class LPolysResult:std::vector<LPolyImpl>
-	{
-		friend class FastZ2SlowBasedRing;
-	};
-
-	bool QueueEmpty(const MultLPolysQueue& queue)
-	{
-		return queue.empty();
-	}
+  public:
 
 	FastZ2SlowBasedRing(const MonomialMetadata&){}
-
-	LPoly DequeueSigSmallest(MultLPolysQueue& queue);
 
 	template <class Field>
 	MultLPolysQueue PutInQueueExtendLabeledPolys(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input);
 	//{return MultLPolysQueue();}
 
-	LPolysResult FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue);
-	void ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers);
 	
 	std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>> FieldAgnosticReconstructionInfo(const LPoly& poly);
 
-	bool IsZero(const LPoly& poly);
-	
-	void Normalize(LPoly& poly);
-	
 	std::unique_ptr<const CrossRingInfo::SingleMonomial<MonomialMetadata>> ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult& reducers);
-	void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue);
-	void InsertInResult(const LPoly& poly, LPolysResult& result);
 };
