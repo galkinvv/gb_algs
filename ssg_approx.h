@@ -38,8 +38,8 @@ class ApproxSignatureGroebner
 						//normalized polynomial was reconstructed in base ring
 						break;
 					}
-					auto added_monomial = fast_ring_.ExtendRingWithMonomialToHelpReconstruct(labeled_poly_to_reduce, R);
-					out_ring_.ExtendWithMonomial(added_monomial);
+					auto added_info = out_ring_.ExtendRingWithMonomialToHelpReconstruct(reconstruction_info);
+					fast_ring_.AddLabeledPolyWithNewVar(added_info, R);
 				}
 				if (!fast_ring_.IsZero(labeled_poly_to_reduce))
 				{

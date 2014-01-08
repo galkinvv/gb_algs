@@ -339,7 +339,9 @@ struct unique_deleter_ptr: std::unique_ptr<T, void(*)(T*)>
 {
 	typedef typename std::remove_cv<T>::type NonConstT;
 	typedef std::unique_ptr<T, void(*)(T*)> BasePtr;
-	unique_deleter_ptr() = delete;
+	unique_deleter_ptr():
+		BasePtr(nullptr, nullptr)
+	{}
 	explicit unique_deleter_ptr(T* ptr):
 		BasePtr(ptr, &unique_deleter_ptr::Delete)
 	{}

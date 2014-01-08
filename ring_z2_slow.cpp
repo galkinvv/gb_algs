@@ -222,14 +222,12 @@ bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by)
 static const char kFirstVarOnOutput = 'a';
 }
 
-struct SlowMon : std::map<char,int>
-{
+struct SlowMon : std::map<char,int> {
 	friend bool operator<(const SlowMon&, const SlowMon&); //undefined
 };
 struct SLowPol : std::vector<SlowMon> {};
 
-struct RingZ2SlowBase::Impl
-{
+struct RingZ2SlowBase::Impl {
 	//this struct shoulld contain data corresponding to polynomial ring, but not to some polynomials of this ring
 	Impl(int keeped_vars_count)
 		:keeped_vars_count_(keeped_vars_count)
@@ -238,37 +236,31 @@ struct RingZ2SlowBase::Impl
 	std::vector<SlowMon> new_variables;
 };
 
-struct RingZ2SlowBase::InPolysSetWithOrigMetadata
-{
+struct RingZ2SlowBase::InPolysSetWithOrigMetadata {
 };
 
-struct RingZ2SlowBase::OutPolysSetForVariyingMetadata
-{
+struct RingZ2SlowBase::OutPolysSetForVariyingMetadata {
 };
 
 RingZ2SlowBase::RingZ2SlowBase(int var_count):
 	impl_(new Impl(var_count))
 {}
 
-bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<const InPolysSetWithOrigMetadata>& prepared_input, 
-		Enumerator<CrossRingInfo::PerVariableData> top_info,  
-		Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input_polys_mons, 
-		const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& result)
+bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<const InPolysSetWithOrigMetadata>& prepared_input,
+        Enumerator<CrossRingInfo::PerVariableData> top_info,
+        Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input_polys_mons,
+        const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& result)
 {
 	//TODO: solve via matrix
-	for (auto top_var: top_info)
-	{
-		
+	for (auto top_var: top_info) {
+
 	}
-	for (auto poly: input_polys_mons)
-	{
-		for (auto mon: poly)
-		{
-			for (auto var: mon)
-			{
-				
+	for (auto poly: input_polys_mons) {
+		for (auto mon: poly) {
+			for (auto var: mon) {
+
 			}
-		}				
+		}
 	}
 	return true;
 }
@@ -296,16 +288,11 @@ unique_deleter_ptr<const RingZ2SlowBase::InPolysSetWithOrigMetadata> RingZ2SlowB
 }
 
 /*
-struct Monomial : std::map<char,int>
-{
-	friend bool operator<(const Monomial&, const Monomial&); //undefined
-};
 
 struct FastPoly : std::vector<Monomial> {};
 */
 
-struct FastZ2SlowBasedRingBase::LPoly::Impl
-{
+struct FastZ2SlowBasedRingBase::LPoly::Impl {
 	/*
 	FastPoly value;
 	std::vector<FastPoly> reconstruction_info;
@@ -319,16 +306,14 @@ struct MultLPoly
 {
 	LPoly poly;
 	Monomial mul_by;
-};	
+};
 */
 
-struct FastZ2SlowBasedRingBase::MultLPolysQueue::Impl /*:std::vector<MultLPoly>*/
-{
+struct FastZ2SlowBasedRingBase::MultLPolysQueue::Impl { /*:std::vector<MultLPoly>*/
 };
 
 
-struct FastZ2SlowBasedRingBase::LPolysResult::Impl /*:std::vector<LPolyImpl>*/
-{
+struct FastZ2SlowBasedRingBase::LPolysResult::Impl { /*:std::vector<LPolyImpl>*/
 	//friend class FastZ2SlowBasedRingBase;
 };
 
@@ -565,3 +550,10 @@ F4MPI::IOPolynomSet RingZ2Slow::ConvertResult(std::unique_ptr<IOData<RingZ2Slow>
 	return converted_result;
 }
 */
+bool FastZ2SlowBasedRing::MonomialLess(const Monomial& m1, const Monomial& m2) const
+{
+}
+
+bool FastZ2SlowBasedRing::SignatureLess(const Signature& m1, const Signature& m2) const
+{
+}

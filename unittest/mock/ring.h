@@ -32,9 +32,10 @@ namespace Mock
 			return true;
 		}
 
-		void ExtendWithMonomial(const std::unique_ptr<const CrossRingInfo::SingleMonomial<MonomialMetadata>>& info)
+		std::unique_ptr<const CrossRingInfo::AddedVarInfo<MonomialMetadata>>  ExtendRingWithMonomialToHelpReconstruct(const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info)
 		{
 			IgnoreIfUnused(info);
+			return nullptr;
 		}
 
 		std::unique_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstruction(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input)
@@ -119,10 +120,9 @@ namespace Mock
 		{
 			IgnoreIfUnused(poly);
 		}
-		std::unique_ptr<const CrossRingInfo::SingleMonomial<MonomialMetadata>>  ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult& reducers)
+		void AddLabeledPolyWithNewVar(const std::unique_ptr<const CrossRingInfo::AddedVarInfo<MonomialMetadata>>& added_info, LPolysResult& reducers)
 		{
-			IgnoreIfUnused(poly, reducers);
-			return nullptr;
+			IgnoreIfUnused(added_info, reducers);
 		}
 		void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
 		{

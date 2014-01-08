@@ -93,15 +93,18 @@ namespace CrossRingInfo
 	typedef std::vector<int> DegreesContainer;
 		
 	template <class MonomialMetadata>
-	class SingleMonomial
+	class AddedVarInfo
 	{
 		typedef MonomialData<DegreesContainer::const_iterator> MonData;
 		typedef decltype(std::declval<MonData>().begin()) VarIterator;
 	public:
-		SingleMonomial(const MonomialMetadata& metadata):
+		AddedVarInfo(const MonomialMetadata& metadata, int addedIndex):
 			metadata_(metadata),
-			data_(metadata.var_count)
-		{}
+			data_(metadata.var_count),
+			addedIndex_(addedIndex)
+		{
+			assert(addedIndex  <= metadata.var_count); //check that all previous indices are known
+		}
 		
 		VarIterator begin()const
 		{
@@ -116,6 +119,10 @@ namespace CrossRingInfo
 		{
 			return metadata_;
 		}		
+		int AddedIndex()const
+		{
+			return addedIndex_;
+		}
 		void AddVariable(const PerVariableData& data)
 		{
 			assert(data.index >= 0);
@@ -126,17 +133,18 @@ namespace CrossRingInfo
 		}
 	private:
 		template <class MonomialMetadata2>
-		friend std::ostream& operator << (std::ostream& s, const SingleMonomial<MonomialMetadata2>& data);
+		friend std::ostream& operator << (std::ostream& s, const AddedVarInfo<MonomialMetadata2>& data);
 		MonData AsMonomialData()const
 		{
 			return MonData(data_.begin(), data_.end());
 		}
 		const MonomialMetadata metadata_;
 		DegreesContainer data_;
+		const int addedIndex_;
 	};
 
 	template <class MonomialMetadata>
-	std::ostream& operator << (std::ostream& s, const SingleMonomial<MonomialMetadata>& data)
+	std::ostream& operator << (std::ostream& s, const AddedVarInfo<MonomialMetadata>& data)
 	{
 		return s << data.AsMonomialData();
 	}
