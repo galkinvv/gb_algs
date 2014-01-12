@@ -325,6 +325,68 @@ struct FastZ2SlowBasedRingBase::LPolysResult::Impl { /*:std::vector<LPolyImpl>*/
 	//friend class FastZ2SlowBasedRingBase;
 };
 
+
+void FastZ2SlowBasedRingBase::AddLabeledPolyBeforeImpl(int new_var_index, Enumerator<CrossRingInfo::PerVariableData> monomial, LPolysResult& reducers, const LPoly& poly_before)
+{
+}
+
+FastZ2SlowBasedRingBase::LPoly FastZ2SlowBasedRingBase::DequeueSigSmallest(MultLPolysQueue& queue)
+{
+	//TODO
+	return LPoly();
+}
+
+void FastZ2SlowBasedRingBase::ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
+{
+}
+
+
+Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> FastZ2SlowBasedRingBase::FieldAgnosticReconstructionInfoPolysImpl(const LPoly& poly)
+{
+	//TODO: at least return	
+}
+
+Enumerator<CrossRingInfo::PerVariableData> FastZ2SlowBasedRingBase::FieldAgnosticReconstructionInfoTopImpl(const LPoly& poly)
+{
+	//TODO: at least return
+}
+
+FastZ2SlowBasedRingBase::LPolysResult FastZ2SlowBasedRingBase::FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue)
+{
+	//TODO
+	return LPolysResult();
+}
+
+void FastZ2SlowBasedRingBase::InsertInResult(const LPoly& poly, LPolysResult& result)
+{
+}
+
+bool FastZ2SlowBasedRingBase::IsZero(const LPoly& poly)
+{
+	//TODO
+	return true;
+}
+
+void FastZ2SlowBasedRingBase::Normalize(LPoly& poly)
+{
+}
+
+FastZ2SlowBasedRingBase::MultLPolysQueue FastZ2SlowBasedRingBase::PutInQueueExtendLabeledPolysImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input)
+{
+	//TODO
+	return MultLPolysQueue();
+}
+
+bool FastZ2SlowBasedRingBase::QueueEmpty(const MultLPolysQueue& queue)
+{
+	//TODO
+	return true;
+}
+
+void FastZ2SlowBasedRingBase::ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
+{
+}
+
 /*
 FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)
 {
