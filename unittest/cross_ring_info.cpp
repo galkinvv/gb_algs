@@ -61,7 +61,7 @@ public:
 	CrossRingInfo::MonomialListListWithCoef<DegRevLex, StrangeField> strange_field_basis_info_{order_, strange_field_};
 	CrossRingInfo::MonomialListListWithCoef<DegRevLex, IntField> int_field_basis_info_{order_, int_field_};
 	CrossRingInfo::MonomialListListWithTopInfo<DegRevLex> poly_rec_info_{order_};
-	CrossRingInfo::AddedVarInfo<DegRevLex> single_mon_{order_};
+	CrossRingInfo::AddedVarInfo<DegRevLex> single_mon_{order_, order_.var_count};
 	const CrossRingInfo::MonomialListListWithCoef<DegRevLex, StrangeField>& const_basis_info_ = strange_field_basis_info_;
 	const CrossRingInfo::MonomialListListWithTopInfo<DegRevLex>& const_poly_rec_info_ = poly_rec_info_;
 	const CrossRingInfo::AddedVarInfo<DegRevLex>& const_single_mon_ = single_mon_;

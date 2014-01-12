@@ -30,7 +30,7 @@ protected:
 	                                      Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input_polys_mons,
 	                                      const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& result);
 
-	void ExtendWithMonomialImpl(Enumerator<CrossRingInfo::PerVariableData> info);
+	int ExtendRingWithMonomialToHelpReconstructImpl(Enumerator<CrossRingInfo::PerVariableData> info);
 
 	unique_deleter_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstructionImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input);
 
@@ -75,21 +75,28 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		auto var_enumerator =
 		    ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM((
 		                ConverterEnumeratorCFunc<
-		                STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<MonomialAsRange>),
+		                STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullNonSizedRangeEnumerator<MonomialAsRange>),
 		                MonomialAsRange>
 		            ))>(mon_enumerator);
 
 
 		return ConstructAndInsertNormalizedImpl(
 		           prepared_input,
-		           FullRangeEnumerator(info->TopInfo()),
+		           FullNonSizedRangeEnumerator(info->TopInfo()),
 		           var_enumerator,
 		           result
 		       );
 	}
 
-	void ExtendWithMonomial(const std::unique_ptr<const CrossRingInfo::AddedVarInfo<MonomialMetadata>>& info) {
-		ExtendWithMonomialImpl(FullRangeEnumerator(*info));
+	std::unique_ptr<const CrossRingInfo::AddedVarInfo<MonomialMetadata>>  ExtendRingWithMonomialToHelpReconstruct(const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info){
+		auto top_monomial = info->TopInfo();
+		int added_var_index = ExtendRingWithMonomialToHelpReconstructImpl(FullNonSizedRangeEnumerator(top_monomial));
+		auto result = as_unique_ptr(new CrossRingInfo::AddedVarInfo<MonomialMetadata>(Base::monomial_metadata_, added_var_index));
+		for(auto var : top_monomial)
+		{
+			result->AddVariable(var);
+		}
+		return MoveToResultType(result);
 	}
 
 	unique_deleter_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstruction(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input) {
@@ -102,7 +109,7 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		auto nochecking_var_enumerator =
 		    ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM((
 		                ConverterEnumeratorCFunc<
-		                STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<MonomialAsRange>),
+		                STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullNonSizedRangeEnumerator<MonomialAsRange>),
 		                MonomialAsRange>
 		            ))>(mon_enumerator);
 
@@ -112,10 +119,11 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 	}
 
 	std::unique_ptr<const CrossRingInfo::VariableMapping<MonomialMetadata>> VarMapping()const {
-		std::unique_ptr<CrossRingInfo::VariableMapping<MonomialMetadata>> result_ptr {new CrossRingInfo::VariableMapping<MonomialMetadata>(Base::monomial_metadata_, 0)};
+		auto result_ptr =  as_unique_ptr(new CrossRingInfo::VariableMapping<MonomialMetadata>(Base::monomial_metadata_, 0));
 		//TODO
 		return MoveToResultType(result_ptr);
 	}
+	
 	std::unique_ptr<const typename Base::IOData::IOPolynomSet> ConvertResultToFixedMetadata(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result) {
 		ImplementedOrder implemented_order;
 		implemented_order.var_count = Base::monomial_metadata_.var_count;
@@ -171,6 +179,11 @@ protected:
 		Monomial sig_mon;
 	};
 	virtual bool MonomialLess(const Monomial& m1, const Monomial& m2) const = 0;
+	
+	MultLPolysQueue PutInQueueExtendLabeledPolysImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input);
+	void AddLabeledPolyBeforeImpl(int new_var_index, Enumerator<CrossRingInfo::PerVariableData> monomial, LPolysResult& reducers, const LPoly& poly_before);
+	Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> FieldAgnosticReconstructionInfoPolysImpl(const LPoly& poly);
+	Enumerator<CrossRingInfo::PerVariableData> FieldAgnosticReconstructionInfoTopImpl(const LPoly& poly);
 private:
 	DECLARE_PIMPL;
 };
@@ -180,16 +193,59 @@ class FastZ2SlowBasedRing: public FastZ2SlowBasedRingBase
 {
 public:
 
-	FastZ2SlowBasedRing(const MonomialMetadata&) {}
+	FastZ2SlowBasedRing(const MonomialMetadata& metadata)
+		:metadata_(metadata)
+	{}
 
 	template <class Field>
-	MultLPolysQueue PutInQueueExtendLabeledPolys(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input);
-	//{return MultLPolysQueue();}
+	MultLPolysQueue PutInQueueExtendLabeledPolys(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input)
+	{
+		auto poly_enumerator = FullRangeEnumerator(input);
+		typedef decltype(poly_enumerator.GetAndMove()) PolynomialAsRange;
+		auto mon_enumerator = ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<PolynomialAsRange>)>(poly_enumerator);
+		typedef decltype(mon_enumerator.GetAndMove().GetAndMove()) MonomialAsRange;
+
+		//TODO: add checking for coefficient is not equal to zero
+		auto nochecking_var_enumerator =
+		    ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM((
+		                ConverterEnumeratorCFunc<
+		                STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullNonSizedRangeEnumerator<MonomialAsRange>),
+		                MonomialAsRange>
+		            ))>(mon_enumerator);
+
+		return PutInQueueExtendLabeledPolysImpl(nochecking_var_enumerator);
+	}
 
 
-	std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>> FieldAgnosticReconstructionInfo(const LPoly& poly);
+	std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>> FieldAgnosticReconstructionInfo(const LPoly& poly)
+	{
+		auto result = as_unique_ptr(new CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>(metadata_));
+		for (auto top_info_var : FieldAgnosticReconstructionInfoTopImpl(poly))
+		{
+			result->AddVariable(top_info_var);
+		}
+		result->TopInfoAdditionDone();
+		
+		for (auto info_poly : FieldAgnosticReconstructionInfoPolysImpl(poly))
+		{
+			result->BeginPolynomialConstruction(info_poly.size());
+			for (auto info_mon : info_poly)
+			{
+				for (auto info_var : info_mon)
+				{
+					result->AddVariable(info_var);
+				}
+				result->MonomialAdditionDone();
+			}
+		}
 
-	std::unique_ptr<const CrossRingInfo::AddedVarInfo<MonomialMetadata>> ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult& reducers);
+		return MoveToResultType(result);
+	}
+
+	void AddLabeledPolyBefore(const std::unique_ptr<const CrossRingInfo::AddedVarInfo<MonomialMetadata>>& added_info, LPolysResult& reducers, const LPoly& poly_before)
+	{
+		AddLabeledPolyBeforeImpl(added_info->AddedIndex(), FullNonSizedRangeEnumerator(*added_info), reducers, poly_before);
+	}
 
 private:
 	virtual bool MonomialLess(const Monomial& m1, const Monomial& m2) const
@@ -197,4 +253,5 @@ private:
 		//TODO
 		return false;
 	}
+	const MonomialMetadata& metadata_;
 };

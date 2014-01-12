@@ -120,9 +120,9 @@ namespace Mock
 		{
 			IgnoreIfUnused(poly);
 		}
-		void AddLabeledPolyWithNewVar(const std::unique_ptr<const CrossRingInfo::AddedVarInfo<MonomialMetadata>>& added_info, LPolysResult& reducers)
+		void AddLabeledPolyBefore(const std::unique_ptr<const CrossRingInfo::AddedVarInfo<MonomialMetadata>>& added_info, LPolysResult& reducers, const LPoly& poly_before)
 		{
-			IgnoreIfUnused(added_info, reducers);
+			IgnoreIfUnused(added_info, reducers, poly_before);
 		}
 		void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
 		{

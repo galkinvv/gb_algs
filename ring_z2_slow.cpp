@@ -270,9 +270,17 @@ void RingZ2SlowBase::ConvertResultToFixedMetadataImpl(const unique_deleter_ptr<O
 	//TODO
 }
 
-void RingZ2SlowBase::ExtendWithMonomialImpl(Enumerator<CrossRingInfo::PerVariableData> info)
+int RingZ2SlowBase::ExtendRingWithMonomialToHelpReconstructImpl(Enumerator<CrossRingInfo::PerVariableData> info)
 {
-	//TODO
+	impl_->new_variables.emplace_back();
+	SlowMon& new_mon = impl_->new_variables.back();
+	for (auto var:info)
+	{
+		int& new_degree =new_mon[var.index];
+		assert(0 == new_degree);
+		new_degree = var.degree;
+	}
+	return impl_->keeped_vars_count_ + impl_->new_variables.size() - 1;
 }
 
 unique_deleter_ptr<RingZ2SlowBase::OutPolysSetForVariyingMetadata> RingZ2SlowBase::PrepareEmptyResult()
@@ -283,7 +291,7 @@ unique_deleter_ptr<RingZ2SlowBase::OutPolysSetForVariyingMetadata> RingZ2SlowBas
 unique_deleter_ptr<const RingZ2SlowBase::InPolysSetWithOrigMetadata> RingZ2SlowBase::PrepareForReconstructionImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input)
 {
 	//TODO
-	auto result = create_deleter_ptr(new InPolysSetWithOrigMetadata());
+	auto result = as_deleter_ptr(new InPolysSetWithOrigMetadata());
 	return MoveToResultType(result);
 }
 
@@ -550,10 +558,3 @@ F4MPI::IOPolynomSet RingZ2Slow::ConvertResult(std::unique_ptr<IOData<RingZ2Slow>
 	return converted_result;
 }
 */
-bool FastZ2SlowBasedRing::MonomialLess(const Monomial& m1, const Monomial& m2) const
-{
-}
-
-bool FastZ2SlowBasedRing::SignatureLess(const Signature& m1, const Signature& m2) const
-{
-}

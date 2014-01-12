@@ -247,6 +247,7 @@ namespace CrossRingInfo
 		{
 			return const_iterator{container_.begin() + interval.end, monomial_metadata_};
 		}
+		using MonomialCollectionBase::size;
 	};
 	
 	inline std::ostream& operator << (std::ostream& s, const MonomialCollectionPlain& data)
@@ -311,6 +312,7 @@ namespace CrossRingInfo
 		{
 			return const_iterator{coef_data_.begin() + first_coef_pos_, container_.begin() + interval.end, monomial_metadata_};
 		}
+		using MonomialCollectionBase::size;
 	  private:
 	   CoefContainer& coef_data_;
 	   int first_coef_pos_;
@@ -395,6 +397,10 @@ namespace CrossRingInfo
 		{
 			return input_poly_infos_.data() + input_poly_infos_.size();
 		}
+		size_t size()const
+		{
+			return input_poly_infos_.size();
+		}
 		int TotalMonomials()const
 		{
 			return std::accumulate(input_poly_infos_.begin(), input_poly_infos_.end(), 0, CalcSizeSum);
@@ -421,19 +427,25 @@ namespace CrossRingInfo
 		MonomialListListWithTopInfo(const MonomialMetadata& metadata)
 			:Base(metadata)
 		{
-			BeginPolynomialConstruction(kMonomialsForTopInfo);
+			BeginPolynomialConstruction(kMonomialInPolynomialForTopInfo);
 		}
 		void TopInfoAdditionDone()
 		{
 			Base::MonomialAdditionDone();
-			assert((Base::begin() + kMonomialsForTopInfo) == Base::end());
+			assert(Base::begin() + kPolynomialsForTopInfo == Base::end());
 		}
 		const MonomialCollectionPlain* begin()const
 		{
 			auto result = Base::begin();
 			assert(result != Base::end());
-			return result + kMonomialsForTopInfo;
+			return result + kPolynomialsForTopInfo;
 		}
+		size_t size()const
+		{
+			assert(Base::size() >= kPolynomialsForTopInfo);
+			return Base::size() - kPolynomialsForTopInfo;
+		}
+
 		void BeginPolynomialConstruction(int monomial_count)
 		{
 			assert(this->TotalMonomials() * this->metadata_.var_count == this->degrees_.size());
@@ -445,17 +457,18 @@ namespace CrossRingInfo
 		using Base::AddVariable;
 		void MonomialAdditionDone()
 		{
-			assert((Base::begin() + kMonomialsForTopInfo) != Base::end());
+			assert((Base::begin() + kPolynomialsForTopInfo) != Base::end());
 			Base::MonomialAdditionDone();
 		}
 		decltype(*(std::declval<Base>().begin()->begin())) TopInfo()const
 		{
 			auto result_poly = Base::begin();
 			assert(result_poly != Base::end());
-			return *result_poly->begin();
+			return *(result_poly->begin());
 		}
 	  private:
-		static const int kMonomialsForTopInfo = 1;
+		static const int kPolynomialsForTopInfo = 1;
+		static const int kMonomialInPolynomialForTopInfo = 1;
 	};
 	
 	template <class MonomialMetadata, class TField>
@@ -467,6 +480,7 @@ namespace CrossRingInfo
 			:Base(metadata)
 			,field_(field)
 		{}
+		using Base::size;
 		using Base::begin;
 		using Base::end;
 		using Base::AddVariable;

@@ -169,13 +169,14 @@ struct Enumerator
 	{
 		virtual T GetAndMove() = 0;
 		virtual bool AtEnd() = 0;
+		virtual size_t size() = 0;
 		virtual ~Impl(){}
 	};
 	
 	template <class Iterator>
-	struct RangeImpl:Impl
+	struct NonSizedRangeImpl:Impl
 	{
-		RangeImpl(Iterator a_current, Iterator a_end)
+		NonSizedRangeImpl(Iterator a_current, Iterator a_end)
 			:current(a_current), end(a_end)
 		{}
 		Iterator current, end;
@@ -190,8 +191,41 @@ struct Enumerator
 		{
 			return !(current != end);
 		}
+
+		size_t size() override
+		{
+			throw std::logic_error("size is unknown for this iterator");
+		}		
 	};
 	
+	template <class Iterator>
+	struct RangeImpl:Impl
+	{
+		RangeImpl(Iterator a_current, Iterator a_end, size_t a_size)
+			:current(a_current), end(a_end), orig_size(a_size)
+		{}
+		
+		Iterator current, end;
+		size_t orig_size;
+		
+		T GetAndMove() override
+		{
+			T result = *current;
+			++current;
+			return result;
+		}
+		bool AtEnd() override
+		{
+			return !(current != end);
+		}
+
+		size_t size() override
+		{
+			return orig_size;
+		}		
+	};
+	
+
 	template <class ConvertFrom>
 	struct ConverterImpl:Impl
 	{
@@ -210,12 +244,24 @@ struct Enumerator
 		{
 			return orig_enumerator.AtEnd();
 		}
+		
+		size_t size() override
+		{
+			return orig_enumerator.size();
+		}
 	};
 	
 	template <class Iterator>
-	static Enumerator<T> Range(Iterator begin, Iterator end)
+	static Enumerator<T> NonSizedRange(Iterator begin, Iterator end)
 	{
-		auto impl = std::make_shared<RangeImpl<Iterator>>(begin, end);
+		auto impl = std::make_shared<NonSizedRangeImpl<Iterator>>(begin, end);
+		return Enumerator(impl);
+	}
+
+	template <class Iterator>
+	static Enumerator<T> Range(Iterator begin, Iterator end, size_t size)
+	{
+		auto impl = std::make_shared<RangeImpl<Iterator>>(begin, end, size);
 		return Enumerator(impl);
 	}
 
@@ -288,6 +334,11 @@ struct Enumerator
 		return impl_->AtEnd();
 	}
   
+	size_t size()
+	{
+		return impl_->size();
+	}
+
 	Enumerator(){}
 	
 	void operator=(const Enumerator& other)
@@ -303,9 +354,15 @@ struct Enumerator
 };
 
 template <class TRange>
+Enumerator<decltype(*std::begin(std::declval<TRange>()))> FullNonSizedRangeEnumerator(const TRange& range)
+{
+	return Enumerator<decltype(*std::begin(std::declval<TRange>()))>::NonSizedRange(range.begin(), range.end());
+}
+
+template <class TRange>
 Enumerator<decltype(*std::begin(std::declval<TRange>()))> FullRangeEnumerator(const TRange& range)
 {
-	return Enumerator<decltype(*std::begin(std::declval<TRange>()))>::Range(range.begin(), range.end());
+	return Enumerator<decltype(*std::begin(std::declval<TRange>()))>::Range(range.begin(), range.end(), range.size());
 }
 
 template <class Func, class ConvertFrom>
@@ -360,9 +417,15 @@ struct unique_deleter_ptr: std::unique_ptr<T, void(*)(T*)>
 };
 
 template <class T>
-unique_deleter_ptr<T> create_deleter_ptr(T* ptr)
+unique_deleter_ptr<T> as_deleter_ptr(T* ptr)
 {
 	return unique_deleter_ptr<T>(ptr, unique_deleter_ptr<T>::Delete);
+}
+
+template <class T>
+std::unique_ptr<T> as_unique_ptr(T* ptr)
+{
+	return std::unique_ptr<T>(ptr);
 }
 
 template <class T>

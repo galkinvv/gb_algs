@@ -39,7 +39,7 @@ class ApproxSignatureGroebner
 						break;
 					}
 					auto added_info = out_ring_.ExtendRingWithMonomialToHelpReconstruct(reconstruction_info);
-					fast_ring_.AddLabeledPolyWithNewVar(added_info, R);
+					fast_ring_.AddLabeledPolyBefore(added_info, R, labeled_poly_to_reduce);
 				}
 				if (!fast_ring_.IsZero(labeled_poly_to_reduce))
 				{
