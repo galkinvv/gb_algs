@@ -450,3 +450,9 @@ ImplicitlyConvertible<typename std::remove_reference<T>::type&&> MoveToResultTyp
 }
 
 #define DECLARE_PIMPL  struct Impl; unique_deleter_ptr<Impl> impl_
+
+template <class Enumerator>
+struct EnumeratorTraits
+{
+	typedef  decltype(*(std::declval<Enumerator>().begin())) ValueType;
+};

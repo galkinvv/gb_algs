@@ -9,6 +9,19 @@
 #include "finite_field.h"
 #include "utils.h"
 
+template <class TMonomialListListWithCoef>
+struct PolynomialCoefChecker
+{
+	typedef decltype(std::declval<TMonomialListListWithCoef>().Field()) TField;
+	typedef typename EnumeratorTraits<TMonomialListListWithCoef>::ValueType TMonomialListWithCoef;
+	typedef typename EnumeratorTraits<TMonomialListWithCoef>::ValueType TMonomialWithCoef;
+	PolynomialCoefChecker(const TMonomialListListWithCoef& poly_list):
+		field_(poly_list.Field())
+	{}
+	
+	const TField& field_;
+};
+
 class RingZ2SlowBase
 {
 public:
@@ -72,7 +85,8 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		auto mon_enumerator = ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<PolynomialAsRange>)>(poly_enumerator);
 		typedef decltype(mon_enumerator.GetAndMove().GetAndMove()) MonomialAsRange;
 
-		auto var_enumerator =
+		//TODO: add checking for coefficient is equal to one
+		auto nochecking_var_enumerator =
 		    ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM((
 		                ConverterEnumeratorCFunc<
 		                STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullNonSizedRangeEnumerator<MonomialAsRange>),
@@ -83,7 +97,7 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		return ConstructAndInsertNormalizedImpl(
 		           prepared_input,
 		           FullNonSizedRangeEnumerator(info->TopInfo()),
-		           var_enumerator,
+		           nochecking_var_enumerator,
 		           result
 		       );
 	}
