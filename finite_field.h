@@ -25,19 +25,19 @@ struct FiniteField {
 	};
 	
 	template <class F>
-	void SetRandom(F random_functor, Value& value) {
+	void SetRandom(F random_functor, Value& value) const{
 		z_.SetRandom(random_functor, value);
 		Normalize(value);
 	}
 
-	void Divide(const Value& divident, const Value& divider, DivResult& result) {
+	void Divide(const Value& divident, const Value& divider, DivResult& result) const{
 		//first solve mod_*x - divider * result  = 1
 		ZValue x_unused;
 		ExtendedEuclid(mod_, divider, x_unused, result, SignedOne::PlusOne);
 		z_.Mul(CopyValue(result), divident, result);
 	}
 
-	ExactSubtractionResultInfo Subtract(const Value& from, const Value& what, const DivResult& multiplier, Value& result) {
+	ExactSubtractionResultInfo Subtract(const Value& from, const Value& what, const DivResult& multiplier, Value& result) const{
 		//DivResult contanes already negated value, so perform addition
 		z_.Add(from, what, multiplier, result);
 		Normalize(result);
@@ -58,10 +58,10 @@ struct FiniteField {
 		return z_.template Export<Integer>(value);
 	}
 
-	void SetZero(Value& result) {
+	void SetZero(Value& result)const{
 		z_.SetOne(result);
 	}
-	void SetOne(Value& result) {
+	void SetOne(Value& result) const{
 		z_.SetOne(result);
 	}
 
@@ -87,8 +87,7 @@ private:
 		value = byModDivResult.rem;
 	}
 
-private:
-	SignedOne NegateOne(SignedOne signedOne) {
+	SignedOne NegateOne(SignedOne signedOne) const{
 		switch(signedOne) {
 		case SignedOne::PlusOne:
 			return SignedOne::MinusOne;
@@ -98,7 +97,7 @@ private:
 	}
 	//Finds x ,y ( 0 < x <= b) and ( 0 <= y < a) for equation a*x - b*y = signedOne using calculation wih only positive numbers.
 	// b < a; gcd(a, b) == 1 are required preconditions
-	void ExtendedEuclid(const ZValue& a, const ZValue& b, ZValue& x, ZValue& y, SignedOne signedOne) {
+	void ExtendedEuclid(const ZValue& a, const ZValue& b, ZValue& x, ZValue& y, SignedOne signedOne) const{
 		assert(z_.Less(b, a));
 		bool finalStep = false;
 		//stop recursion only with positive right side
@@ -129,7 +128,7 @@ private:
 			//solve b*y1 - (a%b) * x1 = -signedOne (equivalent to (a%b) * x1 - b*y1 = signedOne)
 			ExtendedEuclid(b, abDivResult.rem, y, x, NegateOne(signedOne));
 			//original equation is solved as a * x1 - b*(y1 + a/b*x1) = signedOne
-			z_.Add(CopyValue(y), x, abDivResult.qout, y);
+			z_.Add(CopyValue(y), x, abDivResult.quot, y);
 		}
 		assert(!z_.IsZero(x));
 		assert(!z_.Less(b, x));

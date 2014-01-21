@@ -22,7 +22,7 @@ struct ZPlusRing
 		Value rem;
 	};
 	template <class F>
-	void SetRandom(F random_functor, Value& value)
+	void SetRandom(F random_functor, Value& value)const
 	{
 		const int single_call_bytes = sizeof(random_functor());
 		int random_bytes = 0;

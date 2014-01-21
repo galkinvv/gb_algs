@@ -371,6 +371,23 @@ static auto ConverterEnumerator(Enumerator<ConvertFrom> orig_enumerator, Func co
 	return Enumerator<decltype(converter(orig_enumerator.GetAndMove()))>::template Converter<ConvertFrom>(orig_enumerator, converter);
 }
 
+template <class Func>
+struct ConverterOfInnerEnumeratorImpl
+{
+	template <class ValueConvertedByFunc>
+	auto operator()(Enumerator<ValueConvertedByFunc> orig_enumerator) const ->decltype(ConverterEnumerator(orig_enumerator, std::declval<Func>()))
+	{
+		return ConverterEnumerator(orig_enumerator, func_);
+	}
+	Func func_;
+};
+
+template <class Func>
+static ConverterOfInnerEnumeratorImpl<Func> ConverterOfInnerEnumerator(Func converter)
+{
+	return ConverterOfInnerEnumeratorImpl<Func>{converter};
+}
+
 template <class Func, Func converter, class ConvertFrom>
 static auto ConverterEnumeratorCFunc(Enumerator<ConvertFrom> orig_enumerator) -> decltype(ConverterEnumerator(orig_enumerator, converter))
 {

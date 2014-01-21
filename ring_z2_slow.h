@@ -9,14 +9,18 @@
 #include "finite_field.h"
 #include "utils.h"
 
-template <class TMonomialListListWithCoef>
-struct PolynomialCoefChecker
+template <class TField>
+struct MonomialCoefNonZeroEnsurer
 {
-	typedef decltype(std::declval<TMonomialListListWithCoef>().Field()) TField;
-	typedef typename EnumeratorTraits<TMonomialListListWithCoef>::ValueType TMonomialListWithCoef;
-	typedef typename EnumeratorTraits<TMonomialListWithCoef>::ValueType TMonomialWithCoef;
-	PolynomialCoefChecker(const TMonomialListListWithCoef& poly_list):
-		field_(poly_list.Field())
+	template <class TMonomial>
+	const TMonomial& operator()(const TMonomial& mon)const
+	{
+		assert(!FiledHelpers::IsZero(field_,mon.coef()));
+		return mon;
+	}
+
+	MonomialCoefNonZeroEnsurer(const TField& field):
+		field_(field)
 	{}
 	
 	const TField& field_;
@@ -85,8 +89,7 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		auto mon_enumerator = ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<PolynomialAsRange>)>(poly_enumerator);
 		typedef decltype(mon_enumerator.GetAndMove().GetAndMove()) MonomialAsRange;
 
-		//TODO: add checking for coefficient is equal to one
-		auto nochecking_var_enumerator =
+		auto var_enumerator =
 		    ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM((
 		                ConverterEnumeratorCFunc<
 		                STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullNonSizedRangeEnumerator<MonomialAsRange>),
@@ -97,7 +100,7 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		return ConstructAndInsertNormalizedImpl(
 		           prepared_input,
 		           FullNonSizedRangeEnumerator(info->TopInfo()),
-		           nochecking_var_enumerator,
+		           var_enumerator,
 		           result
 		       );
 	}
@@ -116,11 +119,15 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 	unique_deleter_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstruction(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input) {
 		auto poly_enumerator = FullRangeEnumerator(input);
 		typedef decltype(poly_enumerator.GetAndMove()) PolynomialAsRange;
-		auto mon_enumerator = ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<PolynomialAsRange>)>(poly_enumerator);
+		auto nochecking_mon_enumerator = ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<PolynomialAsRange>)>(poly_enumerator);
+
+		MonomialCoefNonZeroEnsurer<Field> monomial_coef_nonzero_checker(input.Field());
+		auto polynomial_coef_nonzero_checker = ConverterOfInnerEnumerator(monomial_coef_nonzero_checker);
+		
+		auto mon_enumerator = ConverterEnumerator(nochecking_mon_enumerator, polynomial_coef_nonzero_checker);
 		typedef decltype(mon_enumerator.GetAndMove().GetAndMove()) MonomialAsRange;
 
-		//TODO: add checking for coefficient is equal to one
-		auto nochecking_var_enumerator =
+		auto var_enumerator =
 		    ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM((
 		                ConverterEnumeratorCFunc<
 		                STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullNonSizedRangeEnumerator<MonomialAsRange>),
@@ -128,8 +135,7 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		            ))>(mon_enumerator);
 
 
-
-		return PrepareForReconstructionImpl(nochecking_var_enumerator);
+		return PrepareForReconstructionImpl(var_enumerator);
 	}
 
 	std::unique_ptr<const CrossRingInfo::VariableMapping<MonomialMetadata>> VarMapping()const {
@@ -216,18 +222,22 @@ public:
 	{
 		auto poly_enumerator = FullRangeEnumerator(input);
 		typedef decltype(poly_enumerator.GetAndMove()) PolynomialAsRange;
-		auto mon_enumerator = ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<PolynomialAsRange>)>(poly_enumerator);
+		auto nochecking_mon_enumerator = ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<PolynomialAsRange>)>(poly_enumerator);
+		
+		MonomialCoefNonZeroEnsurer<Field> monomial_coef_nonzero_checker(input.Field());
+		auto polynomial_coef_nonzero_checker = ConverterOfInnerEnumerator(monomial_coef_nonzero_checker);
+
+		auto mon_enumerator = ConverterEnumerator(nochecking_mon_enumerator, polynomial_coef_nonzero_checker);
 		typedef decltype(mon_enumerator.GetAndMove().GetAndMove()) MonomialAsRange;
 
-		//TODO: add checking for coefficient is not equal to zero
-		auto nochecking_var_enumerator =
+		auto var_enumerator =
 		    ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM((
 		                ConverterEnumeratorCFunc<
 		                STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullNonSizedRangeEnumerator<MonomialAsRange>),
 		                MonomialAsRange>
 		            ))>(mon_enumerator);
 
-		return PutInQueueExtendLabeledPolysImpl(nochecking_var_enumerator);
+		return PutInQueueExtendLabeledPolysImpl(var_enumerator);
 	}
 
 
