@@ -51,6 +51,8 @@ protected:
 
 	unique_deleter_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstructionImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input);
 
+	int VarMappingImplReturningOldVarCount(std::vector<int>& new_monomil_vars) const;
+
 	void ConvertResultToFixedMetadataImpl(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result, CrossRingInfo::MonomialListListWithCoef<ImplementedOrder, ImplementedField>& basic_result);
 
 	struct Monomial : std::map<char,int> {
@@ -139,7 +141,23 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 	}
 
 	std::unique_ptr<const CrossRingInfo::VariableMapping<MonomialMetadata>> VarMapping()const {
-		auto result_ptr =  as_unique_ptr(new CrossRingInfo::VariableMapping<MonomialMetadata>(Base::monomial_metadata_, 0));
+		std::vector<int> new_monomil_vars;
+		int old_var_count = VarMappingImplReturningOldVarCount(new_monomil_vars);
+		assert(0 == (new_monomil_vars.size() % old_var_count));
+		int new_var_count = new_monomil_vars.size() / old_var_count;
+		auto result_ptr = as_unique_ptr(new CrossRingInfo::VariableMapping<MonomialMetadata>(Base::monomial_metadata_, new_var_count));
+		for (int new_var_idx = 0; new_var_idx < new_var_count; ++new_var_idx)
+		{
+			for (int old_var_idx = 0; old_var_idx < old_var_count; ++old_var_idx)
+			{
+				int deg = new_monomil_vars[(new_var_idx * old_var_count) + old_var_idx];
+				if (deg > 0)
+				{
+					result_ptr->AddVariable(CrossRingInfo::PerVariableData(deg, old_var_idx));
+				}
+			}
+			result_ptr->MonomialAdditionDone();
+		}
 		//TODO
 		return MoveToResultType(result_ptr);
 	}
