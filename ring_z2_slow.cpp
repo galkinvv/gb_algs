@@ -270,6 +270,15 @@ void RingZ2SlowBase::ConvertResultToFixedMetadataImpl(const unique_deleter_ptr<O
 	//TODO
 }
 
+int RingZ2SlowBase::VarMappingImplReturningOldVarCount(std::vector<int>& new_monomial_vars) const
+{
+	
+	new_monomial_vars.resize(impl_->keeped_vars_count_ * impl_->new_variables.size());
+	//TODO
+	return impl_->keeped_vars_count_;
+}
+
+
 int RingZ2SlowBase::ExtendRingWithMonomialToHelpReconstructImpl(Enumerator<CrossRingInfo::PerVariableData> info)
 {
 	impl_->new_variables.emplace_back();

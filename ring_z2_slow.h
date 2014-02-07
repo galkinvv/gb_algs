@@ -51,7 +51,7 @@ protected:
 
 	unique_deleter_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstructionImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input);
 
-	int VarMappingImplReturningOldVarCount(std::vector<int>& new_monomil_vars) const;
+	int VarMappingImplReturningOldVarCount(std::vector<int>& new_monomial_vars) const;
 
 	void ConvertResultToFixedMetadataImpl(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result, CrossRingInfo::MonomialListListWithCoef<ImplementedOrder, ImplementedField>& basic_result);
 
