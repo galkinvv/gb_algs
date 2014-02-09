@@ -219,13 +219,16 @@ bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by)
 	return true; // HM/S for maybe_supded is not smaller
 }
 
-static const char kFirstVarOnOutput = 'a';
+static const char kFirstVarOnDebugOutput = 'a';
 }
 
-struct SlowMon : std::map<char,int> {
-	friend bool operator<(const SlowMon&, const SlowMon&); //undefined
+typedef FastZ2SlowBasedRingBase::FastMonomial FastMonomial;
+struct Signature {
+	double sig_index;
+	FastMonomial sig_mon;
 };
-struct SLowPol : std::vector<SlowMon> {};
+
+//struct SLowPol : std::vector<SlowMon> {};
 
 struct RingZ2SlowBase::Impl {
 	//this struct shoulld contain data corresponding to polynomial ring, but not to some polynomials of this ring
@@ -394,8 +397,13 @@ bool FastZ2SlowBasedRingBase::QueueEmpty(const MultLPolysQueue& queue)
 
 void FastZ2SlowBasedRingBase::ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
 {
+	//TODO
 }
 
+ bool FastZ2SlowBasedRingBase::MonomialLessDegRevLex(const FastMonomial& m1, const FastMonomial& m2)
+ {
+	return MDegRevLexless(m1, m2);
+ }
 /*
 FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)
 {

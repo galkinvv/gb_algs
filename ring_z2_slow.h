@@ -26,6 +26,10 @@ struct MonomialCoefNonZeroEnsurer
 	const TField& field_;
 };
 
+struct BaseMon : std::map<char,int> {
+	friend bool operator<(const BaseMon&, const BaseMon&); //undefined
+};
+
 class RingZ2SlowBase
 {
 public:
@@ -51,15 +55,14 @@ protected:
 
 	unique_deleter_ptr<const InPolysSetWithOrigMetadata> PrepareForReconstructionImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input);
 
+	//should return only newly added vars
 	int VarMappingImplReturningOldVarCount(std::vector<int>& new_monomial_vars) const;
 
 	void ConvertResultToFixedMetadataImpl(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result, CrossRingInfo::MonomialListListWithCoef<ImplementedOrder, ImplementedField>& basic_result);
 
-	struct Monomial : std::map<char,int> {
-		friend bool operator<(const Monomial&, const Monomial&); //undefined
-	};
+	struct SlowMon : BaseMon {};
 
-	struct Polynomial : std::vector<Monomial> {};
+	struct Polynomial : std::vector<SlowMon> {};
 	explicit RingZ2SlowBase(int var_count);
 
 	DECLARE_PIMPL;
@@ -146,6 +149,13 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		assert(0 == (new_monomil_vars.size() % old_var_count));
 		int new_var_count = new_monomil_vars.size() / old_var_count;
 		auto result_ptr = as_unique_ptr(new CrossRingInfo::VariableMapping<MonomialMetadata>(Base::monomial_metadata_, new_var_count));
+		//copy old variables as is
+		for (int old_var_idx = 0; old_var_idx < old_var_count; ++old_var_idx)
+		{
+			result_ptr->AddVariable(CrossRingInfo::PerVariableData(1, old_var_idx));
+			result_ptr->MonomialAdditionDone();
+		}
+		//add new variables to the end
 		for (int new_var_idx = 0; new_var_idx < new_var_count; ++new_var_idx)
 		{
 			for (int old_var_idx = 0; old_var_idx < old_var_count; ++old_var_idx)
@@ -158,7 +168,6 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 			}
 			result_ptr->MonomialAdditionDone();
 		}
-		//TODO
 		return MoveToResultType(result_ptr);
 	}
 	
@@ -208,15 +217,10 @@ public:
 
 	void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue);
 	void InsertInResult(const LPoly& poly, LPolysResult& result);
+	struct FastMonomial : BaseMon{};
 protected:
-	struct Monomial : std::map<int,int> {
-		friend bool operator<(const Monomial&, const Monomial&); //undefined
-	};
-	struct Signature {
-		double sig_index;
-		Monomial sig_mon;
-	};
-	virtual bool MonomialLess(const Monomial& m1, const Monomial& m2) const = 0;
+	virtual bool MonomialLess(const FastMonomial& m1, const FastMonomial& m2) const = 0;
+	static bool MonomialLessDegRevLex(const FastMonomial& m1, const FastMonomial& m2);
 	
 	MultLPolysQueue PutInQueueExtendLabeledPolysImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input);
 	void AddLabeledPolyBeforeImpl(int new_var_index, Enumerator<CrossRingInfo::PerVariableData> monomial, LPolysResult& reducers, const LPoly& poly_before);
@@ -290,10 +294,11 @@ public:
 	}
 
 private:
-	virtual bool MonomialLess(const Monomial& m1, const Monomial& m2) const
+	virtual bool MonomialLess(const FastMonomial& m1, const FastMonomial& m2) const
 	{
-		//TODO
-		return false;
+		//this field is constructed only with degrevlex order
+		assert(metadata_.order == CrossRingInfo::MonomialOrder::DegRevLex);
+		return MonomialLessDegRevLex(m1, m2);
 	}
 	const MonomialMetadata& metadata_;
 };
