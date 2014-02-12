@@ -60,17 +60,9 @@ protected:
 
 	void ConvertResultToFixedMetadataImpl(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result, CrossRingInfo::MonomialListListWithCoef<ImplementedOrder, ImplementedField>& basic_result);
 
-	struct SlowMon : BaseMon {};
-
-	struct Polynomial : std::vector<SlowMon> {};
 	explicit RingZ2SlowBase(int var_count);
 
 	DECLARE_PIMPL;
-public:
-	struct PolysSet: private std::vector<Polynomial> {
-		friend class RingZ2SlowBase;
-	};
-
 };
 
 //Z_2 ring with degrevlex oredr on variables

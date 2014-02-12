@@ -222,6 +222,9 @@ bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by)
 static const char kFirstVarOnDebugOutput = 'a';
 }
 
+struct SlowMon : BaseMon {};
+struct SlowPolynomial : std::vector<SlowMon> {};
+
 typedef FastZ2SlowBasedRingBase::FastMonomial FastMonomial;
 struct Signature {
 	double sig_index;
@@ -239,11 +242,11 @@ struct RingZ2SlowBase::Impl {
 	std::vector<SlowMon> new_variables;
 };
 
-struct RingZ2SlowBase::InPolysSetWithOrigMetadata {
-};
+//input polynomials in ring with original monomial count
+struct RingZ2SlowBase::InPolysSetWithOrigMetadata : std::vector<SlowPolynomial> {};
 
-struct RingZ2SlowBase::OutPolysSetForVariyingMetadata {
-};
+//input polynomials in ring with new monomial count
+struct RingZ2SlowBase::OutPolysSetForVariyingMetadata : std::vector<SlowPolynomial> {};
 
 RingZ2SlowBase::RingZ2SlowBase(int var_count):
 	impl_(new Impl(var_count))
@@ -270,6 +273,14 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<c
 
 void RingZ2SlowBase::ConvertResultToFixedMetadataImpl(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result, CrossRingInfo::MonomialListListWithCoef<ImplementedOrder, ImplementedField>& basic_result)
 {
+	for (auto poly: *constructed_result) {
+		for (auto mon: poly) {
+			for (auto var: mon) {
+
+			}
+		}
+	}
+
 	//TODO
 }
 
@@ -302,8 +313,18 @@ unique_deleter_ptr<RingZ2SlowBase::OutPolysSetForVariyingMetadata> RingZ2SlowBas
 
 unique_deleter_ptr<const RingZ2SlowBase::InPolysSetWithOrigMetadata> RingZ2SlowBase::PrepareForReconstructionImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input)
 {
-	//TODO
 	auto result = as_deleter_ptr(new InPolysSetWithOrigMetadata());
+	for (auto poly: input) {
+		result->emplace_back();
+		auto& poly_to_populate = result->back();
+		for (auto mon: poly) {
+			poly_to_populate.emplace_back();
+			auto& mon_to_populate = poly_to_populate.back();
+			for (auto var: mon) {
+				mon_to_populate[var.index] = var.degree;
+			}
+		}
+	}
 	return MoveToResultType(result);
 }
 
