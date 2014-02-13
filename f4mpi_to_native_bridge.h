@@ -19,7 +19,7 @@ namespace F4MPI
 			for(auto mon = poly.m_begin(); mon != poly.m_end(); ++mon, ++coeff) {
 				for (int var_idx = 0; var_idx < CMonomial::theNumberOfVariables; ++var_idx) {
 					if (int deg = mon->getDegree(var_idx)) {
-						out.AddVariable(CrossRingInfo::PerVariableData(deg, var_idx));
+						out.AddVariable(CrossRingInfo::PerVariableData::FromDI(deg, var_idx));
 					}
 				}
 				out.Field().Import(coeff->toint(), coeff_as_value);

@@ -273,22 +273,33 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<c
 
 void RingZ2SlowBase::ConvertResultToFixedMetadataImpl(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result, CrossRingInfo::MonomialListListWithCoef<ImplementedOrder, ImplementedField>& basic_result)
 {
+	ImplementedField::Value one;
+	basic_result.Field().SetOne(one);
 	for (auto poly: *constructed_result) {
+		basic_result.BeginPolynomialConstruction(poly.size());
 		for (auto mon: poly) {
 			for (auto var: mon) {
-
+				basic_result.AddVariable(CrossRingInfo::PerVariableData::FromDI(var.second, var.first));
 			}
+			basic_result.MonomialAdditionDone(one);
 		}
 	}
-
-	//TODO
 }
 
 int RingZ2SlowBase::VarMappingImplReturningOldVarCount(std::vector<int>& new_monomial_vars) const
 {
 	
 	new_monomial_vars.resize(impl_->keeped_vars_count_ * impl_->new_variables.size());
-	//TODO
+	int cur_new_var_start = 0;
+	for(auto new_var:impl_->new_variables)
+	{
+		for (auto old_var:new_var)
+		{
+			new_monomial_vars[cur_new_var_start + old_var.first] = old_var.second;
+		}
+		cur_new_var_start += impl_->keeped_vars_count_;
+	}
+	assert(cur_new_var_start == new_monomial_vars.size());
 	return impl_->keeped_vars_count_;
 }
 

@@ -29,6 +29,10 @@ namespace CrossRingInfo
 			degree(a_degree),
 			index(a_index)
 		{}
+		static PerVariableData FromDI(int a_degree, int a_index)
+		{
+			return PerVariableData(a_degree, a_index);
+		}
 		const int degree;
 		const int index;
 	};

@@ -144,7 +144,7 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		//copy old variables as is
 		for (int old_var_idx = 0; old_var_idx < old_var_count; ++old_var_idx)
 		{
-			result_ptr->AddVariable(CrossRingInfo::PerVariableData(1, old_var_idx));
+			result_ptr->AddVariable(CrossRingInfo::PerVariableData::FromDI(1, old_var_idx));
 			result_ptr->MonomialAdditionDone();
 		}
 		//add new variables to the end
@@ -155,7 +155,7 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 				int deg = new_monomil_vars[(new_var_idx * old_var_count) + old_var_idx];
 				if (deg > 0)
 				{
-					result_ptr->AddVariable(CrossRingInfo::PerVariableData(deg, old_var_idx));
+					result_ptr->AddVariable(CrossRingInfo::PerVariableData::FromDI(deg, old_var_idx));
 				}
 			}
 			result_ptr->MonomialAdditionDone();
@@ -175,7 +175,7 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 			result_ptr->BeginPolynomialConstruction(slow_distance(poly.begin(), poly.end()));
 			for(auto mon:poly) {
 				for(auto var:mon) {
-					result_ptr->AddVariable(CrossRingInfo::PerVariableData(var.degree, var.index));
+					result_ptr->AddVariable(CrossRingInfo::PerVariableData::FromDI(var.degree, var.index));
 				}
 				result_ptr->MonomialAdditionDone(mon.coef());
 			}
