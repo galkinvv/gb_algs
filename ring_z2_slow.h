@@ -26,9 +26,11 @@ struct MonomialCoefNonZeroEnsurer
 	const TField& field_;
 };
 
-struct BaseMon : std::map<char,int> {
+struct BaseMon : std::map<int,int> {
 	friend bool operator<(const BaseMon&, const BaseMon&); //undefined
 };
+
+bool MonomialLessDegRevLex(const BaseMon& m1, const BaseMon& m2);
 
 class RingZ2SlowBase
 {
@@ -62,12 +64,14 @@ protected:
 
 	explicit RingZ2SlowBase(int var_count);
 
+	virtual bool MonomialLess(const BaseMon& m1, const BaseMon& m2) const = 0;
+
 	DECLARE_PIMPL;
 };
 
 //Z_2 ring with degrevlex oredr on variables
 template <class MonomialMetadata, class Field>
-struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialMetadata, Field>>, public RingZ2SlowBase {
+struct RingZ2Slow final: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialMetadata, Field>>, public RingZ2SlowBase {
 	typedef  RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialMetadata, Field>> Base;
 	RingZ2Slow(const RingZ2Slow& copy_from) = default;
 
@@ -182,6 +186,13 @@ struct RingZ2Slow: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialM
 		}
 		return MoveToResultType(result_ptr);
 	}
+  private:
+	virtual bool MonomialLess(const BaseMon& m1, const BaseMon& m2) const override
+	{
+		//this field is constructed only with degrevlex order
+		assert(Base::monomial_metadata_.order == CrossRingInfo::MonomialOrder::DegRevLex);
+		return MonomialLessDegRevLex(m1, m2);
+	}
 };
 
 class  FastZ2SlowBasedRingBase:NoCopy
@@ -212,7 +223,6 @@ public:
 	struct FastMonomial : BaseMon{};
 protected:
 	virtual bool MonomialLess(const FastMonomial& m1, const FastMonomial& m2) const = 0;
-	static bool MonomialLessDegRevLex(const FastMonomial& m1, const FastMonomial& m2);
 	
 	MultLPolysQueue PutInQueueExtendLabeledPolysImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input);
 	void AddLabeledPolyBeforeImpl(int new_var_index, Enumerator<CrossRingInfo::PerVariableData> monomial, LPolysResult& reducers, const LPoly& poly_before);
@@ -223,7 +233,7 @@ private:
 };
 
 template <class MonomialMetadata>
-class FastZ2SlowBasedRing: public FastZ2SlowBasedRingBase
+class FastZ2SlowBasedRing final: public FastZ2SlowBasedRingBase
 {
 public:
 
@@ -286,7 +296,7 @@ public:
 	}
 
 private:
-	virtual bool MonomialLess(const FastMonomial& m1, const FastMonomial& m2) const
+	virtual bool MonomialLess(const FastMonomial& m1, const FastMonomial& m2) const override
 	{
 		//this field is constructed only with degrevlex order
 		assert(metadata_.order == CrossRingInfo::MonomialOrder::DegRevLex);

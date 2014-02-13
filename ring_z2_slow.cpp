@@ -222,6 +222,11 @@ bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by)
 static const char kFirstVarOnDebugOutput = 'a';
 }
 
+bool MonomialLessDegRevLex(const BaseMon& m1, const BaseMon& m2)
+{
+	return MDegRevLexless(m1, m2);
+}
+
 struct SlowMon : BaseMon {};
 struct SlowPolynomial : std::vector<SlowMon> {};
 
@@ -432,10 +437,6 @@ void FastZ2SlowBasedRingBase::ReduceCheckingSignatures(LPoly& poly, LPolysResult
 	//TODO
 }
 
- bool FastZ2SlowBasedRingBase::MonomialLessDegRevLex(const FastMonomial& m1, const FastMonomial& m2)
- {
-	return MDegRevLexless(m1, m2);
- }
 /*
 FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)
 {
