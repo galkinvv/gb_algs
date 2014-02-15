@@ -262,7 +262,19 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<c
         Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input_polys_mons,
         const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& result)
 {
-	//TODO: solve via matrix
+	//TODO
+	//prepare a sorted collection of monomials in question (only gretear-or-equal than top_info)
+	//assert here that top_info correspond to monomial present in other data
+	//associate each polynomial in question (corresponding to monomialss of input_polys_mons) with unique number, corresponding to column number (vector of enumertors for example)
+	//associate each monomial with sparse matrix row
+	//populate matrix rows with (coef from ImplementedField; int column number)
+	//send rows collection to solver that shoud assume that right-side column has rows.size()-1 zeroes and 1in last cell.
+	//solver returns only non-zeros - list of pairs (coef from ImplementedField; int column number)
+	//if solver fails - return false
+	//calculate sum with coefs given from solver for monomials smaller than top_info and add top_info with coef 1.
+	//add it to result
+	//return true
+	
 	for (auto top_var: top_info) {
 
 	}
