@@ -167,6 +167,7 @@ struct Enumerator
 	typedef T value_type;
 	struct Impl
 	{
+		virtual void GoToBegin() = 0;
 		virtual T GetAndMove() = 0;
 		virtual bool AtEnd() = 0;
 		virtual size_t size() = 0;
@@ -176,11 +177,19 @@ struct Enumerator
 	template <class Iterator>
 	struct NonSizedRangeImpl:Impl
 	{
-		NonSizedRangeImpl(Iterator a_current, Iterator a_end)
-			:current(a_current), end(a_end)
-		{}
-		Iterator current, end;
+		NonSizedRangeImpl(Iterator a_begin, Iterator a_end)
+			:begin(a_begin), current{}, end(a_end)
+		{
+			GoToBegin();
+		}
+
+		Iterator begin, current, end;
 		
+		void GoToBegin() override
+		{
+			current = begin;
+		}
+
 		T GetAndMove() override
 		{
 			T result = *current;
@@ -201,13 +210,20 @@ struct Enumerator
 	template <class Iterator>
 	struct RangeImpl:Impl
 	{
-		RangeImpl(Iterator a_current, Iterator a_end, size_t a_size)
-			:current(a_current), end(a_end), orig_size(a_size)
-		{}
+		RangeImpl(Iterator a_begin, Iterator a_end, size_t a_size)
+			:begin(a_begin), current(), end(a_end), orig_size(a_size)
+		{
+			GoToBegin();		
+		}
 		
-		Iterator current, end;
+		Iterator begin, current, end;
 		size_t orig_size;
 		
+		void GoToBegin() override
+		{
+			current = begin;
+		}
+
 		T GetAndMove() override
 		{
 			T result = *current;
@@ -235,6 +251,11 @@ struct Enumerator
 		Enumerator<ConvertFrom> orig_enumerator;
 		std::function<T(const ConvertFrom&)> converter;
 		
+		void GoToBegin() override
+		{
+			orig_enumerator.GoToBegin();
+		}
+
 		T GetAndMove() override
 		{
 			return converter(orig_enumerator.GetAndMove());
@@ -324,6 +345,11 @@ struct Enumerator
 		return WrapperIterator();
 	}
 	
+	void GoToBegin()
+	{
+		impl_->GoToBegin();
+	}
+
 	T GetAndMove()
 	{
 		return impl_->GetAndMove();
