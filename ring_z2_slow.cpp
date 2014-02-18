@@ -1,5 +1,6 @@
 #include "ring_z2_slow.h"
 #include <algorithm>
+#include <deque>
 #include <cassert>
 #include <unordered_set>
 namespace
@@ -262,9 +263,49 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<c
         Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input_polys_mons,
         const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& result)
 {
-	//TODO
+	SlowMon top;
+	for (auto top_var: top_info) {
+		top[top_var.index] = top_var.degree;
+	}
+	auto mon_less = [this](const SlowMon& m1, const SlowMon& m2){return this->MonomialLess(m1, m2);};
+	std::set<SlowMon, decltype(mon_less)> high_mons(mon_less);
+
+	struct MultSlowPoly
+	{
+		MultSlowPoly(const SlowPolynomial& a_poly)
+			:poly(a_poly)
+		{}
+		SlowMon mul_by;
+		SlowPolynomial::const_iterator first_non_high_index;
+		const SlowPolynomial& poly;
+		SlowMon GetMultAt(const SlowPolynomial::const_iterator& it)
+		{
+			return Mmul(mul_by, *it);
+		}
+	};
+	std::deque<MultSlowPoly> mult_inputs;
 	//prepare a sorted collection of monomials in question (only gretear-or-equal than top_info)
+	auto mul_by_it = input_polys_mons.begin();
+	auto orig_poly_it = prepared_input->begin();
+	for (;orig_poly_it != prepared_input->end(); ++mul_by_it, ++orig_poly_it)
+	{
+		assert(mul_by_it != input_polys_mons.end());
+		for (auto mon: *mul_by_it) {
+			mult_inputs.emplace_back(*orig_poly_it);
+			auto &mult = mult_inputs.back();
+			SlowMon mul_by;
+			for (auto var: mon) {
+				mult.mul_by[var.index] = var.degree;
+			}
+			//TODO: fill first_non_high_index with std::upper_bound and lambda using GetMultAt
+			mon_less(mult.GetMultAt(mult.poly.begin()), top); //compile test
+		}
+	}
+	
 	//assert here that top_info correspond to monomial present in other data
+	assert(high_mons.find(top) != high_mons.end());
+	//TODO
+	input_polys_mons.GoToBegin();
 	//associate each polynomial in question (corresponding to monomialss of input_polys_mons) with unique number, corresponding to column number (vector of enumertors for example)
 	//associate each monomial with sparse matrix row
 	//populate matrix rows with (coef from ImplementedField; int column number)
@@ -275,16 +316,6 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<c
 	//add it to result
 	//return true
 	
-	for (auto top_var: top_info) {
-
-	}
-	for (auto poly: input_polys_mons) {
-		for (auto mon: poly) {
-			for (auto var: mon) {
-
-			}
-		}
-	}
 	return true;
 }
 
