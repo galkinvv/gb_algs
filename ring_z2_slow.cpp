@@ -1,4 +1,5 @@
 #include "ring_z2_slow.h"
+#include "sparse_matrix.h"
 #include <algorithm>
 #include <deque>
 #include <cassert>
@@ -268,23 +269,27 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<c
 		top[top_var.index] = top_var.degree;
 	}
 	auto mon_less = [this](const SlowMon& m1, const SlowMon& m2){return this->MonomialLess(m1, m2);};
-	std::set<SlowMon, decltype(mon_less)> high_mons(mon_less);
 
-	struct MultSlowPoly
+	struct MultSlowPolyIterator
 	{
-		MultSlowPoly(const SlowPolynomial& a_poly)
+		MultSlowPolyIterator(const SlowPolynomial& a_poly)
 			:poly(a_poly)
 		{}
 		SlowMon mul_by;
-		SlowPolynomial::const_iterator first_non_high_index;
+		SlowPolynomial::const_iterator it;
+		SlowPolynomial::const_iterator first_smaller_top_it;//iterator to first element smaller than top (or end)
 		const SlowPolynomial& poly;
-		SlowMon GetMultAt(const SlowPolynomial::const_iterator& it)
+		SlowMon GetMultMon()
 		{
 			return Mmul(mul_by, *it);
 		}
 	};
-	std::deque<MultSlowPoly> mult_inputs;
-	//prepare a sorted collection of monomials in question (only gretear-or-equal than top_info)
+	//prepare:
+	//collection of multiplied input polynomials
+	//this associates each polynomial in question (corresponding to monomialss of input_polys_mons) with unique number, corresponding to column number
+	std::deque<MultSlowPolyIterator> mult_inputs;
+	//a sorted collection of their monomials in question (only gretear-or-equal than top_info) - each corresponds to matrix row
+	std::set<SlowMon, decltype(mon_less)> high_mons(mon_less);
 	auto mul_by_it = input_polys_mons.begin();
 	auto orig_poly_it = prepared_input->begin();
 	for (;orig_poly_it != prepared_input->end(); ++mul_by_it, ++orig_poly_it)
@@ -297,19 +302,29 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<c
 			for (auto var: mon) {
 				mult.mul_by[var.index] = var.degree;
 			}
-			//TODO: fill first_non_high_index with std::upper_bound and lambda using GetMultAt
-			mon_less(mult.GetMultAt(mult.poly.begin()), top); //compile test
+			mult.it = mult.poly.begin();
+			for(; mult.it != mult.poly.end(); ++mult.it )
+			{
+				auto orig_mon = mult.GetMultMon();
+				if (mon_less(orig_mon, top))
+				{
+					break;
+				}
+				high_mons.insert(orig_mon);
+			}
+			mult.first_smaller_top_it = mult.it;
 		}
 	}
-	
-	//assert here that top_info correspond to monomial present in other data
-	assert(high_mons.find(top) != high_mons.end());
+	//assert here that top correspond to smallest monomial in high_mons
+	assert(!high_mons.empty() && high_mons.find(top) == high_mons.begin());
+	ImplementedField field;
+	std::vector<std::vector<SparseMatrix::Element<ImplementedField>>> matrix;
 	//TODO
-	input_polys_mons.GoToBegin();
-	//associate each polynomial in question (corresponding to monomialss of input_polys_mons) with unique number, corresponding to column number (vector of enumertors for example)
-	//associate each monomial with sparse matrix row
 	//populate matrix rows with (coef from ImplementedField; int column number)
-	//send rows collection to solver that shoud assume that right-side column has rows.size()-1 zeroes and 1in last cell.
+	std::vector<SparseMatrix::Element<ImplementedField>> solve_result;
+	int max_diferent_numbers_in_coefficients = std::accumulate(prepared_input->begin(), prepared_input->end(), 0, [](int sum, const SlowPolynomial& poly){return sum + poly.size();});
+	SparseMatrix::SolveWithRightSideContainigSingleOne(field, matrix, solve_result, max_diferent_numbers_in_coefficients);
+	//send rows collection to solver that shoud assume that right-side column has 1 in first cell and last rows.size()-1 zeroes
 	//solver returns only non-zeros - list of pairs (coef from ImplementedField; int column number)
 	//if solver fails - return false
 	//calculate sum with coefs given from solver for monomials smaller than top_info and add top_info with coef 1.
