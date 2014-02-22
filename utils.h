@@ -178,10 +178,8 @@ struct Enumerator
 	struct NonSizedRangeImpl:Impl
 	{
 		NonSizedRangeImpl(Iterator a_begin, Iterator a_end)
-			:begin(a_begin), current{}, end(a_end)
-		{
-			GoToBegin();
-		}
+			:begin(a_begin), current(a_begin), end(a_end)
+		{}
 
 		Iterator begin, current, end;
 		
@@ -211,10 +209,8 @@ struct Enumerator
 	struct RangeImpl:Impl
 	{
 		RangeImpl(Iterator a_begin, Iterator a_end, size_t a_size)
-			:begin(a_begin), current(), end(a_end), orig_size(a_size)
-		{
-			GoToBegin();		
-		}
+			:begin(a_begin), current(a_begin), end(a_end), orig_size(a_size)
+		{}
 		
 		Iterator begin, current, end;
 		size_t orig_size;

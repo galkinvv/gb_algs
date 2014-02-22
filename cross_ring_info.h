@@ -193,7 +193,7 @@ namespace CrossRingInfo
 			{}
 			
 			DegIterator position;
-			const MonomialMetadataWithoutOrder& monomial_metadata;
+			std::reference_wrapper<const MonomialMetadataWithoutOrder> monomial_metadata;
 
 			void operator++()
 			{
@@ -207,7 +207,7 @@ namespace CrossRingInfo
 		protected:
 			DegIterator NextPosition(int steps)const
 			{
-				return position + monomial_metadata.var_count * steps;
+				return position + monomial_metadata.get().var_count * steps;
 			}
 		};
 

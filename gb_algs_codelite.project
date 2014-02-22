@@ -79,6 +79,7 @@
     <File Name="z_ring.h"/>
     <File Name="field_base.h"/>
     <File Name="combined_field.h"/>
+    <File Name="sparse_matrix.h"/>
   </VirtualDirectory>
   <VirtualDirectory Name="mpi">
     <File Name="mpi/mpimatrix.cpp"/>

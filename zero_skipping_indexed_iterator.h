@@ -62,8 +62,8 @@ template<class BaseIterator, class Item>
 				GoNext();
 			}
 		}
-		const BaseIterator  begin_;
-		const BaseIterator  end_;
+		BaseIterator  begin_;
+		BaseIterator  end_;
 		BaseIterator  current_;
 	};
 	
