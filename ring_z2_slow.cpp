@@ -287,7 +287,7 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<c
 	//prepare:
 	//collection of multiplied input polynomials
 	//this associates each polynomial in question (corresponding to monomialss of input_polys_mons) with unique number, corresponding to column number
-	std::deque<MultSlowPolyIterator> mult_inputs;
+	std::deque<MultSlowPolyIterator> mult_inputs_with_iters;
 	//a sorted collection of their monomials in question (only gretear-or-equal than top_info) - each corresponds to matrix row
 	std::set<SlowMon, decltype(mon_less)> high_mons(mon_less);
 	auto mul_by_it = input_polys_mons.begin();
@@ -296,8 +296,8 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<c
 	{
 		assert(mul_by_it != input_polys_mons.end());
 		for (auto mon: *mul_by_it) {
-			mult_inputs.emplace_back(*orig_poly_it);
-			auto &mult = mult_inputs.back();
+			mult_inputs_with_iters.emplace_back(*orig_poly_it);
+			auto &mult = mult_inputs_with_iters.back();
 			SlowMon mul_by;
 			for (auto var: mon) {
 				mult.mul_by[var.index] = var.degree;
@@ -319,17 +319,57 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<c
 	assert(!high_mons.empty() && high_mons.find(top) == high_mons.begin());
 	ImplementedField field;
 	std::vector<std::vector<SparseMatrix::Element<ImplementedField>>> matrix;
-	//TODO
+	matrix.reserve(high_mons.size());
 	//populate matrix rows with (coef from ImplementedField; int column number)
-	std::vector<SparseMatrix::Element<ImplementedField>> solve_result;
+	//move iterator to element smaller than top
+	for(auto mult:mult_inputs_with_iters)
+	{
+		mult.it = mult.first_smaller_top_it;
+	}
+	for(auto mon:high_mons)
+	{
+		ImplementedField::Value one;
+		field.SetOne(one);
+		matrix.emplace_back();
+		auto row = matrix.back();
+		for(int col = 0; col < (int)mult_inputs_with_iters.size(); ++col)
+		{
+			auto mult = mult_inputs_with_iters[col];
+			for(;mult.it != mult.poly.begin(); --mult.it)
+			{
+				auto mult_mon = mult.GetMultMon();
+				if (!mon_less(mult_mon, mon))
+				{
+					if (mon_less(mon, mult_mon))
+					{
+						break;//too big
+					}
+					decltype(row)::value_type elem;
+					elem.value = one;
+					elem.column = col;
+					row.push_back(elem);
+					//eqaul - add to matrix
+				}
+				//too small find greater
+			}
+		}
+	}
+	std::vector<SparseMatrix::Element<ImplementedField>> solution;
 	int max_diferent_numbers_in_coefficients = std::accumulate(prepared_input->begin(), prepared_input->end(), 0, [](int sum, const SlowPolynomial& poly){return sum + poly.size();});
-	SparseMatrix::SolveWithRightSideContainigSingleOne(field, matrix, solve_result, max_diferent_numbers_in_coefficients);
 	//send rows collection to solver that shoud assume that right-side column has 1 in first cell and last rows.size()-1 zeroes
 	//solver returns only non-zeros - list of pairs (coef from ImplementedField; int column number)
-	//if solver fails - return false
-	//calculate sum with coefs given from solver for monomials smaller than top_info and add top_info with coef 1.
-	//add it to result
-	//return true
+	SparseMatrix::SolveWithRightSideContainigSingleOne(field, matrix, solution, max_diferent_numbers_in_coefficients);
+	if(solution.empty())
+	{
+		//if solver fails - return false
+		return false;
+	}
+	for (auto result_item:solution)
+	{
+		//TODO
+		//calculate sum with coefs given from solver for monomials smaller than top_info, add it to result
+	}
+	//add top_info with coef 1.
 	
 	return true;
 }

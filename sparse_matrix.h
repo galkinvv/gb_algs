@@ -14,6 +14,7 @@ struct Element
 template <class Field, class ElementMatrixContainer>
 void SolveWithRightSideContainigSingleOne(const Field& field, const ElementMatrixContainer& matrix, std::vector<Element<Field>>& result, int max_diferent_numbers_in_coefficients)
 {
-	result.clear();	
+	result.clear();
+	//TODO
 }
 }
