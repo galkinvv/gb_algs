@@ -364,13 +364,18 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<c
 		//if solver fails - return false
 		return false;
 	}
+	result->emplace_back();
+	auto& new_poly = result->back();
+	//add top_info with coef 1.
+	new_poly.push_back(top);
 	for (auto result_item:solution)
 	{
-		//TODO
 		//calculate sum with coefs given from solver for monomials smaller than top_info, add it to result
-	}
-	//add top_info with coef 1.
-	
+		auto& to_mul = mult_inputs_with_iters[result_item.column];
+		SlowPolynomial smaller_than_top_part;
+		smaller_than_top_part.insert(smaller_than_top_part.begin(), to_mul.first_smaller_top_it, to_mul.poly.end());
+		new_poly = PAdd(new_poly, smaller_than_top_part, to_mul.mul_by);
+	}	
 	return true;
 }
 
@@ -402,7 +407,7 @@ int RingZ2SlowBase::VarMappingImplReturningOldVarCount(std::vector<int>& new_mon
 		}
 		cur_new_var_start += impl_->keeped_vars_count_;
 	}
-	assert(cur_new_var_start == new_monomial_vars.size());
+	assert(cur_new_var_start == int(new_monomial_vars.size()));
 	return impl_->keeped_vars_count_;
 }
 
@@ -442,39 +447,50 @@ unique_deleter_ptr<const RingZ2SlowBase::InPolysSetWithOrigMetadata> RingZ2SlowB
 	return MoveToResultType(result);
 }
 
-/*
+struct FastPolynomial : std::vector<FastMonomial> {};
 
-struct FastPoly : std::vector<Monomial> {};
-*/
 
 struct FastZ2SlowBasedRingBase::LPoly::Impl {
-	/*
-	FastPoly value;
-	std::vector<FastPoly> reconstruction_info;
+	
+	FastPolynomial value;
+	std::vector<FastPolynomial> reconstruction_info;
 	double sig_index;
-	Monomial sig_mon;
-	*/
+	FastMonomial sig_mon;
 };
 
-/*
+
 struct MultLPoly
 {
-	LPoly poly;
-	Monomial mul_by;
-};
-*/
-
-struct FastZ2SlowBasedRingBase::MultLPolysQueue::Impl { /*:std::vector<MultLPoly>*/
+	FastZ2SlowBasedRingBase::LPoly poly;
+	FastMonomial mul_by;
 };
 
 
-struct FastZ2SlowBasedRingBase::LPolysResult::Impl { /*:std::vector<LPolyImpl>*/
-	//friend class FastZ2SlowBasedRingBase;
-};
+struct FastZ2SlowBasedRingBase::MultLPolysQueue::Impl : std::vector<MultLPoly>
+{};
+
+
+struct FastZ2SlowBasedRingBase::LPolysResult::Impl : std::vector<FastZ2SlowBasedRingBase::LPoly>
+{};
 
 
 void FastZ2SlowBasedRingBase::AddLabeledPolyBeforeImpl(int new_var_index, Enumerator<CrossRingInfo::PerVariableData> monomial, LPolysResult& reducers, const LPoly& poly_before)
 {
+	//a new polynomial that would allow reducing monomial would be added
+	LPoly new_poly;
+	new_poly.impl_.reset(new LPoly::Impl());
+	FastMonomial old_mon;
+	FastMonomial new_mon;
+	for (auto var: monomial) {
+		old_mon[var.index] = var.degree;
+	}
+	new_mon[ new_var_index] = 1;
+	//set new_poly.impl_->value to (old_mon - new_mon)
+	new_poly.impl_->value.push_back(old_mon);
+	new_poly.impl_->value.push_back(new_mon);
+	//TODO:
+	//set signature to new value, extend signature weights (stored in ring?)
+	//reconstruction info - add new poly to the end of  slow ring inputs too
 }
 
 FastZ2SlowBasedRingBase::LPoly FastZ2SlowBasedRingBase::DequeueSigSmallest(MultLPolysQueue& queue)
