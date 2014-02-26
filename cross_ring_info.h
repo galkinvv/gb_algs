@@ -102,12 +102,13 @@ namespace CrossRingInfo
 		typedef MonomialData<DegreesContainer::const_iterator> MonData;
 		typedef decltype(std::declval<MonData>().begin()) VarIterator;
 	public:
-		AddedVarInfo(const MonomialMetadata& metadata, int addedIndex):
+		AddedVarInfo(const MonomialMetadata& metadata, int addedMonomialIndex,  int addedPolynomialIndex):
 			metadata_(metadata),
 			data_(metadata.var_count),
-			addedIndex_(addedIndex)
+			addedMonomialIndex_(addedMonomialIndex),
+			addedPolynomialIndex_(addedPolynomialIndex)
 		{
-			assert(addedIndex  <= metadata.var_count); //check that all previous indices are known
+			assert(addedMonomialIndex  <= metadata.var_count); //check that all previous indices are known
 		}
 		
 		VarIterator begin()const
@@ -123,9 +124,13 @@ namespace CrossRingInfo
 		{
 			return metadata_;
 		}		
-		int AddedIndex()const
+		int AddedMonomialIndex()const
 		{
-			return addedIndex_;
+			return addedMonomialIndex_;
+		}
+		int AddedPolynomialIndex()const
+		{
+			return addedPolynomialIndex_;
 		}
 		void AddVariable(const PerVariableData& data)
 		{
@@ -144,7 +149,8 @@ namespace CrossRingInfo
 		}
 		const MonomialMetadata metadata_;
 		DegreesContainer data_;
-		const int addedIndex_;
+		const int addedMonomialIndex_;
+		const int addedPolynomialIndex_;
 	};
 
 	template <class MonomialMetadata>

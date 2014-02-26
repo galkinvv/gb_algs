@@ -495,3 +495,18 @@ struct EnumeratorTraits
 {
 	typedef  decltype(*(std::declval<Enumerator>().begin())) ValueType;
 };
+
+template <class T>
+T Initialized()
+{
+	//value_initiaalized
+	return T{};
+}
+
+template <class T, class MemberType, class... Args>
+T Initialized(MemberType T::*member, MemberType value, Args... args)
+{
+	auto result = Initialized<T>(args...);
+	result.*member = value;
+	return result;
+}

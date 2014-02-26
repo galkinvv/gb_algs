@@ -55,13 +55,14 @@ class CrossRingInfoTest: public ::testing::Test
 public:
 	const int initial_var_count_ = 7;
 	const int initial_field_option_ = 7;
+	const int added_poly_index_ = 42;
 	StrangeField strange_field_{StrangeFieldInitializer()};
 	IntField int_field_ = [&]{IntField int_field; int_field.field_option = initial_field_option_; return int_field;}();
 	DegRevLex order_ = [&]{DegRevLex order; order.var_count = initial_var_count_; return order;}();
 	CrossRingInfo::MonomialListListWithCoef<DegRevLex, StrangeField> strange_field_basis_info_{order_, strange_field_};
 	CrossRingInfo::MonomialListListWithCoef<DegRevLex, IntField> int_field_basis_info_{order_, int_field_};
 	CrossRingInfo::MonomialListListWithTopInfo<DegRevLex> poly_rec_info_{order_};
-	CrossRingInfo::AddedVarInfo<DegRevLex> single_mon_{order_, order_.var_count};
+	CrossRingInfo::AddedVarInfo<DegRevLex> single_mon_{order_, order_.var_count, added_poly_index_};
 	const CrossRingInfo::MonomialListListWithCoef<DegRevLex, StrangeField>& const_basis_info_ = strange_field_basis_info_;
 	const CrossRingInfo::MonomialListListWithTopInfo<DegRevLex>& const_poly_rec_info_ = poly_rec_info_;
 	const CrossRingInfo::AddedVarInfo<DegRevLex>& const_single_mon_ = single_mon_;

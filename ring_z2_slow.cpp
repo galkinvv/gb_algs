@@ -259,7 +259,7 @@ RingZ2SlowBase::RingZ2SlowBase(int var_count):
 	impl_(new Impl(var_count))
 {}
 
-bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<const InPolysSetWithOrigMetadata>& prepared_input,
+bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const InPolysSetWithOrigMetadata& reconstruction_basis,
         Enumerator<CrossRingInfo::PerVariableData> top_info,
         Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input_polys_mons,
         const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& result)
@@ -291,8 +291,8 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<c
 	//a sorted collection of their monomials in question (only gretear-or-equal than top_info) - each corresponds to matrix row
 	std::set<SlowMon, decltype(mon_less)> high_mons(mon_less);
 	auto mul_by_it = input_polys_mons.begin();
-	auto orig_poly_it = prepared_input->begin();
-	for (;orig_poly_it != prepared_input->end(); ++mul_by_it, ++orig_poly_it)
+	auto orig_poly_it = reconstruction_basis.begin();
+	for (;orig_poly_it != reconstruction_basis.end(); ++mul_by_it, ++orig_poly_it)
 	{
 		assert(mul_by_it != input_polys_mons.end());
 		for (auto mon: *mul_by_it) {
@@ -355,7 +355,7 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const unique_deleter_ptr<c
 		}
 	}
 	std::vector<SparseMatrix::Element<ImplementedField>> solution;
-	int max_diferent_numbers_in_coefficients = std::accumulate(prepared_input->begin(), prepared_input->end(), 0, [](int sum, const SlowPolynomial& poly){return sum + poly.size();});
+	int max_diferent_numbers_in_coefficients = std::accumulate(reconstruction_basis.begin(), reconstruction_basis.end(), 0, [](int sum, const SlowPolynomial& poly){return sum + poly.size();});
 	//send rows collection to solver that shoud assume that right-side column has 1 in first cell and last rows.size()-1 zeroes
 	//solver returns only non-zeros - list of pairs (coef from ImplementedField; int column number)
 	SparseMatrix::SolveWithRightSideContainigSingleOne(field, matrix, solution, max_diferent_numbers_in_coefficients);
@@ -412,17 +412,25 @@ int RingZ2SlowBase::VarMappingImplReturningOldVarCount(std::vector<int>& new_mon
 }
 
 
-int RingZ2SlowBase::ExtendRingWithMonomialToHelpReconstructImpl(Enumerator<CrossRingInfo::PerVariableData> info)
+RingZ2SlowBase::NewIndices RingZ2SlowBase::ExtendRingWithMonomialToHelpReconstructImpl(const unique_deleter_ptr<InPolysSetWithOrigMetadata>& reconstruction_basis, Enumerator<CrossRingInfo::PerVariableData> info)
 {
 	impl_->new_variables.emplace_back();
-	SlowMon& new_mon = impl_->new_variables.back();
+	SlowMon& old_mons = impl_->new_variables.back();
 	for (auto var:info)
 	{
-		int& new_degree =new_mon[var.index];
+		int& new_degree =old_mons[var.index];
 		assert(0 == new_degree);
 		new_degree = var.degree;
 	}
-	return impl_->keeped_vars_count_ + impl_->new_variables.size() - 1;
+	const int new_var_index = impl_->keeped_vars_count_ + impl_->new_variables.size() - 1;
+	SlowMon new_mon;
+	new_mon[new_var_index] = 1;
+	reconstruction_basis->emplace_back();
+	//new polynomial = old_mons - new_mon
+	auto new_poly = std::prev(reconstruction_basis->end());	
+	new_poly->push_back(old_mons);
+	new_poly->push_back(new_mon);
+	return Initialized<NewIndices>(&NewIndices::new_var_index, new_var_index, &NewIndices::new_poly_index, std::distance(reconstruction_basis->begin(), new_poly));
 }
 
 unique_deleter_ptr<RingZ2SlowBase::OutPolysSetForVariyingMetadata> RingZ2SlowBase::PrepareEmptyResult()
@@ -430,7 +438,7 @@ unique_deleter_ptr<RingZ2SlowBase::OutPolysSetForVariyingMetadata> RingZ2SlowBas
 	return MoveToResultType(new OutPolysSetForVariyingMetadata());
 }
 
-unique_deleter_ptr<const RingZ2SlowBase::InPolysSetWithOrigMetadata> RingZ2SlowBase::PrepareForReconstructionImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input)
+unique_deleter_ptr<RingZ2SlowBase::InPolysSetWithOrigMetadata> RingZ2SlowBase::PrepareForReconstructionImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input)
 {
 	auto result = as_deleter_ptr(new InPolysSetWithOrigMetadata());
 	for (auto poly: input) {
@@ -474,19 +482,19 @@ struct FastZ2SlowBasedRingBase::LPolysResult::Impl : std::vector<FastZ2SlowBased
 {};
 
 
-void FastZ2SlowBasedRingBase::AddLabeledPolyBeforeImpl(int new_var_index, Enumerator<CrossRingInfo::PerVariableData> monomial, LPolysResult& reducers, const LPoly& poly_before)
+void FastZ2SlowBasedRingBase::AddLabeledPolyBeforeImpl(int new_var_index, int new_poly_index_in_rec_basis, Enumerator<CrossRingInfo::PerVariableData> monomial, LPolysResult& reducers, const LPoly& poly_before)
 {
 	//a new polynomial that would allow reducing monomial would be added
 	LPoly new_poly;
 	new_poly.impl_.reset(new LPoly::Impl());
-	FastMonomial old_mon;
+	FastMonomial old_mons;
 	FastMonomial new_mon;
 	for (auto var: monomial) {
-		old_mon[var.index] = var.degree;
+		old_mons[var.index] = var.degree;
 	}
 	new_mon[ new_var_index] = 1;
 	//set new_poly.impl_->value to (old_mon - new_mon)
-	new_poly.impl_->value.push_back(old_mon);
+	new_poly.impl_->value.push_back(old_mons);
 	new_poly.impl_->value.push_back(new_mon);
 	//TODO:
 	//set signature to new value, extend signature weights (stored in ring?)
