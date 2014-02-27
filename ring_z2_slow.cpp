@@ -481,7 +481,14 @@ struct FastZ2SlowBasedRingBase::MultLPolysQueue::Impl : std::vector<MultLPoly>
 struct FastZ2SlowBasedRingBase::LPolysResult::Impl : std::vector<FastZ2SlowBasedRingBase::LPoly>
 {};
 
+struct FastZ2SlowBasedRingBase::Impl
+{
+	std::set<double> all_indices;
+};
 
+FastZ2SlowBasedRingBase::FastZ2SlowBasedRingBase():
+	impl_(new Impl())
+{};
 void FastZ2SlowBasedRingBase::AddLabeledPolyBeforeImpl(int new_var_index, int new_poly_index_in_rec_basis, Enumerator<CrossRingInfo::PerVariableData> monomial, LPolysResult& reducers, const LPoly& poly_before)
 {
 	//a new polynomial that would allow reducing monomial would be added
@@ -496,9 +503,14 @@ void FastZ2SlowBasedRingBase::AddLabeledPolyBeforeImpl(int new_var_index, int ne
 	//set new_poly.impl_->value to (old_mon - new_mon)
 	new_poly.impl_->value.push_back(old_mons);
 	new_poly.impl_->value.push_back(new_mon);
+	//reconstruction info - exactly corresponds to added polynomial. So use single "1" monomial with "1" coefficient
+	new_poly.impl_->reconstruction_info.resize(new_poly_index_in_rec_basis + 1);
+	new_poly.impl_->reconstruction_info[new_poly_index_in_rec_basis].emplace_back();
+	//set signature to new value, just before poly_before
+	new_poly.impl_->sig_mon = poly_before.impl_->sig_mon;
 	//TODO:
-	//set signature to new value, extend signature weights (stored in ring?)
-	//reconstruction info - add new poly to the end of  slow ring inputs too
+	//	new_poly.impl_->sig_index = [something smaller than poly_before.impl_->sig_index, but greater than other indices in all_indices].
+	impl_->all_indices.insert(new_poly.impl_->sig_index);
 }
 
 FastZ2SlowBasedRingBase::LPoly FastZ2SlowBasedRingBase::DequeueSigSmallest(MultLPolysQueue& queue)
@@ -544,7 +556,9 @@ void FastZ2SlowBasedRingBase::Normalize(LPoly& poly)
 
 FastZ2SlowBasedRingBase::MultLPolysQueue FastZ2SlowBasedRingBase::PutInQueueExtendLabeledPolysImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input)
 {
+	
 	//TODO
+	//TODO: fill all_indices with indices
 	return MultLPolysQueue();
 }
 

@@ -212,6 +212,8 @@ public:
 		DECLARE_PIMPL;
 	};
 
+	FastZ2SlowBasedRingBase();
+
 	bool QueueEmpty(const MultLPolysQueue& queue);
 
 	LPoly DequeueSigSmallest(MultLPolysQueue& queue);
