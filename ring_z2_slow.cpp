@@ -175,7 +175,7 @@ TPolynomial PReduce(const TPolynomial& poly_to_red, const TPolynomial& by, const
 template <class TMultLPoly, class TMonomial = decltype(TMultLPoly().mul_by)>
 TMonomial  MultSig(const TMultLPoly& mp)
 {
-	return Mmul(mp.mul_by, mp.poly.sig_mon);
+	return Mmul(mp.mul_by, mp.poly.impl_->sig.mon);
 }
 
 template <class TMultLPoly, class TMonomial = decltype(TMultLPoly().mul_by)>
@@ -184,16 +184,16 @@ TMonomial  MultHM(const TMultLPoly& mp)
 	return Mmul(mp.mul_by, HM(mp.poly.value));
 }
 
-template <class TMultLPoly>
-bool SigLess(const TMultLPoly& mp1, const TMultLPoly& mp2)
+template <class TMultLPoly, class MonCompare>
+bool SigLess(const TMultLPoly& mp1, const TMultLPoly& mp2, MonCompare monCompare)
 {
 	bool item_less;
-	if (unequal(mp1.poly.sig_index, mp2.poly.sig_index, item_less)) {
+	if (unequal(mp1.poly.impl_->sig.index, mp2.poly.impl_->sig.index, item_less)) {
 		return item_less; //index1 < index2
 	}
 	auto sig1 = MultSig(mp1);
 	auto sig2 = MultSig(mp2);
-	if (unequal(sig1, sig2, item_less, MDegRevLexless<decltype(sig1)>)) {
+	if (unequal(sig1, sig2, item_less, monCompare)) {
 		return item_less; //sigmon1 < sigmon2
 	}
 	return false; //equal
@@ -233,9 +233,11 @@ struct SlowMon : BaseMon {};
 struct SlowPolynomial : std::vector<SlowMon> {};
 
 typedef FastZ2SlowBasedRingBase::FastMonomial FastMonomial;
+typedef std::uint64_t SigIdx;
+
 struct Signature {
-	double sig_index;
-	FastMonomial sig_mon;
+	SigIdx index;
+	FastMonomial mon;
 };
 
 //struct SLowPol : std::vector<SlowMon> {};
@@ -457,13 +459,10 @@ unique_deleter_ptr<RingZ2SlowBase::InPolysSetWithOrigMetadata> RingZ2SlowBase::P
 
 struct FastPolynomial : std::vector<FastMonomial> {};
 
-
-struct FastZ2SlowBasedRingBase::LPoly::Impl {
-	
+struct FastZ2SlowBasedRingBase::LPoly::Impl {	
 	FastPolynomial value;
 	std::vector<FastPolynomial> reconstruction_info;
-	double sig_index;
-	FastMonomial sig_mon;
+	Signature sig;
 };
 
 
@@ -483,7 +482,7 @@ struct FastZ2SlowBasedRingBase::LPolysResult::Impl : std::vector<FastZ2SlowBased
 
 struct FastZ2SlowBasedRingBase::Impl
 {
-	std::set<double> all_indices;
+	std::set<SigIdx> all_indices;
 };
 
 FastZ2SlowBasedRingBase::FastZ2SlowBasedRingBase():
@@ -492,7 +491,8 @@ FastZ2SlowBasedRingBase::FastZ2SlowBasedRingBase():
 void FastZ2SlowBasedRingBase::AddLabeledPolyBeforeImpl(int new_var_index, int new_poly_index_in_rec_basis, Enumerator<CrossRingInfo::PerVariableData> monomial, LPolysResult& reducers, const LPoly& poly_before)
 {
 	//a new polynomial that would allow reducing monomial would be added
-	LPoly new_poly;
+	reducers.impl_->emplace_back();
+	LPoly& new_poly = reducers.impl_->back();
 	new_poly.impl_.reset(new LPoly::Impl());
 	FastMonomial old_mons;
 	FastMonomial new_mon;
@@ -507,16 +507,42 @@ void FastZ2SlowBasedRingBase::AddLabeledPolyBeforeImpl(int new_var_index, int ne
 	new_poly.impl_->reconstruction_info.resize(new_poly_index_in_rec_basis + 1);
 	new_poly.impl_->reconstruction_info[new_poly_index_in_rec_basis].emplace_back();
 	//set signature to new value, just before poly_before
-	new_poly.impl_->sig_mon = poly_before.impl_->sig_mon;
-	//TODO:
-	//	new_poly.impl_->sig_index = [something smaller than poly_before.impl_->sig_index, but greater than other indices in all_indices].
-	impl_->all_indices.insert(new_poly.impl_->sig_index);
+	//monomial is the same, since poly_before is already multiplied polynomial
+	new_poly.impl_->sig.mon = poly_before.impl_->sig.mon;
+	const auto greater_idx_pos = impl_->all_indices.find(new_poly.impl_->sig.index);
+	assert(greater_idx_pos != impl_->all_indices.end());
+	SigIdx smaller_idx = 
+		(greater_idx_pos == impl_->all_indices.begin()) ? 
+			std::numeric_limits<SigIdx>::min() : 
+			*std::prev(greater_idx_pos);
+	new_poly.impl_->sig.index  = smaller_idx + (*greater_idx_pos - smaller_idx)/2;
+	//those assertions can fail during correct operation of an algorithm if too much additions were performed in same place
+	assert(new_poly.impl_->sig.index > smaller_idx);
+	assert(new_poly.impl_->sig.index < *greater_idx_pos);
+	impl_->all_indices.insert(new_poly.impl_->sig.index);
 }
 
 FastZ2SlowBasedRingBase::LPoly FastZ2SlowBasedRingBase::DequeueSigSmallest(MultLPolysQueue& queue)
 {
+	auto mon_less = [this](const FastMonomial& m1, const FastMonomial& m2){return this->MonomialLess(m1, m2);};
+	auto sig_less = [mon_less](const MultLPoly& p1, const MultLPoly& p2){return SigLess(p1, p2, mon_less);};
+	auto& queue_impl = *(queue.impl_);
+	assert(!queue_impl.empty());
+	auto min_it = std::min_element(queue_impl.begin(), queue_impl.end(), sig_less);
+	assert(min_it != queue_impl.end());
+	LPoly result;
 	//TODO
-	return LPoly();
+	/*
+	result.sig_index = min->poly.sig_index;
+	result.sig_mon = Mmul(min->poly.sig_mon, min->mul_by);
+	result.value = Pmul(min->poly.value, min->mul_by);
+	result.reconstruction_info.reserve(min->poly.reconstruction_info.size());
+	for (auto rec_info_poly:min->poly.reconstruction_info) {
+		result.reconstruction_info.push_back(Pmul(rec_info_poly, min->mul_by));
+	}
+	*/
+	 queue_impl.erase(min_it);
+	return result;
 }
 
 void FastZ2SlowBasedRingBase::ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
@@ -600,7 +626,7 @@ void FR::PutInQueueExtendLabeledPolys(const PolysSet& in, MultLPolysQueue& queue
 		}
 		mp.poly.reconstruction_info.resize(in.size());
 		mp.poly.reconstruction_info[current_poly_index].resize(1);
-		mp.poly.sig_index = double(current_poly_index) + 1;
+		mp.poly.sig_index = SigIdx(current_poly_index) + 1;
 		queue.push_back(mp);
 		++current_poly_index;
 	}
