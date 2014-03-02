@@ -448,6 +448,8 @@ struct unique_deleter_ptr: std::unique_ptr<T, void(*)(T*)>
 		BasePtr(other.release(), reinterpret_cast<typename BasePtr::deleter_type>(other.get_deleter()))
 	{
 	}
+	unique_deleter_ptr& operator=(unique_deleter_ptr&& other) = default;
+
 	static void Delete(T* ptr)
 	{
 		std::default_delete<T> cheking_incomplete_type_deleter;
@@ -488,7 +490,18 @@ ImplicitlyConvertible<typename std::remove_reference<T>::type&&> MoveToResultTyp
 	return ImplicitlyConvertible<typename std::remove_reference<T>::type&&>(std::move(value));
 }
 
+template <class T>
+struct auto_pimpl_ptr: unique_deleter_ptr<T>
+{
+	auto_pimpl_ptr():
+		unique_deleter_ptr<T>(new T{})
+	{}
+};
+
+//pimpl declaration that requires pimpl_ setting
 #define DECLARE_PIMPL  struct Impl; unique_deleter_ptr<Impl> impl_
+//pimpl declaration that allows constructing of on objetc only in places where impl is defined and always value-initializes impl
+#define DECLARE_AUTO_PIMPL  struct Impl; auto_pimpl_ptr<Impl> impl_
 
 template <class Enumerator>
 struct EnumeratorTraits

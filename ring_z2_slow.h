@@ -203,13 +203,13 @@ class  FastZ2SlowBasedRingBase:NoCopy
 {
 public:
 	struct LPoly {
-		DECLARE_PIMPL;
+		DECLARE_AUTO_PIMPL;
 	};
 	struct MultLPolysQueue {
-		DECLARE_PIMPL;
+		DECLARE_AUTO_PIMPL;
 	};
 	struct LPolysResult {
-		DECLARE_PIMPL;
+		DECLARE_AUTO_PIMPL;
 	};
 
 	FastZ2SlowBasedRingBase();
@@ -235,7 +235,7 @@ protected:
 	Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> FieldAgnosticReconstructionInfoPolysImpl(const LPoly& poly);
 	Enumerator<CrossRingInfo::PerVariableData> FieldAgnosticReconstructionInfoTopImpl(const LPoly& poly);
 private:
-	DECLARE_PIMPL;
+	DECLARE_AUTO_PIMPL;
 };
 
 template <class MonomialMetadata>

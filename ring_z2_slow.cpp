@@ -4,6 +4,7 @@
 #include <deque>
 #include <cassert>
 #include <unordered_set>
+#include <list>
 namespace
 {
 
@@ -172,7 +173,7 @@ TPolynomial PReduce(const TPolynomial& poly_to_red, const TPolynomial& by, const
 	return PAdd(poly_to_red, by, mul_by);
 }
 
-template <class TMultLPoly, class TMonomial = decltype(TMultLPoly().mul_by)>
+template <class TMultLPoly, class TMonomial = decltype(std::declval<TMultLPoly>().mul_by)>
 TMonomial  MultSig(const TMultLPoly& mp)
 {
 	return Mmul(mp.mul_by, mp.poly.impl_->sig.mon);
@@ -468,14 +469,16 @@ struct FastZ2SlowBasedRingBase::LPoly::Impl {
 
 struct MultLPoly
 {
-	FastZ2SlowBasedRingBase::LPoly poly;
+ MultLPoly(const FastZ2SlowBasedRingBase::LPoly& a_poly):
+		poly(a_poly)
+	{}
+	const FastZ2SlowBasedRingBase::LPoly& poly;
 	FastMonomial mul_by;
 };
 
 
-struct FastZ2SlowBasedRingBase::MultLPolysQueue::Impl : std::vector<MultLPoly>
+struct FastZ2SlowBasedRingBase::MultLPolysQueue::Impl : std::list<MultLPoly>
 {};
-
 
 struct FastZ2SlowBasedRingBase::LPolysResult::Impl : std::vector<FastZ2SlowBasedRingBase::LPoly>
 {};
@@ -485,9 +488,8 @@ struct FastZ2SlowBasedRingBase::Impl
 	std::set<SigIdx> all_indices;
 };
 
-FastZ2SlowBasedRingBase::FastZ2SlowBasedRingBase():
-	impl_(new Impl())
-{};
+FastZ2SlowBasedRingBase::FastZ2SlowBasedRingBase(){}
+
 void FastZ2SlowBasedRingBase::AddLabeledPolyBeforeImpl(int new_var_index, int new_poly_index_in_rec_basis, Enumerator<CrossRingInfo::PerVariableData> monomial, LPolysResult& reducers, const LPoly& poly_before)
 {
 	//a new polynomial that would allow reducing monomial would be added
@@ -531,22 +533,52 @@ FastZ2SlowBasedRingBase::LPoly FastZ2SlowBasedRingBase::DequeueSigSmallest(MultL
 	auto min_it = std::min_element(queue_impl.begin(), queue_impl.end(), sig_less);
 	assert(min_it != queue_impl.end());
 	LPoly result;
-	//TODO
-	/*
-	result.sig_index = min->poly.sig_index;
-	result.sig_mon = Mmul(min->poly.sig_mon, min->mul_by);
-	result.value = Pmul(min->poly.value, min->mul_by);
-	result.reconstruction_info.reserve(min->poly.reconstruction_info.size());
-	for (auto rec_info_poly:min->poly.reconstruction_info) {
-		result.reconstruction_info.push_back(Pmul(rec_info_poly, min->mul_by));
+	result.impl_->sig.index = min_it->poly.impl_->sig.index;
+	result.impl_->sig.mon = Mmul(min_it->poly.impl_->sig.mon, min_it->mul_by);
+	result.impl_->value = Pmul(min_it->poly.impl_->value, min_it->mul_by);
+	result.impl_->reconstruction_info.reserve(min_it->poly.impl_->reconstruction_info.size());
+	for (auto rec_info_poly:min_it->poly.impl_->reconstruction_info) {
+		result.impl_->reconstruction_info.push_back(Pmul(rec_info_poly, min_it->mul_by));
 	}
-	*/
 	 queue_impl.erase(min_it);
 	return result;
 }
 
 void FastZ2SlowBasedRingBase::ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
 {
+	assert(!IsZero(right_part));
+	for (const auto& left_part:*left_parts.impl_) {
+		if (IsZero(left_part)) {
+			continue;
+		}
+		MultLPoly left(left_part);
+		//TODO
+		/*
+		left.mul_by = ToLCMMultiplier(HM(left_part.value), HM(right_part.value));
+		MultLPoly right;
+		right.poly = right_part;
+		right.mul_by = ToLCMMultiplier(HM(right_part.value), HM(left_part.value));
+		MultLPoly &new_lpoly = SigLess(left, right) ? right : left;
+		bool was_supeseded;
+		for(auto existing_lpoly : queue) {
+			if (IsSupersededBy(new_lpoly, existing_lpoly)) {
+				was_supeseded = true;
+				break;
+			}
+		}
+		if (was_supeseded) {
+			continue;
+		}
+		queue.erase(
+		    std::remove_if(
+		        queue.begin(), queue.end(), std::bind(IsSupersededBy<MultLPoly>, std::placeholders::_1, new_lpoly)
+		    ),
+		    queue.end()
+		);
+		queue.push_back(new_lpoly);
+		*/
+	}
+
 }
 
 
@@ -600,22 +632,6 @@ void FastZ2SlowBasedRingBase::ReduceCheckingSignatures(LPoly& poly, LPolysResult
 }
 
 /*
-FR::LPoly FR::DequeueSigSmallest(MultLPolysQueue& queue)
-{
-	auto min = std::min_element(queue.begin(), queue.end(), SigLess<MultLPoly>);
-	assert(min != queue.end());
-	LPoly result;
-	result.sig_index = min->poly.sig_index;
-	result.sig_mon = Mmul(min->poly.sig_mon, min->mul_by);
-	result.value = Pmul(min->poly.value, min->mul_by);
-	result.reconstruction_info.reserve(min->poly.reconstruction_info.size());
-	for (auto rec_info_poly:min->poly.reconstruction_info) {
-		result.reconstruction_info.push_back(Pmul(rec_info_poly, min->mul_by));
-	}
-	queue.erase(min);
-	return result;
-}
-
 void FR::PutInQueueExtendLabeledPolys(const PolysSet& in, MultLPolysQueue& queue)
 {
 	int current_poly_index = 0;
