@@ -179,14 +179,14 @@ TMonomial  MultSig(const TMultLPoly& mp)
 	return Mmul(mp.mul_by, mp.poly.impl_->sig.mon);
 }
 
-template <class TMultLPoly, class TMonomial = decltype(TMultLPoly().mul_by)>
+template <class TMultLPoly, class TMonomial = decltype(std::declval<TMultLPoly>().mul_by)>
 TMonomial  MultHM(const TMultLPoly& mp)
 {
-	return Mmul(mp.mul_by, HM(mp.poly.value));
+	return Mmul(mp.mul_by, HM(mp.poly.impl_->value));
 }
 
 template <class TMultLPoly, class MonCompare>
-bool SigLess(const TMultLPoly& mp1, const TMultLPoly& mp2, MonCompare monCompare)
+bool SigLess(const TMultLPoly& mp1, const TMultLPoly& mp2, MonCompare monLess)
 {
 	bool item_less;
 	if (unequal(mp1.poly.impl_->sig.index, mp2.poly.impl_->sig.index, item_less)) {
@@ -194,16 +194,16 @@ bool SigLess(const TMultLPoly& mp1, const TMultLPoly& mp2, MonCompare monCompare
 	}
 	auto sig1 = MultSig(mp1);
 	auto sig2 = MultSig(mp2);
-	if (unequal(sig1, sig2, item_less, monCompare)) {
+	if (unequal(sig1, sig2, item_less, monLess)) {
 		return item_less; //sigmon1 < sigmon2
 	}
 	return false; //equal
 }
 
-template <class TMultLPoly>
-bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by)
+template <class TMultLPoly, class MonCompare>
+bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by, MonCompare monLess)
 {
-	if (maybe_supded.poly.sig_index !=  sup_by.poly.sig_index) {
+	if (maybe_supded.poly.impl_->sig.index !=  sup_by.poly.impl_->sig.index) {
 		return false; //can't supersede wth different indexes
 	}
 	auto sig_supded = MultSig(maybe_supded);
@@ -211,12 +211,12 @@ bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by)
 	if (!DivideIfCan(sig_supded, sig_by)) {
 		return false; //index_old not divisible by index_new
 	}
-	if (IsZeroImpl(sup_by.poly.value)) return true; //zero polynomial with dividing sig
-	if (IsZeroImpl(maybe_supded.poly.value)) return false; //zero polynomial with sig divisible by non-zero
+	if (IsZeroImpl(sup_by.poly.impl_->value)) return true; //zero polynomial with dividing sig
+	if (IsZeroImpl(maybe_supded.poly.impl_->value)) return false; //zero polynomial with sig divisible by non-zero
 
 	auto sig_supded_hm_by = Mmul(sig_supded, MultHM(sup_by));
 	auto sig_by_hm_supded = Mmul(sig_by, MultHM(maybe_supded));
-	if (MDegRevLexless(sig_by_hm_supded, sig_supded_hm_by)) {
+	if (monLess(sig_by_hm_supded, sig_supded_hm_by)) {
 		return false; //HM/S for maybe_supded is smaller
 	}
 	return true; // HM/S for maybe_supded is not smaller
@@ -490,6 +490,23 @@ struct FastZ2SlowBasedRingBase::Impl
 
 FastZ2SlowBasedRingBase::FastZ2SlowBasedRingBase(){}
 
+struct LessComparer
+{
+	typedef bool (FastZ2SlowBasedRingBase::*CompareMethod)(const FastMonomial& m1, const FastMonomial& m2) const;
+	const CompareMethod compare_method;
+	const FastZ2SlowBasedRingBase& ring_object;
+	
+	bool operator()(const FastMonomial& m1, const FastMonomial& m2)const
+	{
+		return (ring_object.*compare_method)(m1, m2);
+	}
+
+	bool operator()(const MultLPoly& p1, const MultLPoly& p2)const
+	{
+		return SigLess(p1, p2, *this);
+	}
+
+};
 void FastZ2SlowBasedRingBase::AddLabeledPolyBeforeImpl(int new_var_index, int new_poly_index_in_rec_basis, Enumerator<CrossRingInfo::PerVariableData> monomial, LPolysResult& reducers, const LPoly& poly_before)
 {
 	//a new polynomial that would allow reducing monomial would be added
@@ -526,11 +543,10 @@ void FastZ2SlowBasedRingBase::AddLabeledPolyBeforeImpl(int new_var_index, int ne
 
 FastZ2SlowBasedRingBase::LPoly FastZ2SlowBasedRingBase::DequeueSigSmallest(MultLPolysQueue& queue)
 {
-	auto mon_less = [this](const FastMonomial& m1, const FastMonomial& m2){return this->MonomialLess(m1, m2);};
-	auto sig_less = [mon_less](const MultLPoly& p1, const MultLPoly& p2){return SigLess(p1, p2, mon_less);};
+	LessComparer ms_less{&FastZ2SlowBasedRingBase::MonomialLess, *this};
 	auto& queue_impl = *(queue.impl_);
 	assert(!queue_impl.empty());
-	auto min_it = std::min_element(queue_impl.begin(), queue_impl.end(), sig_less);
+	auto min_it = std::min_element(queue_impl.begin(), queue_impl.end(), ms_less);
 	assert(min_it != queue_impl.end());
 	LPoly result;
 	result.impl_->sig.index = min_it->poly.impl_->sig.index;
@@ -546,22 +562,21 @@ FastZ2SlowBasedRingBase::LPoly FastZ2SlowBasedRingBase::DequeueSigSmallest(MultL
 
 void FastZ2SlowBasedRingBase::ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
 {
+	LessComparer ms_less{&FastZ2SlowBasedRingBase::MonomialLess, *this};
 	assert(!IsZero(right_part));
 	for (const auto& left_part:*left_parts.impl_) {
 		if (IsZero(left_part)) {
 			continue;
 		}
 		MultLPoly left(left_part);
-		//TODO
-		/*
-		left.mul_by = ToLCMMultiplier(HM(left_part.value), HM(right_part.value));
-		MultLPoly right;
-		right.poly = right_part;
-		right.mul_by = ToLCMMultiplier(HM(right_part.value), HM(left_part.value));
-		MultLPoly &new_lpoly = SigLess(left, right) ? right : left;
+		left.mul_by = ToLCMMultiplier(HM(left_part.impl_->value), HM(right_part.impl_->value));
+		MultLPoly right(right_part);
+		right.mul_by = ToLCMMultiplier(HM(right_part.impl_->value), HM(left_part.impl_->value));
+		MultLPoly &new_lpoly = ms_less(left, right) ? right : left;
 		bool was_supeseded;
-		for(auto existing_lpoly : queue) {
-			if (IsSupersededBy(new_lpoly, existing_lpoly)) {
+		auto& queue_impl = *queue.impl_;
+		for(auto existing_lpoly : queue_impl) {
+			if (IsSupersededBy(new_lpoly, existing_lpoly, ms_less)) {
 				was_supeseded = true;
 				break;
 			}
@@ -569,16 +584,10 @@ void FastZ2SlowBasedRingBase::ExtendQueueBySpairPartsAndFilterUnneeded(const LPo
 		if (was_supeseded) {
 			continue;
 		}
-		queue.erase(
-		    std::remove_if(
-		        queue.begin(), queue.end(), std::bind(IsSupersededBy<MultLPoly>, std::placeholders::_1, new_lpoly)
-		    ),
-		    queue.end()
-		);
-		queue.push_back(new_lpoly);
-		*/
+		//TODO: check logic
+		queue_impl.remove_if(std::bind(IsSupersededBy<MultLPoly, LessComparer>, std::placeholders::_1, new_lpoly, ms_less));
+		queue_impl.emplace_back(new_lpoly);
 	}
-
 }
 
 
