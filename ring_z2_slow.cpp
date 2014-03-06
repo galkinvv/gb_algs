@@ -584,16 +584,41 @@ void FastZ2SlowBasedRingBase::ExtendQueueBySpairPartsAndFilterUnneeded(const LPo
 		if (was_supeseded) {
 			continue;
 		}
-		//TODO: check logic
 		queue_impl.remove_if(std::bind(IsSupersededBy<MultLPoly, LessComparer>, std::placeholders::_1, new_lpoly, ms_less));
 		queue_impl.emplace_back(new_lpoly);
 	}
 }
 
+CrossRingInfo::PerVariableData VarDataFromMapItem(const std::pair<const int, int>& index_degree_pair)
+{
+	return CrossRingInfo::PerVariableData::FromDI(index_degree_pair.second, index_degree_pair.first);
+}
+
 
 Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> FastZ2SlowBasedRingBase::FieldAgnosticReconstructionInfoPolysImpl(const LPoly& poly)
 {
-	//TODO: at least return	
+	auto poly_enumerator = FullRangeEnumerator(poly.impl_->reconstruction_info);
+	typedef decltype(poly_enumerator.GetAndMove()) PolynomialAsRange;
+	auto poly_with_mon_enumerator = ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<PolynomialAsRange>)>(poly_enumerator);
+	typedef decltype(poly_with_mon_enumerator.GetAndMove().GetAndMove()) MonomialAsRange;
+
+	auto poly_with_mon_with_varpairs_enumerator =
+		ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM((
+					ConverterEnumeratorCFunc<
+					STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullNonSizedRangeEnumerator<MonomialAsRange>),
+					MonomialAsRange>
+				))>(poly_with_mon_enumerator);
+
+
+	typedef decltype(poly_with_mon_with_varpairs_enumerator.GetAndMove().GetAndMove()) MonomialAsEnum;
+	typedef decltype(poly_with_mon_with_varpairs_enumerator.GetAndMove().GetAndMove().GetAndMove()) VarAsMapItem;
+
+	return ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM((
+				ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM((
+						ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(VarDataFromMapItem), VarAsMapItem>
+						)),
+				MonomialAsEnum>
+			))>(poly_with_mon_with_varpairs_enumerator);
 }
 
 Enumerator<CrossRingInfo::PerVariableData> FastZ2SlowBasedRingBase::FieldAgnosticReconstructionInfoTopImpl(const LPoly& poly)
