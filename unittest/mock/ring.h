@@ -128,7 +128,7 @@ namespace Mock
 		{
 			IgnoreIfUnused(left_parts, right_part, queue);
 		}
-		void InsertInResult(const LPoly& poly, LPolysResult& result)
+		void InsertInResult(LPoly&& poly, LPolysResult& result)
 		{
 			IgnoreIfUnused(poly, result);
 		}

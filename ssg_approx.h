@@ -46,7 +46,7 @@ class ApproxSignatureGroebner
 					fast_ring_.Normalize(labeled_poly_to_reduce);
 					fast_ring_.ExtendQueueBySpairPartsAndFilterUnneeded(R, labeled_poly_to_reduce, B);
 				}
-				fast_ring_.InsertInResult(labeled_poly_to_reduce, R);
+				fast_ring_.InsertInResult(std::move(labeled_poly_to_reduce), R);
 			}
 			out_ = out_ring_.ConvertResultToFixedMetadata(reconstructed_result);
 		}

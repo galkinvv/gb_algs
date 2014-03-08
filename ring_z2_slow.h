@@ -225,7 +225,7 @@ public:
 	void Normalize(LPoly& poly);
 
 	void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue);
-	void InsertInResult(const LPoly& poly, LPolysResult& result);
+	void InsertInResult(LPoly&& poly, LPolysResult& result);
 	struct FastMonomial : BaseMon{};
 protected:
 	virtual bool MonomialLess(const FastMonomial& m1, const FastMonomial& m2) const = 0;

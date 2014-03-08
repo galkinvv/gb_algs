@@ -469,7 +469,7 @@ struct FastZ2SlowBasedRingBase::LPoly::Impl {
 
 struct MultLPoly
 {
- MultLPoly(const FastZ2SlowBasedRingBase::LPoly& a_poly):
+	MultLPoly(const FastZ2SlowBasedRingBase::LPoly& a_poly):
 		poly(a_poly)
 	{}
 	const FastZ2SlowBasedRingBase::LPoly& poly;
@@ -480,7 +480,7 @@ struct MultLPoly
 struct FastZ2SlowBasedRingBase::MultLPolysQueue::Impl : std::list<MultLPoly>
 {};
 
-struct FastZ2SlowBasedRingBase::LPolysResult::Impl : std::vector<FastZ2SlowBasedRingBase::LPoly>
+struct FastZ2SlowBasedRingBase::LPolysResult::Impl : std::deque<FastZ2SlowBasedRingBase::LPoly>
 {};
 
 struct FastZ2SlowBasedRingBase::Impl
@@ -623,17 +623,35 @@ Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> FastZ2SlowBas
 
 Enumerator<CrossRingInfo::PerVariableData> FastZ2SlowBasedRingBase::FieldAgnosticReconstructionInfoTopImpl(const LPoly& poly)
 {
-	//TODO: at least return
+	return ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(VarDataFromMapItem)>(FullRangeEnumerator(HM(poly.impl_->value)));
 }
 
 FastZ2SlowBasedRingBase::LPolysResult FastZ2SlowBasedRingBase::FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue)
 {
-	//TODO
-	return LPolysResult();
+	LPolysResult result;
+	LessComparer ms_less{&FastZ2SlowBasedRingBase::MonomialLess, *this};
+	const auto& queue_impl = *queue.impl_;
+	for(auto i0 = queue_impl.begin(); i0 != queue_impl.end(); ++i0) {
+		assert(MDeg(i0->mul_by)  == 0 && MDeg(i0->poly.impl_->sig.mon) == 0) ;
+		for(auto i1 = std::next(i0); i1 != queue_impl.end(); ++i1) {		
+			LPoly syz_part[2];
+			//value and reconstruction info are zero
+			syz_part[0].impl_->sig.index = i0->poly.impl_->sig.index;
+			syz_part[0].impl_->sig.mon = HM(i1->poly.impl_->value);
+			syz_part[1].impl_->sig.index = i1->poly.impl_->sig.index;
+			syz_part[1].impl_->sig.mon = HM(i0->poly.impl_->value);
+			//mul_by is identity nomomial
+			MultLPoly mult[2] = {{syz_part[0]}, {syz_part[1]}};
+			int greater_sig_idx = ms_less(mult[0], mult[1]) ? 1 : 0;
+			InsertInResult(std::move(syz_part[greater_sig_idx]), result);
+		}
+	}
+	return result;
 }
 
-void FastZ2SlowBasedRingBase::InsertInResult(const LPoly& poly, LPolysResult& result)
+void FastZ2SlowBasedRingBase::InsertInResult(LPoly&& poly, LPolysResult& result)
 {
+	result.impl_->emplace_back(std::move(poly));
 }
 
 bool FastZ2SlowBasedRingBase::IsZero(const LPoly& poly)
