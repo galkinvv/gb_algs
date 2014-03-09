@@ -486,6 +486,7 @@ struct FastZ2SlowBasedRingBase::LPolysResult::Impl : std::deque<FastZ2SlowBasedR
 struct FastZ2SlowBasedRingBase::Impl
 {
 	std::set<SigIdx> all_indices;
+	std::list<LPoly> initial_polys;
 };
 
 FastZ2SlowBasedRingBase::FastZ2SlowBasedRingBase(){}
@@ -656,20 +657,41 @@ void FastZ2SlowBasedRingBase::InsertInResult(LPoly&& poly, LPolysResult& result)
 
 bool FastZ2SlowBasedRingBase::IsZero(const LPoly& poly)
 {
-	//TODO
-	return true;
+	return poly.impl_->value.empty();
 }
 
 void FastZ2SlowBasedRingBase::Normalize(LPoly& poly)
 {
+	IgnoreIfUnused(poly);
 }
 
 FastZ2SlowBasedRingBase::MultLPolysQueue FastZ2SlowBasedRingBase::PutInQueueExtendLabeledPolysImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input)
 {
-	
-	//TODO
-	//TODO: fill all_indices with indices
-	return MultLPolysQueue();
+	const SigIdx polys_count = input.size();
+	static const SigIdx kMaxIdx = std::numeric_limits<SigIdx>::max();
+	const SigIdx kStepPerIdx = kMaxIdx/polys_count;
+	int cur_poly_index = 0;
+	MultLPolysQueue result;
+	for (auto poly:input)
+	{
+		++cur_poly_index;
+		impl_->initial_polys.emplace_back();
+		LPoly& labeled_poly = impl_->initial_polys.back();
+		for (auto vars_colection : poly){
+			FastMonomial mon;
+			for(auto var: vars_colection)
+			{
+				mon[var.index] = var.degree;
+			}
+			labeled_poly.impl_->value.push_back(mon);
+		}
+		labeled_poly.impl_->reconstruction_info.resize(input.size());
+		labeled_poly.impl_->reconstruction_info[cur_poly_index].resize(1);
+		labeled_poly.impl_->sig.index = static_cast<SigIdx>(cur_poly_index)*kStepPerIdx;
+		result.impl_->emplace_back(MultLPoly{labeled_poly});
+		impl_->all_indices.insert(labeled_poly.impl_->sig.index);
+	}
+	return result;
 }
 
 bool FastZ2SlowBasedRingBase::QueueEmpty(const MultLPolysQueue& queue)
