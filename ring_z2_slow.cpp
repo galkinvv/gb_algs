@@ -696,229 +696,37 @@ FastZ2SlowBasedRingBase::MultLPolysQueue FastZ2SlowBasedRingBase::PutInQueueExte
 
 bool FastZ2SlowBasedRingBase::QueueEmpty(const MultLPolysQueue& queue)
 {
-	//TODO
-	return true;
+	return queue.impl_->empty();
 }
 
 void FastZ2SlowBasedRingBase::ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
 {
-	//TODO
-}
-
-/*
-void FR::PutInQueueExtendLabeledPolys(const PolysSet& in, MultLPolysQueue& queue)
-{
-	int current_poly_index = 0;
-	for(auto poly: in) {
-		MultLPoly mp;
-		for (auto mon : poly) {
-			mp.poly.value.push_back(mon);
-		}
-		mp.poly.reconstruction_info.resize(in.size());
-		mp.poly.reconstruction_info[current_poly_index].resize(1);
-		mp.poly.sig_index = SigIdx(current_poly_index) + 1;
-		queue.push_back(mp);
-		++current_poly_index;
-	}
-}
-
-void FR::FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue, LPolysResult& to_fill)
-{
-	for(auto i0 = queue.begin(); i0 != queue.end(); ++i0) {
-		assert(MDeg(i0->mul_by)  == 0 && MDeg(i0->poly.sig_mon) == 0) ;
-		for(auto i1 = std::next(i0); i1 != queue.end(); ++i1) {
-			MultLPoly syz_part[2];
-			//value and reconstruction info are zero
-			syz_part[0].poly.sig_index = i0->poly.sig_index;
-			syz_part[0].poly.sig_mon = HM(i1->poly.value);
-			syz_part[1].poly.sig_index = i1->poly.sig_index;
-			syz_part[1].poly.sig_mon = HM(i0->poly.value);;
-			int greater_sig_idx = static_cast<int>(SigLess(syz_part[0], syz_part[1]));
-			to_fill.push_back(syz_part[greater_sig_idx].poly);
-		}
-	}
-}
-
-void FR::ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
-{
+	LessComparer ms_less{&FastZ2SlowBasedRingBase::MonomialLess, *this};
 	bool failed_to_find_reducer = false;
-	while(!poly.value.empty() && !failed_to_find_reducer) {
+	while(!poly.impl_->value.empty() && !failed_to_find_reducer) {
 		failed_to_find_reducer = true;
-		for(auto reducer:reducers) {
-			if(!reducer.value.empty()) {
-				auto divider = DivideIfCan(HM(poly.value), HM(reducer.value));
+		for(const auto& reducer:*reducers.impl_) {
+			if(!reducer.impl_->value.empty()) {
+				auto divider = DivideIfCan(HM(poly.impl_->value), HM(reducer.impl_->value));
 				if (!divider) {
 					continue;
 				}
-				MultLPoly mult_reductor;
-				mult_reductor.poly = reducer;
+				MultLPoly mult_reductor{reducer};
 				mult_reductor.mul_by = *divider;
-				MultLPoly to_reduce;
-				to_reduce.poly = poly;
-				if (!SigLess(mult_reductor, to_reduce)) {
+				MultLPoly to_reduce{poly};
+
+				if (!ms_less(mult_reductor, to_reduce)) {
 					continue;
 				}
-				poly.value = PReduce(poly.value,  reducer.value, *divider);
-				assert(poly.reconstruction_info.size() == reducer.reconstruction_info.size());
-				for (int rec_info_idx = 0; rec_info_idx < int(poly.reconstruction_info.size()); ++rec_info_idx) {
-					auto& rec_info_ref = poly.reconstruction_info[rec_info_idx];
-					rec_info_ref = PAdd(rec_info_ref, reducer.reconstruction_info[rec_info_idx], *divider);
-				}
 				failed_to_find_reducer = false;
-				break;
-			}
-		}
-	}
-}
-
-RingZ2Slow::ReconstructionInfo FR::FieldAgnosticReconstructionInfo(const LPoly& poly)
-{
-	ReconstructionInfo result;
-	result.assign(poly.reconstruction_info.begin(),  poly.reconstruction_info.end());
-	result.top = HM(poly.value);
-	return result;
-}
-
-void FR::ExtendRingWithMonomialToHelpReconstruct(const LPoly& poly, LPolysResult& reducers)
-{
-	throw std::logic_error("ring extension requsted for Z2");
-}
-
-bool FR::IsZero(const LPoly& poly)
-{
-	return IsZeroImpl(poly.value);
-}
-
-void FR::Normalize(LPoly& poly)
-{
-	//Always normalized in Z2
-}
-
-void FR::InsertInResult(const LPoly& poly, LPolysResult& result)
-{
-	result.push_back(poly);
-}
-
-
-void FR::ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
-{
-	assert(!IsZeroImpl(right_part.value));
-	for (auto left_part:left_parts) {
-		if (IsZeroImpl(left_part.value)) {
-			continue;
-		}
-		MultLPoly left;
-		left.poly = left_part;
-		left.mul_by = ToLCMMultiplier(HM(left_part.value), HM(right_part.value));
-		MultLPoly right;
-		right.poly = right_part;
-		right.mul_by = ToLCMMultiplier(HM(right_part.value), HM(left_part.value));
-		MultLPoly &new_lpoly = SigLess(left, right) ? right : left;
-		bool was_supeseded;
-		for(auto existing_lpoly : queue) {
-			if (IsSupersededBy(new_lpoly, existing_lpoly)) {
-				was_supeseded = true;
-				break;
-			}
-		}
-		if (was_supeseded) {
-			continue;
-		}
-		queue.erase(
-		    std::remove_if(
-		        queue.begin(), queue.end(), std::bind(IsSupersededBy<MultLPoly>, std::placeholders::_1, new_lpoly)
-		    ),
-		    queue.end()
-		);
-		queue.push_back(new_lpoly);
-	}
-}
-
-struct RingZ2Slow::Impl {
-	int var_count;
-};
-
-RingZ2Slow::RingZ2Slow()
-	:impl_(new Impl())
-{}
-
-RingZ2Slow::~RingZ2Slow()
-{}
-
-void RingZ2Slow::CopyTo(RingZ2Slow& other)const
-{
-	*other.impl_ = *impl_;
-}
-
-bool RingZ2Slow::ConstructAndInsertNormalized(const PolysSet& in, const ReconstructionInfo& info, PolysSet& out)
-{
-	Polynomial result;
-	assert(info.size() == in.size());
-	auto in_poly = in.cbegin();
-	for(auto rec_info : info)
-	{
-		assert(in_poly != in.cend());
-		for(auto mon : rec_info)
-		{
-			result = PAdd(result, *in_poly, mon);
-		}
-		++in_poly;
-	}
-	assert(!IsZeroImpl(result));
-	assert(HM(result) == info.top);
-	out.push_back(result);
-	return true;
-}
-
-std::unique_ptr<IOData<RingZ2Slow>> RingZ2Slow::Create(const F4MPI::IOPolynomSet& in)
-{
-	auto* data = new RingZ2SlowIoData();
-	if (
-	    in.field_char != 2 ||
-	    in.mon_order != F4MPI::CMonomial::degrevlexOrder ||
-	    in.type != F4MPI::FieldType::Z
-	) {
-		throw std::runtime_error("unsupported parameters for RingZ2Slow");
-	}
-	data->in_ring_.impl_->var_count = in.var_count;
-	PolysSet in_polys;
-	for(auto poly:in.polys) {
-		Polynomial poly_in_ring;
-		for(auto mon = poly.m_begin(); mon != poly.m_end(); ++mon) {
-			Monomial mon_in_ring;
-			for (int var_idx = 0; var_idx < data->in_ring_.impl_->var_count; ++var_idx) {
-				if (int deg = mon->getDegree(var_idx)) {
-					mon_in_ring[kFirstVar] = deg;
+				poly.impl_->value = PReduce(poly.impl_->value,  reducer.impl_->value, *divider);
+				assert(poly.impl_->reconstruction_info.size() == reducer.impl_->reconstruction_info.size());
+				for (int rec_info_idx = 0; rec_info_idx < int(poly.impl_->reconstruction_info.size()); ++rec_info_idx) {
+					auto& rec_info_ref = poly.impl_->reconstruction_info[rec_info_idx];
+					rec_info_ref = PAdd(rec_info_ref, reducer.impl_->reconstruction_info[rec_info_idx], *divider);
 				}
+				break;
 			}
-			poly_in_ring.push_back(mon_in_ring);
 		}
-		in_polys.push_back(poly_in_ring);
 	}
-	data->in_ = in_polys;
-	return std::unique_ptr<IOData<RingZ2Slow>>(data);
 }
-
-F4MPI::IOPolynomSet RingZ2Slow::ConvertResult(std::unique_ptr<IOData<RingZ2Slow>>& result)
-{
-	F4MPI::IOPolynomSet converted_result;
-	converted_result.field_char = 2;
-	converted_result.mon_order = F4MPI::CMonomial::degrevlexOrder;
-	converted_result.type = F4MPI::FieldType::Z;
-	converted_result.var_count = result->out_ring.impl_->var_count;
-	for(auto poly_in_ring:result->out) {
-		F4MPI::CPolynomial poly;
-		for(auto mon_in_ring: poly_in_ring) {
-			std::vector<F4MPI::CMonomialBase::Deg> mon(converted_result.var_count);
-			for (auto var_deg_pair:mon_in_ring) {
-				int var_idx = var_deg_pair.first - kFirstVar;
-				mon[var_idx] =var_deg_pair.second;
-			}
-			poly.addTerm(F4MPI::CModular(1), F4MPI::CMonomial(mon));
-		}
-		converted_result.polys.push_back(poly);
-	}
-	result.reset();
-	return converted_result;
-}
-*/

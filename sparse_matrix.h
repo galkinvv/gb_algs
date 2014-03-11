@@ -8,7 +8,7 @@ struct Element
 	int column;
 };
 
-//solves matrix equation in Fiedl with matrix as left side(Container of rows, where each row is container of elements) assuming that right side consists if one followed by zeroes
+//solves matrix equation in field with matrix as left side(Container of rows, where each row is container of elements) assuming that right side consists if one followed by zeroes
 //empty result means "no solution"
 
 template <class Field, class ElementMatrixContainer>

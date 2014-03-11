@@ -93,6 +93,8 @@ private:
 			return SignedOne::MinusOne;
 		case SignedOne::MinusOne:
 			return SignedOne::PlusOne;
+		default:
+			assert(!"bad value for signedOne");
 		}
 	}
 	//Finds x ,y ( 0 < x <= b) and ( 0 <= y < a) for equation a*x - b*y = signedOne using calculation wih only positive numbers.

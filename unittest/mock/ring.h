@@ -34,7 +34,7 @@ namespace Mock
 
 		std::unique_ptr<const CrossRingInfo::AddedVarInfo<MonomialMetadata>>  ExtendRingWithMonomialToHelpReconstruct(const std::unique_ptr<InPolysSetWithOrigMetadata>& reconstruction_basis, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info)
 		{
-			IgnoreIfUnused(info);
+			IgnoreIfUnused(reconstruction_basis, info);
 			return nullptr;
 		}
 
