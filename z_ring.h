@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <limits>
 #include <cassert>
+#include <type_traits>
 template <class Integer>
 struct ZPlusRing
 {

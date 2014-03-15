@@ -298,9 +298,8 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const InPolysSetWithOrigMe
 	for (;orig_poly_it != reconstruction_basis.end(); ++mul_by_it, ++orig_poly_it)
 	{
 		assert(mul_by_it != input_polys_mons.end());
-		for (auto mon: *mul_by_it) {
-			mult_inputs_with_iters.emplace_back(*orig_poly_it);
-			auto &mult = mult_inputs_with_iters.back();
+		for (auto mon: *mul_by_it) {			
+			auto &mult = emplaced_back(mult_inputs_with_iters, *orig_poly_it);
 			SlowMon mul_by;
 			for (auto var: mon) {
 				mult.mul_by[var.index] = var.degree;
@@ -333,8 +332,7 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const InPolysSetWithOrigMe
 	{
 		ImplementedField::Value one;
 		field.SetOne(one);
-		matrix.emplace_back();
-		auto row = matrix.back();
+		auto& row =  emplaced_back(matrix);
 		for(int col = 0; col < (int)mult_inputs_with_iters.size(); ++col)
 		{
 			auto mult = mult_inputs_with_iters[col];
@@ -366,9 +364,8 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const InPolysSetWithOrigMe
 	{
 		//if solver fails - return false
 		return false;
-	}
-	result->emplace_back();
-	auto& new_poly = result->back();
+	}	
+	auto& new_poly = emplaced_back(*result);
 	//add top_info with coef 1.
 	new_poly.push_back(top);
 	for (auto result_item:solution)
@@ -417,8 +414,7 @@ int RingZ2SlowBase::VarMappingImplReturningOldVarCount(std::vector<int>& new_mon
 
 RingZ2SlowBase::NewIndices RingZ2SlowBase::ExtendRingWithMonomialToHelpReconstructImpl(const unique_deleter_ptr<InPolysSetWithOrigMetadata>& reconstruction_basis, Enumerator<CrossRingInfo::PerVariableData> info)
 {
-	impl_->new_variables.emplace_back();
-	SlowMon& old_mons = impl_->new_variables.back();
+	SlowMon& old_mons = emplaced_back(impl_->new_variables);
 	for (auto var:info)
 	{
 		int& new_degree =old_mons[var.index];
@@ -428,12 +424,11 @@ RingZ2SlowBase::NewIndices RingZ2SlowBase::ExtendRingWithMonomialToHelpReconstru
 	const int new_var_index = impl_->keeped_vars_count_ + impl_->new_variables.size() - 1;
 	SlowMon new_mon;
 	new_mon[new_var_index] = 1;
-	reconstruction_basis->emplace_back();
 	//new polynomial = old_mons - new_mon
-	auto new_poly = std::prev(reconstruction_basis->end());	
-	new_poly->push_back(old_mons);
-	new_poly->push_back(new_mon);
-	return Initialized<NewIndices>(&NewIndices::new_var_index, new_var_index, &NewIndices::new_poly_index, std::distance(reconstruction_basis->begin(), new_poly));
+	auto& new_poly = emplaced_back(*reconstruction_basis);
+	new_poly.push_back(old_mons);
+	new_poly.push_back(new_mon);
+	return Initialized<NewIndices>(&NewIndices::new_var_index, new_var_index, &NewIndices::new_poly_index, reconstruction_basis->size() - 1);
 }
 
 unique_deleter_ptr<RingZ2SlowBase::OutPolysSetForVariyingMetadata> RingZ2SlowBase::PrepareEmptyResult()
@@ -445,11 +440,9 @@ unique_deleter_ptr<RingZ2SlowBase::InPolysSetWithOrigMetadata> RingZ2SlowBase::P
 {
 	auto result = as_deleter_ptr(new InPolysSetWithOrigMetadata());
 	for (auto poly: input) {
-		result->emplace_back();
-		auto& poly_to_populate = result->back();
+		auto& poly_to_populate = emplaced_back(*result);
 		for (auto mon: poly) {
-			poly_to_populate.emplace_back();
-			auto& mon_to_populate = poly_to_populate.back();
+			auto& mon_to_populate = emplaced_back(poly_to_populate);
 			for (auto var: mon) {
 				mon_to_populate[var.index] = var.degree;
 			}
@@ -511,8 +504,7 @@ struct LessComparer
 void FastZ2SlowBasedRingBase::AddLabeledPolyBeforeImpl(int new_var_index, int new_poly_index_in_rec_basis, Enumerator<CrossRingInfo::PerVariableData> monomial, LPolysResult& reducers, const LPoly& poly_before)
 {
 	//a new polynomial that would allow reducing monomial would be added
-	reducers.impl_->emplace_back();
-	LPoly& new_poly = reducers.impl_->back();
+	LPoly& new_poly = emplaced_back(*reducers.impl_);
 	new_poly.impl_.reset(new LPoly::Impl());
 	FastMonomial old_mons;
 	FastMonomial new_mon;
@@ -675,8 +667,7 @@ FastZ2SlowBasedRingBase::MultLPolysQueue FastZ2SlowBasedRingBase::PutInQueueExte
 	for (auto poly:input)
 	{
 		++cur_poly_index;
-		impl_->initial_polys.emplace_back();
-		LPoly& labeled_poly = impl_->initial_polys.back();
+		LPoly& labeled_poly = emplaced_back(impl_->initial_polys);
 		for (auto vars_colection : poly){
 			FastMonomial mon;
 			for(auto var: vars_colection)
