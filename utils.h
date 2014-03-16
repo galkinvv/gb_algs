@@ -527,6 +527,6 @@ T Initialized(MemberType T::*member, MemberType value, Args... args)
 template <class Container, class... Args>
 auto emplaced_back(Container& container, Args... args) -> decltype(std::declval<Container>().back())
 {
-	container.emplace_back(std::forward<Args...>(args...));
+	container.emplace_back(std::forward<Args>(args)...);
 	return container.back();
 }

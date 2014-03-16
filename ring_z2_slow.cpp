@@ -345,7 +345,7 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const InPolysSetWithOrigMe
 					{
 						break;//too big
 					}
-					decltype(row)::value_type elem;
+					std::remove_reference<decltype(row.back())>::type elem;
 					elem.value = one;
 					elem.column = col;
 					row.push_back(elem);
@@ -428,7 +428,7 @@ RingZ2SlowBase::NewIndices RingZ2SlowBase::ExtendRingWithMonomialToHelpReconstru
 	auto& new_poly = emplaced_back(*reconstruction_basis);
 	new_poly.push_back(old_mons);
 	new_poly.push_back(new_mon);
-	return Initialized<NewIndices>(&NewIndices::new_var_index, new_var_index, &NewIndices::new_poly_index, reconstruction_basis->size() - 1);
+	return Initialized<NewIndices>(&NewIndices::new_var_index, new_var_index, &NewIndices::new_poly_index, static_cast<int>(reconstruction_basis->size() - 1));
 }
 
 unique_deleter_ptr<RingZ2SlowBase::OutPolysSetForVariyingMetadata> RingZ2SlowBase::PrepareEmptyResult()
