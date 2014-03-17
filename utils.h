@@ -6,6 +6,7 @@
 #include <ostream>
 #include <functional>
 #include <memory>
+#include <random>
 #include <cassert>
 
 class NoCopy
@@ -431,6 +432,19 @@ int slow_distance(Iterator from, Iterator to)
 }
 
 template <class T>
+struct auto_unique_ptr: std::unique_ptr<T>
+{
+	auto_unique_ptr():
+		std::unique_ptr<T>(new T())
+	{}
+	
+	auto_unique_ptr& operator=(auto_unique_ptr&& other) = default;
+	auto_unique_ptr(auto_unique_ptr&& other):
+		std::unique_ptr<T>(std::move(other))
+	{}
+};
+
+template <class T>
 struct unique_deleter_ptr: std::unique_ptr<T, void(*)(T*)>
 {
 	typedef typename std::remove_cv<T>::type NonConstT;
@@ -530,3 +544,15 @@ auto emplaced_back(Container& container, Args... args) -> decltype(std::declval<
 	container.emplace_back(std::forward<Args>(args)...);
 	return container.back();
 }
+
+class RandomGenerator
+{
+  public:
+	int operator()()
+	{
+		return dis(gen);
+	}
+  private:
+	std::mt19937 gen{std::random_device()()};
+	std::uniform_int_distribution<> dis;
+};
