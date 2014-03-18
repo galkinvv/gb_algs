@@ -15,7 +15,7 @@ struct MonomialCoefNonZeroEnsurer
 	template <class TMonomial>
 	const TMonomial& operator()(const TMonomial& mon)const
 	{
-		assert(!FiledHelpers::IsZero(field_,mon.coef()));
+		assert(!FieldHelpers::IsZero(field_,mon.coef()));
 		return mon;
 	}
 

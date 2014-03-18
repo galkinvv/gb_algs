@@ -33,8 +33,9 @@ struct FiniteField {
 	void Divide(const Value& divident, const Value& divider, DivResult& result) const{
 		//first solve mod_*x - divider * result  = 1
 		ZValue x_unused;
-		ExtendedEuclid(mod_, divider, x_unused, result, SignedOne::PlusOne);
-		z_.Mul(CopyValue(result), divident, result);
+		ZValue divider_inverse;
+		ExtendedEuclid(mod_, divider, x_unused, divider_inverse, SignedOne::PlusOne);
+		z_.Mul(divider_inverse, divident, result);
 	}
 
 	ExactSubtractionResultInfo Subtract(const Value& from, const Value& what, const DivResult& multiplier, Value& result) const{
@@ -59,8 +60,9 @@ struct FiniteField {
 	}
 
 	void SetZero(Value& result)const{
-		z_.SetOne(result);
+		z_.SetZero(result);
 	}
+	
 	void SetOne(Value& result) const{
 		z_.SetOne(result);
 	}

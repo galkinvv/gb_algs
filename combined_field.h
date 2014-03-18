@@ -1,4 +1,7 @@
 #pragma once
+#include "field_base.h"
+#include "utils.h"
+
 template <class ExactField, class ApproxField>
 class CombinedField
 {
@@ -9,39 +12,52 @@ class CombinedField
 		typename ApproxField::Value approx;
 	};
 	
-	class Frac
+	class DivResult
 	{
 		friend class CombinedField;
-		typename ExactField::Frac exact;
-		typename ApproxField::Frac approx;
+		typename ExactField::DivResult exact;
+		typename ApproxField::DivResult approx;
 	};
 
 	template <class F>
-	void ExtendWithRandom(const ApproxField::Value& approx_value, F random_functor, Value& value)
+	void ExtendWithRandom(const typename ApproxField::Value& approx_value, F random_functor, Value& value)const
 	{
 		value.approx = approx_value;
 		ef_.SetRandom(random_functor, value.exact);
 	}
 
-	void ExtractApprox(const Value& value,  ApproxField::Value& approx_value)
+	void ExtractApprox(const Value& value, typename ApproxField::Value& approx_value)const
 	{
 		approx_value = value.approx;
 	}
 
-	void Frac(const Value& numerator, const Value& denominator, Frac& result)
+	void Divide(const Value& numerator, const Value& denominator, DivResult& result)const
 	{
 		af_.Divide(numerator.approx, denominator.approx, result.approx); //may  throw unexact_divisor_exception
 		ef_.Divide(numerator.exact, denominator.exact, result.exact);
 	}
-	bool IsPreciserDivisor(const Value& numerator, const Value& denominator)
+	
+	bool IsPreciserDivisor(const Value& divisor0, const Value& divisor1)const
 	{
-		return af_.IsPreciserDivisor(numerator.approx, denominator.approx);
+		return af_.IsPreciserDivisor(divisor0.approx, divisor1.approx);
 	}
 	
-	ExactSubtractionResultInfo Subtract(const Value& from, const Value& what, const Frac& multiplier, Value& result)
+	void SetZero(Value& result)const
+	{
+		af_.SetZero(result.approx);
+		ef_.SetZero(result.exact);
+	}
+	
+	void SetOne(Value& result)const
+	{
+		af_.SetOne(result.approx);
+		ef_.SetOne(result.exact);
+	}
+	
+	ExactSubtractionResultInfo Subtract(const Value& from, const Value& what, const DivResult& multiplier, Value& result)const
 	{
 		auto approx_result = af_.Subtract(from.approx, what.approx, multiplier.approx, result.approx);
-		auto exact_result = af_.Subtract(from.exact, what.exact, multiplier.exact, result.exact);
+		auto exact_result = ef_.Subtract(from.exact, what.exact, multiplier.exact, result.exact);
 		if (exact_result == ExactSubtractionResultInfo::NonZero)
 		{
 			return ExactSubtractionResultInfo::NonZero;
@@ -55,4 +71,61 @@ class CombinedField
 
 	ExactField ef_;
 	ApproxField af_;
+};
+
+template <class ExactField>
+class ExactFieldAsCombined
+{
+  public:
+	ExactFieldAsCombined(const ExactField& other):ef_(other){}
+
+	class Value
+	{
+		friend class ExactFieldAsCombined;
+		typename ExactField::Value exact;
+	};
+	
+	class DivResult
+	{
+		friend class ExactFieldAsCombined;
+		typename ExactField::DivResult exact;
+	};
+
+	template <class F>
+	void ExtendWithRandom(const typename ExactField::Value& approx_value, F random_functor, Value& value)const
+	{
+		value.exact = approx_value;
+		IgnoreIfUnused(random_functor);
+	}
+	void ExtractApprox(const Value& value, typename ExactField::Value& approx_value)const
+	{
+		approx_value = value.exact;
+	}
+
+	void Divide(const Value& numerator, const Value& denominator, DivResult& result)const
+	{
+		ef_.Divide(numerator.exact, denominator.exact, result.exact);
+	}
+	bool IsPreciserDivisor(const Value& divisor0, const Value& divisor1)const
+	{
+		//mostly times is uncomparable
+		return FieldHelpers::IsZero(ef_, divisor1.exact);
+	}
+	
+	void SetZero(Value& result)const
+	{
+		ef_.SetZero(result.exact);
+	}
+	
+	void SetOne(Value& result)const
+	{
+		ef_.SetOne(result.exact);
+	}
+	
+	ExactSubtractionResultInfo Subtract(const Value& from, const Value& what, const DivResult& multiplier, Value& result)const
+	{
+		return ef_.Subtract(from.exact, what.exact, multiplier.exact, result.exact);
+	}
+private:
+  ExactField ef_;
 };

@@ -13,7 +13,7 @@ enum class ApproxSubtractionResultInfo
 struct unexact_divisor_exception: std::exception{};
 struct cant_detect_zero_equality_exception: std::exception{};
 
-namespace FiledHelpers
+namespace FieldHelpers
 {
 	template <class Field>
 	bool IsZero(const Field& field, const typename Field::Value& value)
