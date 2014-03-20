@@ -3,6 +3,7 @@
 #include "combined_field.h"
 #include "z_ring.h"
 #include "utils.h"
+#include <algorithm>
 #include <vector>
 #include <exception>
 
@@ -34,14 +35,15 @@ namespace{
 	template <class Field>
 	void TriangulateMatrix(const Field& field, std::vector<auto_unique_ptr<RowWithRightPart<Field>>>& matrix, std::vector<int>& lead_columns)
 	{
-		std::vector<decltype(matrix.back()->left.begin())> min_row_iterators;
+		std::vector<typename std::remove_reference<decltype(matrix.back()->left.cbegin())>::type> min_row_iterators;
 		lead_columns.resize(matrix.size(), -2); //fill with non-initialized
 		for (int used_rows = matrix.size(); used_rows >0 ; --used_rows)
 		{			
+			const auto used_matrix_end = matrix.begin()+used_rows;
 			int last_idx = used_rows - 1;
 			//check for zero rows
 			bool zero_row_found = false;
-			for (auto ir=matrix.begin(), ir_end = matrix.begin()+used_rows; ir!=ir_end; ++ir)
+			for (auto ir=matrix.begin(); ir!=used_matrix_end; ++ir)
 			{
 				const auto& r = **ir;
 				if (r.left.empty())
@@ -52,22 +54,32 @@ namespace{
 						throw incompatible_system_exception();
 					}
 					//completely zero left and right sides
-					zero_row_found = true;
 					auto last = matrix.begin() + last_idx;
 					if (ir != last)
 					{
 						ir->swap(*last);
 					}
+					assert(matrix[last_idx]->left.empty()); //should be empty because we positioned in in a such way
 					lead_columns[last_idx] = kRowIsCompletlyZero;
+					zero_row_found = true;
+					break;
 				}
 			}
 			if (zero_row_found)
 			{
 				continue;
 			}
-			min_row_iterators.reserve(used_rows);
-			//TODO
 			//fill min_row_iterators
+			min_row_iterators.clear();
+			min_row_iterators.reserve(used_rows);
+			for (auto ir = matrix.begin(); ir != used_matrix_end; ++ir)
+			{
+				const auto& left_row_part = (**ir).left;
+				assert(!left_row_part.empty());
+				const auto min_in_row = std::min_element(left_row_part.begin(), left_row_part.end(), [&field](const Element<Field>& v0, const Element<Field>& v1){return field.IsPreciserDivisor(v0.value, v1.value);});
+				min_row_iterators.push_back(min_in_row);
+			}
+			//TODO
 			//find minimail
 			//swap
 			//subtract

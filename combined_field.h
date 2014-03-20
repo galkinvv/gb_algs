@@ -109,6 +109,7 @@ class ExactFieldAsCombined
 	bool IsPreciserDivisor(const Value& divisor0, const Value& divisor1)const
 	{
 		//mostly times is uncomparable
+		IgnoreIfUnused(divisor0);
 		return FieldHelpers::IsZero(ef_, divisor1.exact);
 	}
 	
