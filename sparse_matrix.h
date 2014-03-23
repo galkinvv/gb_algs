@@ -27,8 +27,10 @@ namespace{
 	
 	//triangulates matrix. lead_columns - filled with column numbers treated as leading.
 	//i-th number in lead_columns corresponds to i-th row in matrix
-	const int kRowIsCompletlyZero = -1;
-	//kRowIsCompletlyZero in lead column means  completely zero row
+	//lead elements of triangulated matrix are set to exact ones
+
+	const int kRowIsCompletlyZero = -1; //kRowIsCompletlyZero in lead column means  completely zero row
+	const int kUnitializedLeadColumn = -2; //used only internally
 	struct incompatible_system_exception: std::exception{};
 	//throws incompatible_system_exception when system can't be triangulated (too much non-zero rows for example)
 	
@@ -36,55 +38,76 @@ namespace{
 	void TriangulateMatrix(const Field& field, std::vector<auto_unique_ptr<RowWithRightPart<Field>>>& matrix, std::vector<int>& lead_columns)
 	{
 		std::vector<typename std::remove_reference<decltype(matrix.back()->left.cbegin())>::type> min_row_iterators;
-		lead_columns.resize(matrix.size(), -2); //fill with non-initialized
-		for (int used_rows = matrix.size(); used_rows >0 ; --used_rows)
+		lead_columns.resize(matrix.size(), kUnitializedLeadColumn); //fill with non-initialized
+		int used_rows = matrix.size();
+		for(;;)
 		{			
-			const auto used_matrix_end = matrix.begin()+used_rows;
-			int last_idx = used_rows - 1;
-			//check for zero rows
-			bool zero_row_found = false;
-			for (auto ir=matrix.begin(); ir!=used_matrix_end; ++ir)
+			min_row_iterators.clear();
+			min_row_iterators.reserve(used_rows);
+			auto ir=matrix.begin();
+			//fill min_row_iterators and check for zero rows
+			while (ir != matrix.begin()+used_rows)
 			{
-				const auto& r = **ir;
-				if (r.left.empty())
+				const auto& left_row_part = (**ir).left;
+				if (left_row_part.empty())
 				{
-					if (!FieldHelpers::IsZero(field, r.right.value))
+					// left side is zero
+					if (!FieldHelpers::IsZero(field, (**ir).right.value))
 					{
 						//zero left side but non-zero right side
 						throw incompatible_system_exception();
 					}
 					//completely zero left and right sides
-					auto last = matrix.begin() + last_idx;
+					--used_rows;
+					auto last = matrix.begin()+used_rows;
 					if (ir != last)
 					{
 						ir->swap(*last);
 					}
-					assert(matrix[last_idx]->left.empty()); //should be empty because we positioned in in a such way
-					lead_columns[last_idx] = kRowIsCompletlyZero;
-					zero_row_found = true;
-					break;
+					assert(matrix[used_rows]->left.empty()); //should be empty because we positioned in in a such way
+					lead_columns[used_rows] = kRowIsCompletlyZero;
+				}
+				else
+				{					
+					//non-empty row
+					const auto min_in_row = std::min_element(left_row_part.begin(), left_row_part.end(), [&field](const Element<Field>& v0, const Element<Field>& v1){return field.IsPreciserDivisor(v0.value, v1.value);});					
+					assert(min_in_row != left_row_part.end());
+					min_row_iterators.push_back(min_in_row);
 				}
 			}
-			if (zero_row_found)
+			if (min_row_iterators.empty())
 			{
-				continue;
+				//no more rows
+				break;
 			}
-			//fill min_row_iterators
-			min_row_iterators.clear();
-			min_row_iterators.reserve(used_rows);
-			for (auto ir = matrix.begin(); ir != used_matrix_end; ++ir)
+			const auto min_min_row_it = std::min_element(
+					min_row_iterators.begin(), 
+					min_row_iterators.end(), 
+					[&field](decltype(min_row_iterators.front()) v0, decltype(min_row_iterators.front()) v1){return field.IsPreciserDivisor(v0->value, v1->value);}
+				);
+			
+			auto item_in_min_row = *min_min_row_it;
+			const int min_row_index = min_min_row_it - min_row_iterators.begin();
+			
+			const auto found_min_row = matrix.begin()+min_row_index;
+			
+			--used_rows;
+			const auto last = matrix.begin()+used_rows;
+			if (found_min_row != last)
 			{
-				const auto& left_row_part = (**ir).left;
-				assert(!left_row_part.empty());
-				const auto min_in_row = std::min_element(left_row_part.begin(), left_row_part.end(), [&field](const Element<Field>& v0, const Element<Field>& v1){return field.IsPreciserDivisor(v0.value, v1.value);});
-				min_row_iterators.push_back(min_in_row);
+				found_min_row->swap(*last);
 			}
-			//TODO
-			//find minimail
-			//swap
-			//subtract
-			//fill lead_columns
+			assert(matrix[used_rows]->left.empty()); //should be empty because we positioned in in a such way
+			lead_columns[used_rows] = item_in_min_row - (**last).left.begin();
+			assert(lead_columns[used_rows] < (**last).left.size());
+
+			//TODO: normilize last
+			for (ir=matrix.begin(); ir != last; ++ir)
+			{
+				//TODO: substract multiplied last from ir
+			}			
 		}
+		//TODO: check  anwser corretness: all lead_columns are -1 or correspond to exaclyvalue exactly equal to one 
 	}
 }
 
@@ -94,6 +117,7 @@ template <class Field, class ElementMatrixContainer, class CombinedField = Exact
 void SolveWithRightSideContainigSingleOne(const Field& field, const ElementMatrixContainer& matrix, std::vector<Element<Field>>& result, int max_diferent_numbers_in_coefficients)
 {
 	result.clear();
+	//TODO for non-Z2 case:
 	//calculate P_0 based on matrix.size() and max_diferent_numbers_in_coefficients
 	//calculate N_0 based on P_0. 
 	//select field based on P_0 and N_0
