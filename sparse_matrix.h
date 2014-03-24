@@ -27,7 +27,7 @@ namespace{
 	
 	//triangulates matrix. lead_columns - filled with column numbers treated as leading.
 	//i-th number in lead_columns corresponds to i-th row in matrix
-	//lead elements of triangulated matrix are set to exact ones
+	//lead elements of triangulated matrix are NOT set to exact ones - they are arbitrary values
 
 	const int kRowIsCompletlyZero = -1; //kRowIsCompletlyZero in lead column means  completely zero row
 	const int kUnitializedLeadColumn = -2; //used only internally
@@ -98,12 +98,18 @@ namespace{
 				found_min_row->swap(*last);
 			}
 			assert(matrix[used_rows]->left.empty()); //should be empty because we positioned in in a such way
-			lead_columns[used_rows] = item_in_min_row - (**last).left.begin();
-			assert(lead_columns[used_rows] < (**last).left.size());
+			const int lead_column = item_in_min_row->column;
+			lead_columns[used_rows] = lead_column;
+			assert((item_in_min_row - (**last).left.begin()) < (**last).left.size());
 
-			//TODO: normilize last
+			//go to subtraction without  normalizing the  lead coef in last
 			for (ir=matrix.begin(); ir != last; ++ir)
 			{
+				auto lead_row = std::lower_bound((**ir).left.begin(),(**ir).left.end(), lead_column, [](const Element<Field>& el, int column){return el.column < column;});
+			if (lead_row == (**ir).left.end() || lead_row->column != lead_column)
+			{
+				continue;
+			}
 				//TODO: substract multiplied last from ir
 			}			
 		}
