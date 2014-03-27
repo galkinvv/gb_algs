@@ -22,7 +22,7 @@ namespace{
 	struct RowWithRightPart
 	{
 		std::vector<Element<Field>> left;
-		Element<Field> right;
+		typename Field::Value right;
 	};
 	
 	//triangulates matrix. lead_columns - filled with column numbers treated as leading.
@@ -52,7 +52,7 @@ namespace{
 				if (left_row_part.empty())
 				{
 					// left side is zero
-					if (!FieldHelpers::IsZero(field, (**ir).right.value))
+					if (!FieldHelpers::IsZero(field, (**ir).right))
 					{
 						//zero left side but non-zero right side
 						throw incompatible_system_exception();
@@ -86,7 +86,7 @@ namespace{
 					[&field](decltype(min_row_iterators.front()) v0, decltype(min_row_iterators.front()) v1){return field.IsPreciserDivisor(v0->value, v1->value);}
 				);
 			
-			auto item_in_min_row = *min_min_row_it;
+			auto lead_item_in_min_row = *min_min_row_it;
 			const int min_row_index = min_min_row_it - min_row_iterators.begin();
 			
 			const auto found_min_row = matrix.begin()+min_row_index;
@@ -98,19 +98,31 @@ namespace{
 				found_min_row->swap(*last);
 			}
 			assert(matrix[used_rows]->left.empty()); //should be empty because we positioned in in a such way
-			const int lead_column = item_in_min_row->column;
+			const int lead_column = lead_item_in_min_row->column;
 			lead_columns[used_rows] = lead_column;
-			assert((item_in_min_row - (**last).left.begin()) < (**last).left.size());
+			const auto& last_row = *last;
+			assert((lead_item_in_min_row - last_row->left.begin()) < last_row->left.size());
 
 			//go to subtraction without  normalizing the  lead coef in last
+			typename Field::Value zero;
+			field.SetZero(zero);
 			for (ir=matrix.begin(); ir != last; ++ir)
 			{
 				auto lead_row = std::lower_bound((**ir).left.begin(),(**ir).left.end(), lead_column, [](const Element<Field>& el, int column){return el.column < column;});
-			if (lead_row == (**ir).left.end() || lead_row->column != lead_column)
-			{
-				continue;
-			}
+				if (lead_row == (**ir).left.end() || lead_row->column != lead_column)
+				{
+					continue;
+				}
+				
+				typename Field::DivResult row_multiplier;
+				field.Divide(lead_row->value, lead_item_in_min_row->value, row_multiplier);
+				auto_unique_ptr<RowWithRightPart<Field>> modified_row;
+				modified_row->left.reserve((**ir).left.size() + last_row->left.size());
+				field.Subtract((**ir).right, last_row->right, row_multiplier, modified_row->right);
+				auto orig = (**ir).left.begin();
+				auto modifier = last_row->left.begin();
 				//TODO: substract multiplied last from ir
+				ir->reset(modified_row.release());
 			}			
 		}
 		//TODO: check  anwser corretness: all lead_columns are -1 or correspond to exaclyvalue exactly equal to one 
@@ -137,12 +149,12 @@ void SolveWithRightSideContainigSingleOne(const Field& field, const ElementMatri
 		if (combined_matrix.size() == 1)
 		{
 			//first row contains one
-			combined_field.SetOne(pair_row->right.value);
+			combined_field.SetOne(pair_row->right);
 		}
 		else
 		{
 			//all other rows - zeroes
-			combined_field.SetZero(pair_row->right.value);
+			combined_field.SetZero(pair_row->right);
 		}
 		pair_row->left.reserve(row.size());
 		for(const auto& el:row)
