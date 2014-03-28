@@ -35,6 +35,66 @@ namespace{
 	//throws incompatible_system_exception when system can't be triangulated (too much non-zero rows for example)
 	
 	template <class Field>
+	void SubMatrixRows(const Field& field, const RowWithRightPart<Field>& orig, const RowWithRightPart<Field>& modifier, RowWithRightPart<Field>& result, typename std::vector<Element<Field>>::const_iterator lead_orig, typename std::vector<Element<Field>>::const_iterator lead_modifier)
+	{
+		typename Field::Value zero;
+		field.SetZero(zero);
+		typename Field::DivResult row_multiplier;
+		assert(lead_orig->column == lead_modifier->column);
+		field.Divide(lead_orig->value, lead_modifier->value, row_multiplier);
+		result.left.reserve(orig.left.size() + modifier.left.size());
+		field.Subtract(orig.right, modifier.right, row_multiplier, result.right);
+		auto io = orig.left.begin();
+		auto io_end = orig.left.end();
+		auto im_end = modifier.left.end();
+		//TODO: adapt
+		/*
+		while(i1!=i1f && i2!=i2f){			
+			int dif = p1.getMon(i1).compareTo(p2.getMon(i2));
+			CModular c;
+			if(dif==0){				
+				c = p1.getCoeff(i1) +addCoeff*p2.getCoeff(i2);
+				M = p1.getMon(i1);
+				++i1;
+				++i2;
+			}		
+			else if(dif>0){
+				c = p1.getCoeff(i1);
+				M = p1.getMon(i1);				
+				++i1;
+			}		
+			else{
+				c = addCoeff*p2.getCoeff(i2);
+				M = p2.getMon(i2);				
+				++i2;
+			}
+			if(c!=0){
+				Result.pushTermBack(c, M);
+			}
+		}
+		while(i1!=i1f){			
+			CModular c;
+			c = p1.getCoeff(i1);
+			M = p1.getMon(i1);				
+			if(c!=0){
+				Result.pushTermBack(c, M);
+			}
+			++i1;
+		}
+
+		while(i2!=i2f){			
+			CModular c;
+			c = addCoeff*p2.getCoeff(i2);
+			M = p2.getMon(i2);
+			if(c!=0){
+				Result.pushTermBack(c, M);
+			}
+			++i2;
+		}	
+		*/
+	}
+	
+	template <class Field>
 	void TriangulateMatrix(const Field& field, std::vector<auto_unique_ptr<RowWithRightPart<Field>>>& matrix, std::vector<int>& lead_columns)
 	{
 		std::vector<typename std::remove_reference<decltype(matrix.back()->left.cbegin())>::type> min_row_iterators;
@@ -104,8 +164,6 @@ namespace{
 			assert((lead_item_in_min_row - last_row->left.begin()) < last_row->left.size());
 
 			//go to subtraction without  normalizing the  lead coef in last
-			typename Field::Value zero;
-			field.SetZero(zero);
 			for (ir=matrix.begin(); ir != last; ++ir)
 			{
 				auto lead_row = std::lower_bound((**ir).left.begin(),(**ir).left.end(), lead_column, [](const Element<Field>& el, int column){return el.column < column;});
@@ -113,15 +171,8 @@ namespace{
 				{
 					continue;
 				}
-				
-				typename Field::DivResult row_multiplier;
-				field.Divide(lead_row->value, lead_item_in_min_row->value, row_multiplier);
 				auto_unique_ptr<RowWithRightPart<Field>> modified_row;
-				modified_row->left.reserve((**ir).left.size() + last_row->left.size());
-				field.Subtract((**ir).right, last_row->right, row_multiplier, modified_row->right);
-				auto orig = (**ir).left.begin();
-				auto modifier = last_row->left.begin();
-				//TODO: substract multiplied last from ir
+				SubMatrixRows(field, **ir, *last_row, *modified_row, lead_row, lead_item_in_min_row);
 				ir->reset(modified_row.release());
 			}			
 		}
