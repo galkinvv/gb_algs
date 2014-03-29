@@ -42,56 +42,63 @@ namespace{
 		typename Field::DivResult row_multiplier;
 		assert(lead_orig->column == lead_modifier->column);
 		field.Divide(lead_orig->value, lead_modifier->value, row_multiplier);
-		result.left.reserve(orig.left.size() + modifier.left.size());
 		field.Subtract(orig.right, modifier.right, row_multiplier, result.right);
-		auto io = orig.left.begin();
-		auto io_end = orig.left.end();
-		auto im_end = modifier.left.end();
-		//TODO: adapt
-		/*
-		while(i1!=i1f && i2!=i2f){			
-			int dif = p1.getMon(i1).compareTo(p2.getMon(i2));
-			CModular c;
-			if(dif==0){				
-				c = p1.getCoeff(i1) +addCoeff*p2.getCoeff(i2);
-				M = p1.getMon(i1);
-				++i1;
-				++i2;
-			}		
-			else if(dif>0){
-				c = p1.getCoeff(i1);
-				M = p1.getMon(i1);				
-				++i1;
-			}		
-			else{
-				c = addCoeff*p2.getCoeff(i2);
-				M = p2.getMon(i2);				
-				++i2;
+		const int result_reserve = orig.left.size() + modifier.left.size() - 2;
+		result.left.reserve(result_reserve);
+		auto io = orig.left.cbegin();
+		auto io_end = orig.left.cend();
+		auto im = modifier.left.cbegin();
+		auto im_end = modifier.left.cend();
+		bool lead_column_found_and_ignored = false;
+		while(io!=io_end && im!=im_end)
+		{			
+			if (io->column < im->column)
+			{
+				result.left.emplace_back(*io);
+				++io;
 			}
-			if(c!=0){
-				Result.pushTermBack(c, M);
+			else if (io->column > im->column)
+			{
+				result.left.emplace_back(*im);
+				auto sub_result = field.Subtract(zero, im->value, row_multiplier, result.left.back().value);
+				assert(sub_result == ExactSubtractionResultInfo::NonZero);
+				++im;
 			}
+			else
+			{
+				assert(io->column == im->column);
+				if (io != lead_orig)
+				{
+					typename Field::Value new_value;
+					if (ExactSubtractionResultInfo::NonZero == field.Subtract(io->value, im->value, row_multiplier, new_value))
+					{
+						result.left.emplace_back(*io);
+						result.left.back().value = new_value;
+					}					
+				}
+				else
+				{
+					assert(im == lead_modifier);
+					lead_column_found_and_ignored = true;
+				}
+				++io;
+				++im;
+			}
+			assert(lead_column_found_and_ignored);
 		}
-		while(i1!=i1f){			
-			CModular c;
-			c = p1.getCoeff(i1);
-			M = p1.getMon(i1);				
-			if(c!=0){
-				Result.pushTermBack(c, M);
-			}
-			++i1;
+		while(io!=io_end){
+			assert(im == im_end);
+			result.left.emplace_back(*io);
+			++io;
 		}
-
-		while(i2!=i2f){			
-			CModular c;
-			c = addCoeff*p2.getCoeff(i2);
-			M = p2.getMon(i2);
-			if(c!=0){
-				Result.pushTermBack(c, M);
-			}
-			++i2;
-		}	
-		*/
+		while(im!=im_end){
+			assert(io == io_end);
+			result.left.emplace_back(*im);
+			auto sub_result = field.Subtract(zero, im->value, row_multiplier, result.left.back().value);
+			assert(sub_result == ExactSubtractionResultInfo::NonZero);
+			++im;
+		}
+		assert(result.left.size() <= result_reserve);
 	}
 	
 	template <class Field>
