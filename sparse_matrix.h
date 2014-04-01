@@ -206,13 +206,13 @@ void SolveWithRightSideContainigSingleOne(const Field& field, const ElementMatri
 		auto& pair_row = emplaced_back(combined_matrix);
 		if (combined_matrix.size() == 1)
 		{
-			//first row contains one
-			combined_field.SetOne(pair_row->right);
+			//first row is one
+			pair_row->right = FieldHelpers::MinusOne(combined_field);
 		}
 		else
 		{
 			//all other rows - zeroes
-			combined_field.SetZero(pair_row->right);
+			pair_row->right = FieldHelpers::Zero(combined_field);
 		}
 		pair_row->left.reserve(row.size());
 		for(const auto& el:row)
@@ -224,6 +224,36 @@ void SolveWithRightSideContainigSingleOne(const Field& field, const ElementMatri
 	}
 	std::vector<int> lead_columns;
 	TriangulateMatrix(combined_field, combined_matrix, lead_columns);
-	//TODO
+	assert(lead_columns.size() == combined_matrix.size())
+	for (int ir = 0; ir  < lead_columns.size(); ++ir)
+	{
+		const int lead_column = lead_columns[ir];
+		if (lead_col != kRowIsCompletelyZero)
+		{
+			const auto& r = combined_matrix[ir];
+			const auto lead_element_it = std::lower_bound(r.left.begin(), r.left.end(), lead_column, );
+			typename Field::Value lead_value;
+			typename Field::Value right_value;
+			combined_field.ExtractApprox(lead_element_it->value, lead_value);
+			combined_field.ExtractApprox(r.right.value, right_value);
+			//subtract  from ritght side columns corresponding to already foumnd result elements
+			for(auto computed_element:result)
+			{
+				const int other_column = computed_element.column;
+				const auto other_element_it = std::lower_bound(r.left.begin(), r.left.end(), other_column, );
+				if (other_element_it != r.left.end() && other_element_it->column == other_column)
+				{
+					auto other_value = FieldHelpers::DivByOne(field, other_element_it->value);
+					field.Subtract(CopyValue(right_value), computed_element.value, other_value, right_value);
+				}
+			}
+			typename Field::DivResult var_value_as_frac;
+			field.Divide(right_value, lead_value, var_value_as_frac);
+			Element<Field> new_element;
+			new_element.column = lead_column;
+			new_element.value = FieldHelpers::FracAsValue(var_value_as_frac);
+			result.emplace_back(new_element);
+		}
+	}
 }
 }

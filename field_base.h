@@ -18,11 +18,41 @@ namespace FieldHelpers
 	template <class Field>
 	bool IsZero(const Field& field, const typename Field::Value& value)
 	{
-		typename Field::Value one, zero, unused_result;
-		typename Field::DivResult zero_div_result;
-		field.SetOne(one);
-		field.SetZero(zero);
-		field.Divide(zero, one, zero_div_result);
-		return ExactSubtractionResultInfo::Zero ==  field.Subtract(value, zero, zero_div_result, unused_result);
+		typename Field::Value unused_result;
+		return ExactSubtractionResultInfo::Zero ==  field.Subtract(value, Zero(field), DivByOne(field, Zero(field)), unused_result);
+	}
+	
+	template <class Field>
+	typename Field::Value Zero(const Field& field)
+	{
+		typename Field::Value result;
+		field.SetZero(result);
+		return result;
+	}
+	
+	template <class Field>
+	typename Field::Value One(const Field& field)
+	{
+		typename Field::Value result;
+		field.SetOne(result);
+		return result;
+	}
+	
+	template <class Field>
+	typename Field::Value FracAsValue(const Field& field, const typename Field::DivResult& value)
+	{
+		typename Field::Value negated_result, result;
+		field.Subtract(Zero(field), One(field), value, negated_result);
+		field.Subtract(Zero(field), One(field), DivByOne(negated_result), result);
+		return result;
+	}
+	
+	template <class Field>
+	typename Field::DivResult DivByOne(const Field& field, const typename Field::Value& value)
+	{
+		//TODO:: add "DivideByOne" method
+		typename Field::DivResult result;
+		field.Divide(value, One(field), result);
+		return result;
 	}
 }
