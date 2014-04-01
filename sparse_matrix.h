@@ -25,15 +25,6 @@ namespace{
 		typename Field::Value right;
 	};
 	
-	//triangulates matrix. lead_columns - filled with column numbers treated as leading.
-	//i-th number in lead_columns corresponds to i-th row in matrix
-	//lead elements of triangulated matrix are NOT set to exact ones - they are arbitrary values
-
-	const int kRowIsCompletlyZero = -1; //kRowIsCompletlyZero in lead column means  completely zero row
-	const int kUnitializedLeadColumn = -2; //used only internally
-	struct incompatible_system_exception: std::exception{};
-	//throws incompatible_system_exception when system can't be triangulated (too much non-zero rows for example)
-	
 	template <class Field>
 	void SubMatrixRows(const Field& field, const RowWithRightPart<Field>& orig, const RowWithRightPart<Field>& modifier, RowWithRightPart<Field>& result, typename std::vector<Element<Field>>::const_iterator lead_orig, typename std::vector<Element<Field>>::const_iterator lead_modifier)
 	{
@@ -100,6 +91,21 @@ namespace{
 		}
 		assert(result.left.size() <= result_reserve);
 	}
+	
+	template <class Field> bool columnOfElementLessCompare(const Element<Field>& el, int column)
+	{
+		return el.column < column;
+	}
+
+	//triangulates matrix. lead_columns - filled with column numbers treated as leading.
+	//triangulation is in a form that leading element is subtracted from all rows with smaller number
+	//i-th number in lead_columns corresponds to i-th row in matrix
+	//lead elements of triangulated matrix are NOT set to exact ones - they are arbitrary values
+
+	const int kRowIsCompletlyZero = -1; //kRowIsCompletlyZero in lead column means  completely zero row
+	const int kUnitializedLeadColumn = -2; //used only internally
+	struct incompatible_system_exception: std::exception{};
+	//throws incompatible_system_exception when system can't be triangulated (too much non-zero rows for example)
 	
 	template <class Field>
 	void TriangulateMatrix(const Field& field, std::vector<auto_unique_ptr<RowWithRightPart<Field>>>& matrix, std::vector<int>& lead_columns)
@@ -170,10 +176,10 @@ namespace{
 			const auto& last_row = *last;
 			assert((lead_item_in_min_row - last_row->left.begin()) < last_row->left.size());
 
-			//go to subtraction without  normalizing the  lead coef in last
+			//go to subtraction without  normalizing the lead coef in last
 			for (ir=matrix.begin(); ir != last; ++ir)
 			{
-				auto lead_row = std::lower_bound((**ir).left.begin(),(**ir).left.end(), lead_column, [](const Element<Field>& el, int column){return el.column < column;});
+				auto lead_row = std::lower_bound((**ir).left.begin(),(**ir).left.end(), lead_column, columnOfElementLessCompare<Field>);
 				if (lead_row == (**ir).left.end() || lead_row->column != lead_column)
 				{
 					continue;
@@ -183,7 +189,26 @@ namespace{
 				ir->reset(modified_row.release());
 			}			
 		}
-		//TODO: check  anwser corretness: all lead_columns are -1 or correspond to exaclyvalue exactly equal to one 
+		//check  anwser corretness: all lead_columns are kRowIsCompletlyZero or correspond to value
+		assert(matrix.size() == lead_columns.size());
+		for (int ir=0;ir < matrix.size(); ++ir)
+		{
+			const auto& r = *matrix[ir]; 
+			const auto lead_column = lead_columns[ir];
+			assert(lead_column != kUnitializedLeadColumn);
+			if (lead_column == kRowIsCompletlyZero)
+			{
+				assert(r.left.empty());
+				assert(FieldHelpers::IsZero(field, r.right));
+			}
+			else
+			{
+				assert(lead_column >= 0);
+				auto lead_it = std::lower_bound(r.left.begin(), r.left.end(), lead_column, columnOfElementLessCompare<Field>);
+				assert(lead_it != r.left.end());
+				assert(lead_it->column == lead_column);
+			}
+		}
 	}
 }
 
@@ -224,6 +249,7 @@ void SolveWithRightSideContainigSingleOne(const Field& field, const ElementMatri
 	}
 	std::vector<int> lead_columns;
 	TriangulateMatrix(combined_field, combined_matrix, lead_columns);
+	
 	//TODO
 }
 }
