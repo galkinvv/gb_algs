@@ -57,7 +57,10 @@ struct ZPlusRing
 
 	void Mul(const Value& mult0, const Value& mult1,  Value& result)const
 	{
-		assert(numeric_limits::max() / mult0.i >= mult1.i); //check for mul overflow
+		if (mult0.i)
+		{
+			assert(numeric_limits::max() / mult0.i >= mult1.i); //check for mul overflow
+		}
 		result.i =mult0.i * mult1.i;
 	}
 

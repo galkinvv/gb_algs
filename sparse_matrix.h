@@ -28,8 +28,6 @@ namespace{
 	template <class Field>
 	void SubMatrixRows(const Field& field, const RowWithRightPart<Field>& orig, const RowWithRightPart<Field>& modifier, RowWithRightPart<Field>& result, typename std::vector<Element<Field>>::const_iterator lead_orig, typename std::vector<Element<Field>>::const_iterator lead_modifier)
 	{
-		typename Field::Value zero;
-		field.SetZero(zero);
 		typename Field::DivResult row_multiplier;
 		assert(lead_orig->column == lead_modifier->column);
 		field.Divide(lead_orig->value, lead_modifier->value, row_multiplier);
@@ -51,7 +49,7 @@ namespace{
 			else if (io->column > im->column)
 			{
 				result.left.emplace_back(*im);
-				auto sub_result = field.Subtract(zero, im->value, row_multiplier, result.left.back().value);
+				auto sub_result = field.Subtract(FieldHelpers::Zero(field), im->value, row_multiplier, result.left.back().value);
 				assert(sub_result == ExactSubtractionResultInfo::NonZero);
 				++im;
 			}
@@ -85,7 +83,7 @@ namespace{
 		while(im!=im_end){
 			assert(io == io_end);
 			result.left.emplace_back(*im);
-			auto sub_result = field.Subtract(zero, im->value, row_multiplier, result.left.back().value);
+			auto sub_result = field.Subtract(FieldHelpers::Zero(field), im->value, row_multiplier, result.left.back().value);
 			assert(sub_result == ExactSubtractionResultInfo::NonZero);
 			++im;
 		}
@@ -255,28 +253,30 @@ void SolveWithRightSideContainigSingleOne(const Field& field, const ElementMatri
 		const int lead_column = lead_columns[ir];
 		if (lead_column != kRowIsCompletlyZero)
 		{
-			const auto& r = combined_matrix[ir];
-			const auto lead_element_it = std::lower_bound(r.left.begin(), r.left.end(), lead_column, columnOfElementLessCompare);
+			const auto& r = *combined_matrix[ir];
+			const auto lead_element_it = std::lower_bound(r.left.begin(), r.left.end(), lead_column, columnOfElementLessCompare<decltype(combined_field)>);
 			typename Field::Value lead_value;
 			typename Field::Value right_value;
 			combined_field.ExtractApprox(lead_element_it->value, lead_value);
-			combined_field.ExtractApprox(r.right.value, right_value);
+			combined_field.ExtractApprox(r.right, right_value);
 			//subtract  from ritght side columns corresponding to already foumnd result elements
 			for(auto computed_element:result)
 			{
 				const int other_column = computed_element.column;
-				const auto other_element_it = std::lower_bound(r.left.begin(), r.left.end(), other_column, columnOfElementLessCompare);
+				const auto other_element_it = std::lower_bound(r.left.begin(), r.left.end(), other_column, columnOfElementLessCompare<decltype(combined_field)>);
 				if (other_element_it != r.left.end() && other_element_it->column == other_column)
 				{
-					auto other_value = FieldHelpers::DivByOne(field, other_element_it->value);
-					field.Subtract(CopyValue(right_value), computed_element.value, other_value, right_value);
+					typename Field::Value other_value;
+					combined_field.ExtractApprox(other_element_it->value, other_value);
+					auto other_value_as_frac = FieldHelpers::DivByOne(field, other_value);
+					field.Subtract(CopyValue(right_value), computed_element.value, other_value_as_frac, right_value);
 				}
 			}
 			typename Field::DivResult var_value_as_frac;
 			field.Divide(right_value, lead_value, var_value_as_frac);
 			Element<Field> new_element;
 			new_element.column = lead_column;
-			new_element.value = FieldHelpers::FracAsValue(var_value_as_frac);
+			new_element.value = FieldHelpers::FracAsValue(field, var_value_as_frac);
 			result.emplace_back(new_element);
 		}
 	}

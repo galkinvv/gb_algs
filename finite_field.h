@@ -1,6 +1,8 @@
 #pragma once
 #include <cassert>
 #include "field_base.h"
+#include "utils.h"
+
 
 template <class ZPlusRing>
 struct FiniteField {

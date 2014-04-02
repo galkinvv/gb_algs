@@ -330,8 +330,6 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const InPolysSetWithOrigMe
 	}
 	for(auto mon:high_mons)
 	{
-		ImplementedField::Value one;
-		field.SetOne(one);
 		auto& row =  emplaced_back(matrix);
 		for(int col = 0; col < (int)mult_inputs_with_iters.size(); ++col)
 		{
@@ -346,7 +344,7 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const InPolysSetWithOrigMe
 						break;//too big
 					}
 					std::remove_reference<decltype(row.back())>::type elem;
-					elem.value = one;
+					elem.value =  FieldHelpers::One(field);
 					elem.column = col;
 					row.push_back(elem);
 					//eqaul - add to matrix
@@ -381,15 +379,13 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const InPolysSetWithOrigMe
 
 void RingZ2SlowBase::ConvertResultToFixedMetadataImpl(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result, CrossRingInfo::MonomialListListWithCoef<ImplementedOrder, ImplementedField>& basic_result)
 {
-	ImplementedField::Value one;
-	basic_result.Field().SetOne(one);
 	for (auto poly: *constructed_result) {
 		basic_result.BeginPolynomialConstruction(poly.size());
 		for (auto mon: poly) {
 			for (auto var: mon) {
 				basic_result.AddVariable(CrossRingInfo::PerVariableData::FromDI(var.second, var.first));
 			}
-			basic_result.MonomialAdditionDone(one);
+			basic_result.MonomialAdditionDone(FieldHelpers::One(basic_result.Field()));
 		}
 	}
 }

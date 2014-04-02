@@ -10,6 +10,7 @@ using UnitTest::PRIVATE_TEST;
 TEST_F(PRIVATE_TEST, method) {this->method();}
 #endif
 
+#define EXPECT_ASSERT(expr) EXPECT_DEATH((expr), "")
 
 template <class SubComparator>
 struct ContainerEqualExpect
