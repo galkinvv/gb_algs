@@ -73,6 +73,7 @@ struct FiniteField {
 	static FiniteField CreateZpFieldWithChar(const Integer& value) {
 		FiniteField result;
 		result.z_.Import(result.mod_, value);
+		assert(RingHelpers::IsPrime(result.z_, result.mod_));
 		//result.mod_ must be prime
 		return result;
 	}

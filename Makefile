@@ -94,6 +94,14 @@ quickcompile:
 	mkdir -p 3rd/
 	mv /tmp/gtest_version/gtest* 3rd/gtest
 
+3rd/gmp/include/gmp.h:
+	rm -rf 3rd/gmp/ /tmp/gmp_build
+	mkdir /tmp/gmp_build
+	wget https://gmplib.org/download/gmp/gmp-6.0.0a.tar.xz -O /tmp/gmp_build/gmp-6.0.0a.tar.xz
+	tar xf /tmp/gmp_build/gmp-6.0.0a.tar.xz -C /tmp/gmp_build
+	mkdir -p 3rd/
+	
+
 check: $(BUILDDIR)/run-gt$(BINEXT)
 	$(BUILDDIR)/run-gt$(BINEXT)
 

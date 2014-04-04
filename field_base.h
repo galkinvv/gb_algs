@@ -54,5 +54,14 @@ namespace FieldHelpers
 	{
 		typename Field::Value unused_result;
 		return ExactSubtractionResultInfo::Zero ==  field.Subtract(value, Zero(field), DivByOne(field, Zero(field)), unused_result);
-	}
+	}	
+}
+
+namespace RingHelpers{
+	template <class Ring>
+	bool IsPrime(const Ring& ring, const typename Ring::Value& value)
+	{
+		//TODO: implement  via gmp;
+		return false;
+	}	
 }
