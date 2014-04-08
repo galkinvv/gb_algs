@@ -3,6 +3,9 @@
 ifndef CXX11
 	CXX11=g++-4.8 -std=c++11
 endif
+ifndef CC
+	CC=gcc-4.8
+endif
 ifndef WITH_MPI
 	WITH_MPI=0
 endif
@@ -58,34 +61,34 @@ LIBOBJECTS = $(LIBSOURCES:%.cpp=build/%.o)
 
 all: $(BUILDDIR)/$(MAINBIN) $(BUILDDIR)/run-gt$(BINEXT)
 $(BUILDDIR)/$(MAINBIN): $(BUILDDIR)/$(MAINTARGET).o $(FULLLIBNAME)
-	$(LD) $(BUILDDIR)/$(MAINTARGET).o -L $(BUILDDIR) -l $(MAINLIB) -o $@ $(LDFLAGS)
+	$(LD) $(BUILDDIR)/$(MAINTARGET).o -L $(BUILDDIR) -l $(MAINLIB) -L 3rd/gmp/lib -l gmp -l gmpxx -o $@ $(LDFLAGS)
 
 TEST_SOURCES=$(wildcard unittest/*.cpp)
 TEST_SOURCES+=$(wildcard unittest/mock/*.cpp)
 TEST_OBJECTS = $(TEST_SOURCES:unittest/%.cpp=build/unittest/%.o)
 
 $(BUILDDIR)/run-gt$(BINEXT): $(TEST_OBJECTS) $(FULLLIBNAME)
-	$(LD) -pthread $^ -L $(BUILDDIR) -l $(MAINLIB) -o $@ $(LDFLAGS)
+	$(LD) -pthread $^ -L $(BUILDDIR) -l $(MAINLIB) -L 3rd/gmp/lib -l gmp -l gmpxx -o $@ $(LDFLAGS)
 
 $(FULLLIBNAME): $(LIBOBJECTS)
 	ar cr $@ $^
 
 $(BUILDDIR)/unittest/%.o: unittest/%.cpp 3rd/gtest/src/gtest-all.cc
 	mkdir -p $(dir $@)
-	$(CXX11) $(CXXFLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -c $< -o $@
+	$(CXX11) $(CXXFLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -I 3rd/gmp/include/ -c $< -o $@
 
 parse.tab:
 	bison parse.ypp
 
 $(BUILDDIR)/%.o: %.cpp
 	mkdir -p $(dir $@)
-	$(CXX11) $(CXXFLAGS) -I . -c $< -o $@
+	$(CXX11) $(CXXFLAGS) -I . -I 3rd/gmp/include/ -c $< -o $@
 
 clean:
 	$(RM) $(BUILDDIR)
 
 quickcompile:
-	$(CXX11) $(ALL_CXX_LANG_FLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -S -x c++ $(QUICK_SOURCE) -o /dev/null
+	$(CXX11) $(ALL_CXX_LANG_FLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -I 3rd/gmp/include/ -S -x c++ $(QUICK_SOURCE) -o /dev/null
 
 3rd/gtest/src/gtest-all.cc:
 	rm -rf 3rd/gtest/ /tmp/gtest.zip /tmp/gtest_version
@@ -100,7 +103,8 @@ quickcompile:
 	wget https://gmplib.org/download/gmp/gmp-6.0.0a.tar.xz -O /tmp/gmp_build/gmp-6.0.0a.tar.xz
 	tar xf /tmp/gmp_build/gmp-6.0.0a.tar.xz -C /tmp/gmp_build
 	mkdir -p 3rd/
-	
+	cd /tmp/gmp_build/gmp-6.0.0 && CC=$(CC) CXX=$(firstword $(CXX11)) CXXFLAGS=$(wordlist 2,999,$(CXX11)) ./configure --prefix=/tmp/gmp_build/gmp_install --enable-cxx=yes && make -j 4 && make install
+	cp -r /tmp/gmp_build/gmp_install 3rd/gmp
 
 check: $(BUILDDIR)/run-gt$(BINEXT)
 	$(BUILDDIR)/run-gt$(BINEXT)

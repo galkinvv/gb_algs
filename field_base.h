@@ -1,5 +1,7 @@
 #pragma once
 #include <exception>
+#include <gmpxx.h>
+
 enum class ExactSubtractionResultInfo
 {
 	Zero,
@@ -61,7 +63,9 @@ namespace RingHelpers{
 	template <class Ring>
 	bool IsPrime(const Ring& ring, const typename Ring::Value& value)
 	{
-		//TODO: implement  via gmp;
-		return false;
+		auto value_as_mpz = ring.template Export<mpz_class>(value);
+		static const int kDefinitelyComposite = 0;
+		static const int kSuitableNumberOfChecks = 25;
+		return mpz_probab_prime_p(value_as_mpz.get_mpz_t(), kSuitableNumberOfChecks) != kDefinitelyComposite;
 	}	
 }

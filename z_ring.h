@@ -108,9 +108,10 @@ struct ZPlusRing
 	{
 		typedef std::numeric_limits<Integer2> numeric_limits2;
 		assert(value.i >= numeric_limits2::min());
-		assert(value.i <= numeric_limits2::max());
+		//gmp doesn't define max numeric limits
+		assert(numeric_limits2::max() ==0 || value.i <= numeric_limits2::max());
 		Integer2 result = value.i;
-		assert(Integer(result) == value.i);
+		assert(result == value.i);
 		return result;
 	}
 	

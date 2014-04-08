@@ -91,10 +91,10 @@ TEST(BadConstructionDeathTest, BigNotPrime)
 
 TEST(BadConstructionDeathTest, SmallRingBigNum)
 {
-	EXPECT_ASSERT(FiniteFieldCreator<ZPlusRing8>::Module<256>::Create());
+	EXPECT_ASSERT(FiniteFieldCreator<ZPlusRing8>::Module<257>::Create());
 }
 
 TEST(BadConstructionDeathTest, BigRingVeryBigNum)
 {
-	EXPECT_ASSERT(FiniteFieldCreator<ZPlusRing8>::Module<4294967296>::Create());
+	EXPECT_ASSERT(FiniteFieldCreator<ZPlusRing8>::Module<4294967311ull>::Create());
 }
