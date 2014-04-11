@@ -3,8 +3,8 @@
 ifndef CXX11
 	CXX11=g++-4.8 -std=c++11
 endif
-ifndef CC
-	CC=gcc-4.8
+ifndef CC_FORCXX
+	CC_FORCXX=gcc-4.8
 endif
 ifndef WITH_MPI
 	WITH_MPI=0
@@ -73,21 +73,21 @@ $(BUILDDIR)/run-gt$(BINEXT): $(TEST_OBJECTS) $(FULLLIBNAME)
 $(FULLLIBNAME): $(LIBOBJECTS)
 	ar cr $@ $^
 
-$(BUILDDIR)/unittest/%.o: unittest/%.cpp 3rd/gtest/src/gtest-all.cc
+$(BUILDDIR)/unittest/%.o: unittest/%.cpp 3rd/gtest/src/gtest-all.cc 3rd/gmp/include/gmp.h
 	mkdir -p $(dir $@)
 	$(CXX11) $(CXXFLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -I 3rd/gmp/include/ -c $< -o $@
 
 parse.tab:
 	bison parse.ypp
 
-$(BUILDDIR)/%.o: %.cpp
+$(BUILDDIR)/%.o: %.cpp 3rd/gmp/include/gmp.h
 	mkdir -p $(dir $@)
 	$(CXX11) $(CXXFLAGS) -I . -I 3rd/gmp/include/ -c $< -o $@
 
 clean:
 	$(RM) $(BUILDDIR)
 
-quickcompile:
+quickcompile: 3rd/gtest/src/gtest-all.cc 3rd/gmp/include/gmp.h
 	$(CXX11) $(ALL_CXX_LANG_FLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -I 3rd/gmp/include/ -S -x c++ $(QUICK_SOURCE) -o /dev/null
 
 3rd/gtest/src/gtest-all.cc:
@@ -103,7 +103,7 @@ quickcompile:
 	wget https://gmplib.org/download/gmp/gmp-6.0.0a.tar.xz -O /tmp/gmp_build/gmp-6.0.0a.tar.xz
 	tar xf /tmp/gmp_build/gmp-6.0.0a.tar.xz -C /tmp/gmp_build
 	mkdir -p 3rd/
-	cd /tmp/gmp_build/gmp-6.0.0 && CC=$(CC) CXX=$(firstword $(CXX11)) CXXFLAGS=$(wordlist 2,999,$(CXX11)) ./configure --prefix=/tmp/gmp_build/gmp_install --enable-cxx=yes && make -j 4 && make install
+	cd /tmp/gmp_build/gmp-6.0.0 && CC=$(CC_FORCXX) CXX=$(firstword $(CXX11)) CXXFLAGS=$(wordlist 2,999,$(CXX11)) ./configure --prefix=/tmp/gmp_build/gmp_install --enable-cxx=yes && make -j 4 && make install
 	cp -r /tmp/gmp_build/gmp_install 3rd/gmp
 
 check: $(BUILDDIR)/run-gt$(BINEXT)
