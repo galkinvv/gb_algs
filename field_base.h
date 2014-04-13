@@ -52,11 +52,18 @@ namespace FieldHelpers
 	}
 	
 	template <class Field>
-	bool IsZero(const Field& field, const typename Field::Value& value)
+	bool IsEqual(const Field& field, const typename Field::Value& value0, const typename Field::Value& value1)
 	{
 		typename Field::Value unused_result;
-		return ExactSubtractionResultInfo::Zero ==  field.Subtract(value, Zero(field), DivByOne(field, Zero(field)), unused_result);
+		return ExactSubtractionResultInfo::Zero ==  field.Subtract(value0, value1, DivByOne(field, One(field)), unused_result);
 	}	
+
+	template <class Field>
+	bool IsZero(const Field& field, const typename Field::Value& value)
+	{
+		return IsEqual(field, value, Zero(field));
+	}	
+
 }
 
 namespace RingHelpers{

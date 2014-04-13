@@ -1,8 +1,10 @@
 #pragma once
 #include <cstdint>
+#include <iosfwd>
 #include <limits>
 #include <cassert>
 #include <type_traits>
+
 template <class Integer>
 struct ZPlusRing
 {
@@ -12,7 +14,11 @@ struct ZPlusRing
 		Value():
 			i()
 		{}
+		friend std::ostream& operator <<(std::ostream &output, const Value &x) {
+			return output << (IntegerForTextIO)x.i;
+		}
 	  private:
+		typedef typename std::conditional<std::is_same<Integer, std::uint8_t>::value, std::uint32_t, Integer>::type IntegerForTextIO;
 		friend struct ZPlusRing;
 		Integer i;
 	};

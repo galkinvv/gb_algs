@@ -8,6 +8,8 @@
 #include <memory>
 #include <random>
 #include <cassert>
+#include <iostream>
+
 
 class NoCopy
 {
@@ -543,6 +545,24 @@ auto emplaced_back(Container& container, Args... args) -> decltype(std::declval<
 {
 	container.emplace_back(std::forward<Args>(args)...);
 	return container.back();
+}
+
+
+ inline std::ostream&PrintTo(std::ostream& stream)
+{
+	return stream;
+}
+
+template <class T, class... Args>
+std::ostream& PrintTo(std::ostream& stream, T&& arg0, Args&&... args)
+{
+	return PrintTo(stream << std::forward<T>(arg0), std::forward<Args>(args)...);
+}
+
+template <class... Args>
+void L(Args&&... args)
+{
+	PrintTo(std::clog, std::forward<Args>(args)...) << std::endl;
 }
 
 class RandomGenerator

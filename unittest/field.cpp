@@ -35,27 +35,68 @@ struct FieldTest :  ::testing::Test
 		:f_(Creator::Create())
 	{}
 	typename Creator::Field f_;
+	typename Creator::Field::Value to_check;
+	template <class Integer>
+	typename Creator::Field::Value Imp(const Integer& i)
+	{
+		typename Creator::Field::Value result;
+		f_.Import(i, result);
+		return result;
+	}
 };
 
 
 TYPED_TEST_CASE_P(FieldTest);
 
-TYPED_TEST_P(FieldTest, UseValueType)
+TYPED_TEST_P(FieldTest, HasNestedTypes)
 {
-	ASSERT_GT(sizeof(typename decltype(this->f_)::Value), 0);
+	EXPECT_GT(sizeof(typename decltype(this->f_)::Value), 0);
+	EXPECT_GT(sizeof(typename decltype(this->f_)::DivResult), 0);
 }
 
-TYPED_TEST_P(FieldTest, ZeroIsZero)
+TYPED_TEST_P(FieldTest, ZeroTests)
 {
-	ASSERT_TRUE(FieldHelpers::IsZero(this->f_, FieldHelpers::Zero(this->f_)));
+	//0 == 0
+	EXPECT_TRUE(FieldHelpers::IsZero(this->f_, FieldHelpers::Zero(this->f_)));
+	EXPECT_TRUE(FieldHelpers::IsEqual(this->f_, FieldHelpers::Zero(this->f_), FieldHelpers::Zero(this->f_)));
+	//0-0*0 == 0
+	this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::Zero(this->f_), FieldHelpers::DivByOne(this->f_, FieldHelpers::Zero(this->f_)), this->to_check);
+	EXPECT_TRUE(FieldHelpers::IsZero(this->f_, this->to_check));
+	//0-1*0 == 0
+	this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::One(this->f_), FieldHelpers::DivByOne(this->f_, FieldHelpers::Zero(this->f_)), this->to_check);
+	EXPECT_TRUE(FieldHelpers::IsZero(this->f_, this->to_check));
+	//0-0*1 == 0
+	this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::Zero(this->f_), FieldHelpers::DivByOne(this->f_, FieldHelpers::One(this->f_)), this->to_check);
+	EXPECT_TRUE(FieldHelpers::IsZero(this->f_, this->to_check));
+	//0-0*1 == 0
+	this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::Zero(this->f_), FieldHelpers::DivByOne(this->f_, FieldHelpers::One(this->f_)), this->to_check);
+	EXPECT_TRUE(FieldHelpers::IsZero(this->f_, this->to_check));
+	
+	//0-0*2 == 0
+	this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::Zero(this->f_), FieldHelpers::DivByOne(this->f_, this->Imp(2)), this->to_check);
+	EXPECT_TRUE(FieldHelpers::IsZero(this->f_, this->to_check));
+	
+	//0-0*17 == 0
+	//this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::Zero(this->f_), FieldHelpers::DivByOne(this->f_, this->Imp(17ull)), this->to_check);
+	EXPECT_TRUE(FieldHelpers::IsZero(this->f_, this->to_check));
+
+	//0-1*1 != 0
+	this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::One(this->f_), FieldHelpers::DivByOne(this->f_, FieldHelpers::One(this->f_)), this->to_check);
+	EXPECT_FALSE(FieldHelpers::IsZero(this->f_, this->to_check));
 }
 
-TYPED_TEST_P(FieldTest, OneIsNotZero)
+TYPED_TEST_P(FieldTest, OneTests)
 {
-	ASSERT_FALSE(FieldHelpers::IsZero(this->f_, FieldHelpers::One(this->f_)));
+	//0 != 1
+	EXPECT_FALSE(FieldHelpers::IsZero(this->f_, FieldHelpers::One(this->f_)));
+	EXPECT_FALSE(FieldHelpers::IsEqual(this->f_, FieldHelpers::One(this->f_), FieldHelpers::Zero(this->f_)));
+	EXPECT_FALSE(FieldHelpers::IsEqual(this->f_, FieldHelpers::Zero(this->f_), FieldHelpers::One(this->f_)));
+	//1 == 1
+	EXPECT_TRUE(FieldHelpers::IsEqual(this->f_, FieldHelpers::One(this->f_), FieldHelpers::One(this->f_)));
+
 }
 
-REGISTER_TYPED_TEST_CASE_P(FieldTest, UseValueType, ZeroIsZero, OneIsNotZero);
+REGISTER_TYPED_TEST_CASE_P(FieldTest, HasNestedTypes, ZeroTests, OneTests);
 
 
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField8_2, FieldTest, FiniteFieldCreator<ZPlusRing8>::Module<2>);

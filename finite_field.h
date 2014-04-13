@@ -17,6 +17,10 @@ struct FiniteField {
   public:
 	class Value: ZValue
 	{
+		friend std::ostream& operator <<(std::ostream &output, const Value &x) {
+			return output << static_cast<ZValue>(x);
+        }
+
 		friend class FiniteField;
 	};
 
@@ -37,6 +41,7 @@ struct FiniteField {
 		ZValue x_unused;
 		ZValue divider_inverse;
 		ExtendedEuclid(mod_, divider, x_unused, divider_inverse, SignedOne::PlusOne);
+		L("mod = ", mod_, " divider = ", divider, " x_unused = ", x_unused, " divider_inverse = ", divider_inverse);
 		z_.Mul(divider_inverse, divident, result);
 	}
 
