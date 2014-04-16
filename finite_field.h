@@ -37,11 +37,23 @@ struct FiniteField {
 	}
 
 	void Divide(const Value& divident, const Value& divider, DivResult& result) const{
-		//first solve mod_*x - divider * result  = 1
+		//first solve mod_*x_unused - divider * divider_inverse  = -1, which is equivalent to inverting in Z_mod field
 		ZValue x_unused;
 		ZValue divider_inverse;
-		ExtendedEuclid(mod_, divider, x_unused, divider_inverse, SignedOne::PlusOne);
+		ExtendedEuclid(mod_, divider, x_unused, divider_inverse, SignedOne::PlusOne); //SignedOne::PlusOne is used because result should be stored as negative
 		L("mod = ", mod_, " divider = ", divider, " x_unused = ", x_unused, " divider_inverse = ", divider_inverse);
+		/*
+		not easy to check because of negation
+		 assert([&]{
+			ZDivResult expected_minus_one_remainder;
+			ZValue expected_minus_one_by_mod;
+			ZValue expected_one;
+			z_.Mul(divider_inverse, divider, expected_minus_one_by_mod);
+			z_.Divide(expected_one_by_mod, mod_, expected_minus_one_remainder);
+			z_.
+			return z_.IsOne(expected_one_remainder.rem);
+			}());
+		*/
 		z_.Mul(divider_inverse, divident, result);
 	}
 
@@ -107,7 +119,9 @@ private:
 			assert(!"bad value for signedOne");
 		}
 	}
-	//Finds x ,y ( 0 < x <= b) and ( 0 <= y < a) for equation a*x - b*y = signedOne using calculation wih only positive numbers.
+	
+	//epects that a > b
+	//Finds x, y (0 < x <= b+1) and (0 <= y < a) for equation a*x - b*y = signedOne using calculation wih only positive numbers.
 	// b < a; gcd(a, b) == 1 are required preconditions
 	void ExtendedEuclid(const ZValue& a, const ZValue& b, ZValue& x, ZValue& y, SignedOne signedOne) const{
 		assert(z_.Less(b, a));
@@ -117,7 +131,7 @@ private:
 		{
 			if (z_.IsZero(b))
 			{
-				assert(z_.IsOne(a));
+				assert(z_.IsOne(a)); //fail of this assertion means that a and b has non-one gcd.
 				//solve as 1*1 - 0*0 = 1
 				z_.SetOne(x);
 				z_.SetZero(y);
@@ -142,8 +156,15 @@ private:
 			//original equation is solved as a * x1 - b*(y1 + a/b*x1) = signedOne
 			z_.Add(CopyValue(y), x, abDivResult.quot, y);
 		}
-		assert(!z_.IsZero(x));
-		assert(!z_.Less(b, x));
+		assert([&]{
+			if (z_.IsZero(x))
+			{
+				return true;
+			}
+			ZValue xMinusOne = x;
+			z_.Decrement(xMinusOne);
+			return !z_.Less(b ,xMinusOne);
+		}());
 		assert(z_.Less(y, a));
 	}
 
