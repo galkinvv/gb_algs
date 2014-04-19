@@ -5,7 +5,10 @@
 #include <cassert>
 #include <type_traits>
 
-template <class Integer>
+#include <utils.h>
+
+//
+template <class Integer, class BiggerInteger>
 struct ZPlusRing
 {
 	class Value
@@ -46,6 +49,8 @@ struct ZPlusRing
 	}
 	
 	static_assert(std::is_unsigned<Integer>::value, "Integer must be unsigned for use with ZPlusRing");
+	static_assert(std::is_unsigned<BiggerInteger>::value, "BiggerInteger must be unsigned for use with ZPlusRing");
+	static_assert(sizeof(BiggerInteger) >= 2*sizeof(Integer), "BiggerInteger must have at least 2 times more bits than Integer for use with ZPlusRing");
 
 	void Divide(const Value& divident, const Value& divider, DivResult& result)const
 	{
@@ -54,22 +59,27 @@ struct ZPlusRing
 		result.rem.i = divident.i%divider.i;
 	}
 	
-	void Add(const Value& from, const Value& what, const Value& multiplier, Value& result)const
+	void AddMulMod(const Value& from, const Value& what, const Value& multiplier, const Value& mod, Value& result)const
 	{
-		Mul(what, multiplier, result);
-		result.i = from.i + result.i;
-		assert(result.i >= from.i);//check for add overflow
+		MulMod(what, multiplier, mod, result);
+		result.i = narrow_cast<Integer>((wide_cast<BiggerInteger>(from.i) * wide_cast<BiggerInteger>(result.i))%wide_cast<BiggerInteger>(mod.i));
 	}
 
-	void Mul(const Value& mult0, const Value& mult1,  Value& result)const
+	void MulMod(const Value& mult0, const Value& mult1, const Value& mod,  Value& result)const
 	{
-		if (mult0.i)
+		result.i = narrow_cast<Integer>((wide_cast<BiggerInteger>(mult0.i) * wide_cast<BiggerInteger>(mult1.i))%wide_cast<BiggerInteger>(mod.i));
+	}
+
+	void AddMul(const Value& from, const Value& what, const Value& multiplier, Value& result)const
+ 	{
+		if (what.i)
 		{
-			assert(numeric_limits::max() / mult0.i >= mult1.i); //check for mul overflow
+			assert(numeric_limits::max() / what.i >= multiplier.i); //check for mul overflow
 		}
-		result.i =mult0.i * mult1.i;
-	}
-
+		result.i =from.i + what.i * multiplier.i;
+		assert(result.i >= from.i);//check for add overflow
+ 	}
+ 
 	void SetZero(Value& result)const 
 	{
 		result.i = 0;
@@ -105,8 +115,7 @@ struct ZPlusRing
 	{
 		assert(ext >= numeric_limits::min());
 		assert(ext <= numeric_limits::max());
-		value.i = ext;
-		assert(Integer2(value.i) == ext);
+		value.i = narrow_cast<Integer>(ext);
 	}
 	
 	template <class Integer2 = Integer>
@@ -114,7 +123,7 @@ struct ZPlusRing
 	{
 		typedef std::numeric_limits<Integer2> numeric_limits2;
 		assert(value.i >= numeric_limits2::min());
-		//gmp doesn't define max numeric limits
+		//gmp doesn't define non-zero max numeric limits
 		assert(numeric_limits2::max() ==0 || value.i <= numeric_limits2::max());
 		Integer2 result = value.i;
 		assert(result == value.i);
@@ -123,6 +132,6 @@ struct ZPlusRing
 	
 	typedef std::numeric_limits<Integer> numeric_limits;
 };
-typedef ZPlusRing<std::uint8_t> ZPlusRing8;
-typedef ZPlusRing<std::uint16_t> ZPlusRing16;
-typedef ZPlusRing<std::uint32_t> ZPlusRing32;
+typedef ZPlusRing<std::uint_least8_t, std::uint_fast16_t> ZPlusRing8;
+typedef ZPlusRing<std::uint_least16_t, std::uint_fast32_t> ZPlusRing16;
+typedef ZPlusRing<std::uint_least32_t, std::uint_fast64_t> ZPlusRing32;

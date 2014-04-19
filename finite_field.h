@@ -54,13 +54,14 @@ struct FiniteField {
 			return z_.IsOne(expected_one_remainder.rem);
 			}());
 		*/
-		z_.Mul(divider_inverse, divident, result);
+		z_.MulMod(divider_inverse, divident, mod_, result);
+		assert(IsNormalized(result));
 	}
 
 	ExactSubtractionResultInfo Subtract(const Value& from, const Value& what, const DivResult& multiplier, Value& result) const{
 		//DivResult contanes already negated value, so perform addition
-		z_.Add(from, what, multiplier, result);
-		Normalize(result);
+		z_.AddMulMod(from, what, multiplier, mod_, result);
+		assert(IsNormalized(result));
 		if (z_.IsZero(result)) {
 			return ExactSubtractionResultInfo::Zero;
 		}
@@ -107,6 +108,13 @@ private:
 		ZDivResult byModDivResult;
 		z_.Divide(value, mod_, byModDivResult);
 		value = byModDivResult.rem;
+		assert(IsNormalized(value));
+	}
+
+	bool IsNormalized(ZValue& value)const {
+		ZValue zero;
+		z_.SetZero(zero);
+		return z_.Less(value, mod_) && !z_.Less(value, zero);
 	}
 
 	SignedOne NegateOne(SignedOne signedOne) const{
@@ -154,7 +162,7 @@ private:
 			//solve b*y1 - (a%b) * x1 = -signedOne (equivalent to (a%b) * x1 - b*y1 = signedOne)
 			ExtendedEuclid(b, abDivResult.rem, y, x, NegateOne(signedOne));
 			//original equation is solved as a * x1 - b*(y1 + a/b*x1) = signedOne
-			z_.Add(CopyValue(y), x, abDivResult.quot, y);
+			z_.AddMul(CopyValue(y), x, abDivResult.quot, y);
 		}
 		assert([&]{
 			if (z_.IsZero(x))

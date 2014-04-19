@@ -576,3 +576,40 @@ class RandomGenerator
 	std::mt19937 gen{std::random_device()()};
 	std::uniform_int_distribution<> dis;
 };
+
+template <class NarrowInteger, class WideInteger> NarrowInteger narrow_cast(const WideInteger& i)
+{
+	static_assert(
+		(std::is_unsigned<NarrowInteger>::value && std::is_unsigned<WideInteger>::value) ||
+		(std::is_signed<NarrowInteger>::value && std::is_signed<WideInteger>::value)
+		, "Integers must be both unsigned or signed");
+	NarrowInteger result = i;
+	assert(WideInteger(result) == i);
+	return result;
+}
+
+template <class  WideInteger, class NarrowInteger> WideInteger wide_cast(const NarrowInteger& i)
+{
+	static_assert(
+		(std::is_unsigned<NarrowInteger>::value && std::is_unsigned<WideInteger>::value) ||
+		(std::is_signed<NarrowInteger>::value && std::is_signed<WideInteger>::value)
+		, "Integers must be both unsigned or signed");
+	static_assert(sizeof(NarrowInteger) <= sizeof(WideInteger), "wide_cast can't cast to smaller size"); //can add support for casting to wider signed type
+	return WideInteger(i);
+}
+
+template <class Signed> typename std::make_unsigned<Signed>::type unsigned_cast(const Signed& i)
+{
+	typedef typename std::make_unsigned<Signed>::type Unsigned;
+	assert(i >= Signed(0));
+	return Unsigned(i);
+}
+
+template <class Unsigned> typename std::make_signed<Unsigned>::type signed_cast(const Unsigned& i)
+{
+	typedef typename std::make_unsigned<Unsigned>::type Signed;
+	assert(i <= Unsigned(std::numeric_limits<Signed>::max()));
+	auto result = Signed(i);
+	assert(result >=0);
+	return result;
+}

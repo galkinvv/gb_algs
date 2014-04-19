@@ -73,7 +73,7 @@ TYPED_TEST_P(FieldTest, ZeroTests)
 	EXPECT_TRUE(FieldHelpers::IsZero(this->f_, this->to_check));
 	
 	//0-0*2 == 0
-	this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::Zero(this->f_), FieldHelpers::DivByOne(this->f_, this->Imp(2)), this->to_check);
+	this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::Zero(this->f_), FieldHelpers::DivByOne(this->f_, this->Imp(2u)), this->to_check);
 	EXPECT_TRUE(FieldHelpers::IsZero(this->f_, this->to_check));
 	
 	//0-0*17 == 0

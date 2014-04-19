@@ -44,7 +44,7 @@ protected:
 	typedef CrossRingInfo::MonomialMetadata<CrossRingInfo::MonomialOrder::DegRevLex> ImplementedOrder;
 	struct ImplementedField: FiniteField<ZPlusRing8> {
 		ImplementedField():
-			FiniteField<ZPlusRing8>(FiniteField<ZPlusRing8>::CreateZpFieldWithChar(2))
+			FiniteField<ZPlusRing8>(FiniteField<ZPlusRing8>::CreateZpFieldWithChar(2u))
 		{}
 	};
 

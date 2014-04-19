@@ -22,7 +22,7 @@ namespace F4MPI
 						out.AddVariable(CrossRingInfo::PerVariableData::FromDI(deg, var_idx));
 					}
 				}
-				out.Field().Import(coeff->toint(), coeff_as_value);
+				out.Field().Import(unsigned_cast(coeff->toint()), coeff_as_value);
 				out.MonomialAdditionDone(coeff_as_value);
 			}
 		}
@@ -61,7 +61,7 @@ namespace F4MPI
 
 		MonomialMetadata monomial_metadata;
 		monomial_metadata.var_count = CMonomial::theNumberOfVariables;
-		Field field = Field::CreateZpFieldWithChar(CModular::getMOD());
+		Field field = Field::CreateZpFieldWithChar(unsigned_cast(CModular::getMOD()));
 		TRing out_ring{monomial_metadata, field};
 		IOPolynomSet io_poly_set_in {monomial_metadata, field};
 		ConvertF4MPIInputData<typename Field::Value>(F, io_poly_set_in);

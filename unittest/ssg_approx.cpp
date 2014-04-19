@@ -12,7 +12,7 @@ struct PRIVATE_TEST: ::testing::Test{
 
 	static Field CreateField()
 	{
-		return Field::CreateZpFieldWithChar(2);
+		return Field::CreateZpFieldWithChar(2u);
 	}
 	void ZeroPolys()
 	{
