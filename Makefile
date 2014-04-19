@@ -10,7 +10,7 @@ ifndef WITH_MPI
 	WITH_MPI=0
 endif
 ifndef OPTIMIZE
-	OPTIMIZE = g
+	OPTIMIZE = 0
 endif
 
 GCC_WARNINGS=-Wall -Wextra -Wuninitialized -W -Wparentheses -Wformat=2 -Wswitch-default -Wcast-align -Wpointer-arith -Wwrite-strings -Wstrict-aliasing=2

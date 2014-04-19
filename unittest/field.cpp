@@ -82,6 +82,7 @@ TYPED_TEST_P(FieldTest, ZeroTests)
 
 	//0-1*1 != 0
 	this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::One(this->f_), FieldHelpers::DivByOne(this->f_, FieldHelpers::One(this->f_)), this->to_check);
+	EXPECT_EQ(this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::One(this->f_), FieldHelpers::DivByOne(this->f_, FieldHelpers::One(this->f_)), this->to_check), ExactSubtractionResultInfo::NonZero);
 	EXPECT_FALSE(FieldHelpers::IsZero(this->f_, this->to_check));
 }
 

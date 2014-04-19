@@ -39,9 +39,9 @@ struct FiniteField {
 	void Divide(const Value& divident, const Value& divider, DivResult& result) const{
 		//first solve mod_*x_unused - divider * divider_inverse  = -1, which is equivalent to inverting in Z_mod field
 		ZValue x_unused;
-		ZValue divider_inverse;
-		ExtendedEuclid(mod_, divider, x_unused, divider_inverse, SignedOne::PlusOne); //SignedOne::PlusOne is used because result should be stored as negative
-		L("mod = ", mod_, " divider = ", divider, " x_unused = ", x_unused, " divider_inverse = ", divider_inverse);
+		ZValue negative_divider_inverse;
+		ExtendedEuclid(mod_, divider, x_unused, negative_divider_inverse, SignedOne::PlusOne); //SignedOne::PlusOne is used because result should be stored as negative
+		L("mod = ", mod_, " divider = ", divider, " x_unused = ", x_unused, " negative_divider_inverse = ", negative_divider_inverse);
 		/*
 		not easy to check because of negation
 		 assert([&]{
@@ -54,7 +54,7 @@ struct FiniteField {
 			return z_.IsOne(expected_one_remainder.rem);
 			}());
 		*/
-		z_.MulMod(divider_inverse, divident, mod_, result);
+		z_.MulMod(negative_divider_inverse, divident, mod_, result);
 		assert(IsNormalized(result));
 	}
 

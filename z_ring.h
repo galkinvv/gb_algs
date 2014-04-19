@@ -62,7 +62,7 @@ struct ZPlusRing
 	void AddMulMod(const Value& from, const Value& what, const Value& multiplier, const Value& mod, Value& result)const
 	{
 		MulMod(what, multiplier, mod, result);
-		result.i = narrow_cast<Integer>((wide_cast<BiggerInteger>(from.i) * wide_cast<BiggerInteger>(result.i))%wide_cast<BiggerInteger>(mod.i));
+		result.i = narrow_cast<Integer>((wide_cast<BiggerInteger>(from.i) + wide_cast<BiggerInteger>(result.i))%wide_cast<BiggerInteger>(mod.i));
 	}
 
 	void MulMod(const Value& mult0, const Value& mult1, const Value& mod,  Value& result)const
