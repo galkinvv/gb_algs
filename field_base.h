@@ -36,9 +36,8 @@ namespace FieldHelpers
 	template <class Field>
 	typename Field::DivResult DivByOne(const Field& field, const typename Field::Value& value)
 	{
-		//TODO:: add "DivideByOne" method
 		typename Field::DivResult result;
-		field.Divide(value, One(field), result);
+		field.DivByOne(value, result);
 		return result;
 	}
 	

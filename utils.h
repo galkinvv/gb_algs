@@ -598,6 +598,27 @@ template <class  WideInteger, class NarrowInteger> WideInteger wide_cast(const N
 	return WideInteger(i);
 }
 
+//need a macro to be able to cast to non-publicly visible bases
+#define to_base_cast(CHILD) \
+([](decltype(CHILD)& child){ \
+	typedef decltype(child) Derived; \
+	struct ImplicitlyConvertibleToBase \
+	{ \
+		explicit ImplicitlyConvertibleToBase(Derived& value): \
+			value_(value) \
+		{} \
+		template <class Base> \
+		operator Base() \
+		{ \
+			static_assert(std::is_base_of<Base, Derived>(), "to_base_cast can be applied only for casting to base"); \
+			return (Base&)value_; \
+		} \
+	  private: \
+		Derived& value_; \
+	}; \
+	return ImplicitlyConvertibleToBase(child); \
+}(CHILD))
+
 template <class Signed> typename std::make_unsigned<Signed>::type unsigned_cast(const Signed& i)
 {
 	typedef typename std::make_unsigned<Signed>::type Unsigned;

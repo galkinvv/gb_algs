@@ -99,7 +99,7 @@ TYPED_TEST_P(FieldTest, OneTests)
 
 REGISTER_TYPED_TEST_CASE_P(FieldTest, HasNestedTypes, ZeroTests, OneTests);
 
-//TODO: change fields in a way to ensure that multiplication wont overflow inside base ring
+
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField8_2, FieldTest, FiniteFieldCreator<ZPlusRing8>::Module<2>);
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField8_3, FieldTest, FiniteFieldCreator<ZPlusRing8>::Module<3>);
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField8_5, FieldTest, FiniteFieldCreator<ZPlusRing8>::Module<5>);
