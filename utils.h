@@ -598,30 +598,19 @@ template <class  WideInteger, class NarrowInteger> WideInteger wide_cast(const N
 	return WideInteger(i);
 }
 
-template <bool report, class... InfoArgs>
-struct BadTypeReporter{};
-
-template <class... InfoArgs>
-struct BadTypeReporter<true,  InfoArgs...>
-{
-	static const bool always_false = sizeof...(InfoArgs) < 0;
-	static_assert(always_false, "BadTypeReporter reports that it's argument is bad");
-};
-
-template <class TPassThrough, bool value, class... InfoArgs>
-struct StaticAssertInTypeExpr : BadTypeReporter<value, InfoArgs...>
-{
-	typedef TPassThrough type;
+template <class ValueContainer, decltype(ValueContainer::value) expected_value>
+struct StaticAsserter{
+	static bool const value = ValueContainer::value == expected_value;
+	static_assert(value, "BadTypeReporter reports that it's type arguments is bad, see below for other assertion explaining why");
 };
 
 //need a macro to be able to cast to non-publicly visible bases
 #define TO_BASE_CAST(TBase, child) \
-	(static_cast<typename StaticAssertInTypeExpr< \
-		TBase, \
-		!std::is_base_of<typename std::remove_reference<TBase>::type, typename std::remove_reference<decltype(child)>::type>(), \
-		typename std::remove_reference<TBase>::type, \
-		typename std::remove_reference<decltype(child)>::type \
-	>::type>(child))
+	([](decltype(child)&& child_in_lambda)->TBase{ \
+		static_assert(StaticAsserter<std::is_base_of<typename std::remove_reference<TBase>::type, typename std::remove_reference<decltype(child)>::type>, true>::value, "TO_BASE_CAST can cast only to base");\
+		return static_cast<TBase>(child_in_lambda); \
+	}(child))
+	
 
 
 template <class Signed> typename std::make_unsigned<Signed>::type unsigned_cast(const Signed& i)
