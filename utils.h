@@ -598,26 +598,31 @@ template <class  WideInteger, class NarrowInteger> WideInteger wide_cast(const N
 	return WideInteger(i);
 }
 
+template <bool report, class... InfoArgs>
+struct BadTypeReporter{};
+
+template <class... InfoArgs>
+struct BadTypeReporter<true,  InfoArgs...>
+{
+	static const bool always_false = sizeof...(InfoArgs) < 0;
+	static_assert(always_false, "BadTypeReporter reports that it's argument is bad");
+};
+
+template <class TPassThrough, bool value, class... InfoArgs>
+struct StaticAssertInTypeExpr : BadTypeReporter<value, InfoArgs...>
+{
+	typedef TPassThrough type;
+};
+
 //need a macro to be able to cast to non-publicly visible bases
-#define to_base_cast(CHILD) \
-([](decltype(CHILD)& child){ \
-	typedef decltype(child) Derived; \
-	struct ImplicitlyConvertibleToBase \
-	{ \
-		explicit ImplicitlyConvertibleToBase(Derived& value): \
-			value_(value) \
-		{} \
-		template <class Base> \
-		operator Base() \
-		{ \
-			static_assert(std::is_base_of<Base, Derived>(), "to_base_cast can be applied only for casting to base"); \
-			return (Base&)value_; \
-		} \
-	  private: \
-		Derived& value_; \
-	}; \
-	return ImplicitlyConvertibleToBase(child); \
-}(CHILD))
+#define TO_BASE_CAST(TBase, child) \
+	(static_cast<typename StaticAssertInTypeExpr< \
+		TBase, \
+		!std::is_base_of<typename std::remove_reference<TBase>::type, typename std::remove_reference<decltype(child)>::type>(), \
+		typename std::remove_reference<TBase>::type, \
+		typename std::remove_reference<decltype(child)>::type \
+	>::type>(child))
+
 
 template <class Signed> typename std::make_unsigned<Signed>::type unsigned_cast(const Signed& i)
 {

@@ -37,7 +37,9 @@ struct FiniteField {
 	}
 
 	void DivByOne(const Value& divident, DivResult& result) const{
-		(Value&)to_base_cast(result) = divident;
+		static_assert(std::is_base_of<Value, DivResult>(), "value is not base for result");
+		TO_BASE_CAST(Value&, result) = divident;
+		//TO_BASE_CAST(DivResult&, divident);
 	}
 
 	void Divide(const Value& divident, const Value& divider, DivResult& result) const{
