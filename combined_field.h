@@ -31,6 +31,11 @@ class CombinedField
 		approx_value = value.approx;
 	}
 
+	void DivByOne(const Value& divident, DivResult& result) const{
+		af_.DivByOne(divident.approx, result.approx);
+		ef_.DivByOne(divident.exact, result.exact);
+	}
+
 	void Divide(const Value& numerator, const Value& denominator, DivResult& result)const
 	{
 		af_.Divide(numerator.approx, denominator.approx, result.approx); //may  throw unexact_divisor_exception
@@ -100,6 +105,10 @@ class ExactFieldAsCombined
 	void ExtractApprox(const Value& value, typename ExactField::Value& approx_value)const
 	{
 		approx_value = value.exact;
+	}
+
+	void DivByOne(const Value& divident, DivResult& result) const{
+		ef_.DivByOne(divident.exact, result.exact);
 	}
 
 	void Divide(const Value& numerator, const Value& denominator, DivResult& result)const
