@@ -24,9 +24,9 @@ struct FiniteField {
 		friend class FiniteField;
 	};
 
-	//stores negative result of division
-	class DivResult:Value
+	class DivResult
 	{
+		Value negatedValue; 	//stores negative result of division
 		friend class FiniteField;
 	};
 	
@@ -37,7 +37,18 @@ struct FiniteField {
 	}
 
 	void DivByOne(const Value& divident, DivResult& result) const{
-		TO_BASE_CAST(Value&, result) = divident;
+		//simple cast is not enough, because DivResult is stored as negated value
+
+		//zero case is specially handled to get rid of normalize call
+		if (z_.IsZero(divident))
+		{
+			z_.SetZero(result.negatedValue);
+		}
+		else
+		{
+			z_.SubtractFromNotSmaller(mod_, divident, result.negatedValue);
+		}
+		assert(IsNormalized(result.negatedValue));
 	}
 
 	void Divide(const Value& divident, const Value& divider, DivResult& result) const{
@@ -57,13 +68,13 @@ struct FiniteField {
 			return z_.IsOne(expected_one_remainder.rem);
 			}());
 		*/
-		z_.MulMod(negative_divider_inverse, divident, mod_, result);
-		assert(IsNormalized(result));
+		z_.MulMod(negative_divider_inverse, divident, mod_, result.negatedValue);
+		assert(IsNormalized(result.negatedValue));
 	}
 
 	ExactSubtractionResultInfo Subtract(const Value& from, const Value& what, const DivResult& multiplier, Value& result) const{
 		//DivResult contanes already negated value, so perform addition
-		z_.AddMulMod(from, what, multiplier, mod_, result);
+		z_.AddMulMod(from, what, multiplier.negatedValue, mod_, result);
 		assert(IsNormalized(result));
 		if (z_.IsZero(result)) {
 			return ExactSubtractionResultInfo::Zero;

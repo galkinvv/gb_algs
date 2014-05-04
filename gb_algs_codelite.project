@@ -134,7 +134,7 @@
         <Target Name="Check">make check</Target>
         <RebuildCommand/>
         <CleanCommand>make clean</CleanCommand>
-        <BuildCommand>make</BuildCommand>
+        <BuildCommand>make -j 4</BuildCommand>
         <PreprocessFileCommand/>
         <SingleFileCommand>make  quickcompile "QUICK_SOURCE=$(CurrentFileFullPath)"</SingleFileCommand>
         <MakefileGenerationCommand/>

@@ -67,7 +67,7 @@ struct ZPlusRing
 
 	void MulMod(const Value& mult0, const Value& mult1, const Value& mod,  Value& result)const
 	{
-		result.i = narrow_cast<Integer>((wide_cast<BiggerInteger>(mult0.i) * wide_cast<BiggerInteger>(mult1.i))%wide_cast<BiggerInteger>(mod.i));
+		result.i = narrow_cast<Integer>((wide_cast<BiggerInteger>(mult0.i) * wide_cast<BiggerInteger>(mult1.i)) % wide_cast<BiggerInteger>(mod.i));
 	}
 
 	void AddMul(const Value& from, const Value& what, const Value& multiplier, Value& result)const
@@ -80,6 +80,13 @@ struct ZPlusRing
 		assert(result.i >= from.i);//check for add overflow
  	}
  
+	void SubtractFromNotSmaller(const Value& from, const Value& what, Value& result)const
+ 	{
+		assert(from.i >= what.i);
+		result.i = from.i - what.i;
+		assert(result.i <= from.i);
+ 	}
+
 	void SetZero(Value& result)const 
 	{
 		result.i = 0;
