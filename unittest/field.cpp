@@ -1,8 +1,10 @@
 #include <limits>
 #include <cstdint>
-#include "test_base.h"
 #include "z_ring.h"
 #include "finite_field.h"
+
+#define PRIVATE_TYPED_TEST FieldTest
+#include "test_base.h"
 
 template <class Field>
 struct CreateFieldForTest
@@ -27,77 +29,229 @@ struct FiniteFieldCreator
 	};
 };
 
-
-template <class Creator>
+template <class Param>
 struct FieldTest :  ::testing::Test
 {
 	FieldTest()
-		:f_(Creator::Create())
+		:f_(Param::Create())
 	{}
-	typename Creator::Field f_;
-	typename Creator::Field::Value to_check;
+	typename Param::Field f_;
+	typedef typename Param::Field::Value Value;
+	typedef typename Param::Field::DivResult DivResult;
+	
 	template <class Integer>
-	typename Creator::Field::Value Imp(const Integer& i)
+	Value Imp(const Integer& i)
 	{
-		typename Creator::Field::Value result;
+		Value result;
 		f_.Import(i, result);
 		return result;
 	}
+
+	Value MinusOne()
+	{
+		Value result;
+		f_.Subtract(FieldHelpers::Zero(f_), FieldHelpers::One(f_), FieldHelpers::DivByOne(f_, FieldHelpers::One(f_)), result);
+		return result;
+	}
+
+	void NonEmptyNestedTypes()
+	{
+		EXPECT_GT(sizeof(Value), 0);
+		EXPECT_GT(sizeof(DivResult), 0);		
+	}
+
+	void ZeroTests()
+	{
+		Value to_check;
+		//0 == 0
+		EXPECT_TRUE(FieldHelpers::IsZero(f_, FieldHelpers::Zero(f_)));
+		EXPECT_TRUE(FieldHelpers::IsEqual(f_, FieldHelpers::Zero(f_), Imp(0u)));
+		EXPECT_TRUE(FieldHelpers::IsEqual(f_, FieldHelpers::Zero(f_), FieldHelpers::Zero(f_)));
+		//0-0*0 == 0
+		f_.Subtract(FieldHelpers::Zero(f_), FieldHelpers::Zero(f_), FieldHelpers::DivByOne(f_, FieldHelpers::Zero(f_)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsZero(f_, to_check));
+		//0-1*0 == 0
+		f_.Subtract(FieldHelpers::Zero(f_), FieldHelpers::One(f_), FieldHelpers::DivByOne(f_, FieldHelpers::Zero(f_)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsZero(f_, to_check));
+		//0-0*1 == 0
+		f_.Subtract(FieldHelpers::Zero(f_), FieldHelpers::Zero(f_), FieldHelpers::DivByOne(f_, FieldHelpers::One(f_)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsZero(f_, to_check));
+		//0-0*1 == 0
+		f_.Subtract(FieldHelpers::Zero(f_), FieldHelpers::Zero(f_), FieldHelpers::DivByOne(f_, FieldHelpers::One(f_)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsZero(f_, to_check));
+		
+		//0-0*2 == 0
+		f_.Subtract(FieldHelpers::Zero(f_), FieldHelpers::Zero(f_), FieldHelpers::DivByOne(f_, Imp(2u)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsZero(f_, to_check));
+		
+		//0-0*17 == 0
+		f_.Subtract(FieldHelpers::Zero(f_), FieldHelpers::Zero(f_), FieldHelpers::DivByOne(f_, Imp(17ull)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsZero(f_, to_check));
+
+		//0-1*1 != 0
+		f_.Subtract(FieldHelpers::Zero(f_), FieldHelpers::One(f_), FieldHelpers::DivByOne(f_, FieldHelpers::One(f_)), to_check);
+		EXPECT_EQ(f_.Subtract(FieldHelpers::Zero(f_), FieldHelpers::One(f_), FieldHelpers::DivByOne(f_, FieldHelpers::One(f_)), to_check), ExactSubtractionResultInfo::NonZero);
+		EXPECT_FALSE(FieldHelpers::IsZero(f_, to_check));		
+	}
+
+	void OneTests()
+	{
+		Value to_check;
+		
+		//0 != 1
+		EXPECT_FALSE(FieldHelpers::IsZero(f_, FieldHelpers::One(f_)));
+		EXPECT_FALSE(FieldHelpers::IsEqual(f_, FieldHelpers::One(f_), FieldHelpers::Zero(f_)));
+		EXPECT_FALSE(FieldHelpers::IsEqual(f_, FieldHelpers::Zero(f_), FieldHelpers::One(f_)));
+		//1 == 1
+		EXPECT_TRUE(FieldHelpers::IsEqual(f_, FieldHelpers::One(f_), Imp(1u)));
+		EXPECT_TRUE(FieldHelpers::IsEqual(f_, FieldHelpers::One(f_), FieldHelpers::One(f_)));	
+		//1-1*1=0
+		f_.Subtract(FieldHelpers::One(f_), FieldHelpers::One(f_), FieldHelpers::DivByOne(f_, FieldHelpers::One(f_)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsZero(f_, to_check));
+		
+		//17-1*1=16
+		f_.Subtract(Imp(17u), FieldHelpers::One(f_), FieldHelpers::DivByOne(f_, FieldHelpers::One(f_)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsEqual(f_, to_check, Imp(16u)));
+
+		//255-1*1=254
+		f_.Subtract(Imp(255u), FieldHelpers::One(f_), FieldHelpers::DivByOne(f_, FieldHelpers::One(f_)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsEqual(f_, to_check, Imp(254u)));
+		
+		//17-1*17=0
+		f_.Subtract(Imp(17u), FieldHelpers::One(f_), FieldHelpers::DivByOne(f_, Imp(17u)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsZero(f_, to_check));	
+
+		//2-1*2=0
+		f_.Subtract(Imp(2u), FieldHelpers::One(f_), FieldHelpers::DivByOne(f_, Imp(2u)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsZero(f_, to_check));	
+
+		//255-1*255=0
+		f_.Subtract(Imp(255u), FieldHelpers::One(f_), FieldHelpers::DivByOne(f_, Imp(255u)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsZero(f_, to_check));
+
+		//2-1*1=1
+		f_.Subtract(Imp(2u), FieldHelpers::One(f_), FieldHelpers::DivByOne(f_, FieldHelpers::One(f_)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsEqual(f_, to_check, FieldHelpers::One(f_)));
+	}
+
+	void MinusOneTests()
+	{
+		EXPECT_FALSE(FieldHelpers::IsZero(f_, MinusOne()));
+		Value to_check;
+		//1 == -1 if and only if 0 ==2 (field with char two)
+		bool oneEqualToMinusOne = FieldHelpers::IsEqual(f_, FieldHelpers::One(f_), MinusOne());
+		bool twoIsZero= FieldHelpers::IsZero(f_, Imp(2u));
+		EXPECT_EQ(oneEqualToMinusOne, twoIsZero);
+		
+		// 0-1*(-1/1) ==1
+		f_.Subtract(FieldHelpers::Zero(f_), FieldHelpers::One(f_), FieldHelpers::DivByOne(f_, MinusOne()), to_check);
+		EXPECT_TRUE(FieldHelpers::IsEqual(f_, to_check, FieldHelpers::One(f_)));	
+		
+		DivResult minusOneByMinusOne;
+		f_.Divide(MinusOne(), MinusOne(), minusOneByMinusOne);
+
+		// 0-(-1)*(-1/-1) ==1
+		f_.Subtract(FieldHelpers::Zero(f_), MinusOne(), minusOneByMinusOne, to_check);
+		EXPECT_TRUE(FieldHelpers::IsEqual(f_, to_check, FieldHelpers::One(f_)));	
+
+		// 0-1*(-1/-1) == -1
+		f_.Subtract(FieldHelpers::Zero(f_), FieldHelpers::One(f_), minusOneByMinusOne, to_check);
+		EXPECT_TRUE(FieldHelpers::IsEqual(f_, to_check, MinusOne()));	
+
+		//17-(-1)*1=18
+		f_.Subtract(Imp(17u), MinusOne(), FieldHelpers::DivByOne(f_, FieldHelpers::One(f_)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsEqual(f_, to_check, Imp(18u)));
+
+		//254-(-1)*1=254
+		f_.Subtract(Imp(254u), MinusOne(), FieldHelpers::DivByOne(f_, FieldHelpers::One(f_)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsEqual(f_, to_check, Imp(255u)));
+	}
+	
+	void SubtractTests()
+	{
+		Value to_check;
+		//255-25*10==5
+		f_.Subtract(Imp(255u), Imp(25u), FieldHelpers::DivByOne(f_, Imp(10u)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsEqual(f_, to_check, Imp(5u)));		
+
+		//15-2*8==-1
+		f_.Subtract(Imp(15u), Imp(2u), FieldHelpers::DivByOne(f_, Imp(8u)), to_check);
+		EXPECT_TRUE(FieldHelpers::IsEqual(f_, to_check, MinusOne()));		
+	}
+	void DivideTests()
+	{
+		unsigned dividers []={2,3,5,7,61};
+		bool skipped = false;
+		for(auto divider:dividers)
+		{
+			Value imp_divider = Imp(divider);
+			if (FieldHelpers::IsZero(f_, imp_divider))
+			{
+				EXPECT_FALSE(skipped);
+				skipped = true;
+			}
+			else
+			{
+				DivResult d1, d2, d25, d255;
+				f_.Divide(Imp(1u), imp_divider, d1);
+				f_.Divide(Imp(2u), imp_divider, d2);
+				f_.Divide(Imp(25u), imp_divider, d25);
+				f_.Divide(Imp(255u), imp_divider, d255);
+				
+				Value to_check, premult;
+
+				f_.Subtract(Imp(1u), imp_divider, d1, to_check);
+				EXPECT_TRUE(FieldHelpers::IsZero(f_, to_check));
+				
+				f_.Subtract(Imp(2u), imp_divider, d2, to_check);
+				EXPECT_TRUE(FieldHelpers::IsZero(f_, to_check));
+				
+				f_.Subtract(Imp(25u), imp_divider, d25, to_check);
+				EXPECT_TRUE(FieldHelpers::IsZero(f_, to_check));
+				
+				f_.Subtract(Imp(255u), imp_divider, d255, to_check);
+				EXPECT_TRUE(FieldHelpers::IsZero(f_, to_check));
+				
+				f_.Subtract(FieldHelpers::Zero(f_), Imp(5u), d1, premult);
+				f_.Subtract(FieldHelpers::Zero(f_), imp_divider, FieldHelpers::DivByOne(f_, premult), to_check);
+				EXPECT_TRUE(FieldHelpers::IsEqual(f_, to_check, Imp(5u)));
+
+				f_.Subtract(FieldHelpers::Zero(f_), Imp(7u), d25, premult);
+				f_.Subtract(FieldHelpers::Zero(f_), imp_divider, FieldHelpers::DivByOne(f_, premult), to_check);
+				EXPECT_TRUE(FieldHelpers::IsEqual(f_, to_check, Imp(175u)));
+				
+				if (divider == 2)
+				{
+					//-1 == 2/2
+					f_.Subtract(FieldHelpers::Zero(f_), FieldHelpers::One(f_), d2, to_check);
+					EXPECT_TRUE(FieldHelpers::IsEqual(f_, to_check, MinusOne()));
+				}
+				if (divider == 3)
+				{
+					//85 == 255/3
+					f_.Subtract(Imp(85u), FieldHelpers::One(f_), d255, to_check);
+					EXPECT_TRUE(FieldHelpers::IsZero(f_, to_check));					
+				}
+				if (divider == 5)
+				{
+					//5 == 25/5
+					f_.Subtract(Imp(5u), FieldHelpers::One(f_), d25, to_check);
+					EXPECT_TRUE(FieldHelpers::IsZero(f_, to_check));					
+				}
+			}
+		}
+	}
+
 };
 
 
-TYPED_TEST_CASE_P(FieldTest);
-
-TYPED_TEST_P(FieldTest, HasNestedTypes)
-{
-	EXPECT_GT(sizeof(typename decltype(this->f_)::Value), 0);
-	EXPECT_GT(sizeof(typename decltype(this->f_)::DivResult), 0);
-}
-
-TYPED_TEST_P(FieldTest, ZeroTests)
-{
-	//0 == 0
-	EXPECT_TRUE(FieldHelpers::IsZero(this->f_, FieldHelpers::Zero(this->f_)));
-	EXPECT_TRUE(FieldHelpers::IsEqual(this->f_, FieldHelpers::Zero(this->f_), FieldHelpers::Zero(this->f_)));
-	//0-0*0 == 0
-	this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::Zero(this->f_), FieldHelpers::DivByOne(this->f_, FieldHelpers::Zero(this->f_)), this->to_check);
-	EXPECT_TRUE(FieldHelpers::IsZero(this->f_, this->to_check));
-	//0-1*0 == 0
-	this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::One(this->f_), FieldHelpers::DivByOne(this->f_, FieldHelpers::Zero(this->f_)), this->to_check);
-	EXPECT_TRUE(FieldHelpers::IsZero(this->f_, this->to_check));
-	//0-0*1 == 0
-	this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::Zero(this->f_), FieldHelpers::DivByOne(this->f_, FieldHelpers::One(this->f_)), this->to_check);
-	EXPECT_TRUE(FieldHelpers::IsZero(this->f_, this->to_check));
-	//0-0*1 == 0
-	this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::Zero(this->f_), FieldHelpers::DivByOne(this->f_, FieldHelpers::One(this->f_)), this->to_check);
-	EXPECT_TRUE(FieldHelpers::IsZero(this->f_, this->to_check));
-	
-	//0-0*2 == 0
-	this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::Zero(this->f_), FieldHelpers::DivByOne(this->f_, this->Imp(2u)), this->to_check);
-	EXPECT_TRUE(FieldHelpers::IsZero(this->f_, this->to_check));
-	
-	//0-0*17 == 0
-	//this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::Zero(this->f_), FieldHelpers::DivByOne(this->f_, this->Imp(17ull)), this->to_check);
-	EXPECT_TRUE(FieldHelpers::IsZero(this->f_, this->to_check));
-
-	//0-1*1 != 0
-	this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::One(this->f_), FieldHelpers::DivByOne(this->f_, FieldHelpers::One(this->f_)), this->to_check);
-	EXPECT_EQ(this->f_.Subtract(FieldHelpers::Zero(this->f_), FieldHelpers::One(this->f_), FieldHelpers::DivByOne(this->f_, FieldHelpers::One(this->f_)), this->to_check), ExactSubtractionResultInfo::NonZero);
-	EXPECT_FALSE(FieldHelpers::IsZero(this->f_, this->to_check));
-}
-
-TYPED_TEST_P(FieldTest, OneTests)
-{
-	//0 != 1
-	EXPECT_FALSE(FieldHelpers::IsZero(this->f_, FieldHelpers::One(this->f_)));
-	EXPECT_FALSE(FieldHelpers::IsEqual(this->f_, FieldHelpers::One(this->f_), FieldHelpers::Zero(this->f_)));
-	EXPECT_FALSE(FieldHelpers::IsEqual(this->f_, FieldHelpers::Zero(this->f_), FieldHelpers::One(this->f_)));
-	//1 == 1
-	EXPECT_TRUE(FieldHelpers::IsEqual(this->f_, FieldHelpers::One(this->f_), FieldHelpers::One(this->f_)));
-
-}
-
-REGISTER_TYPED_TEST_CASE_P(FieldTest, HasNestedTypes, ZeroTests, OneTests);
+TEST_METHOD(NonEmptyNestedTypes)
+TEST_METHOD(ZeroTests)
+TEST_METHOD(OneTests)
+TEST_METHOD(MinusOneTests)
+TEST_METHOD(SubtractTests)
+TEST_METHOD(DivideTests)
+REGISTER_TYPED_TEST_CASE_P(FieldTest, NonEmptyNestedTypes, ZeroTests, OneTests, MinusOneTests, SubtractTests, DivideTests);
 
 
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField8_2, FieldTest, FiniteFieldCreator<ZPlusRing8>::Module<2>);
@@ -120,6 +274,8 @@ INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_7, FieldTest, FiniteFieldCrea
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_251, FieldTest, FiniteFieldCreator<ZPlusRing32>::Module<251>);
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_65521, FieldTest, FiniteFieldCreator<ZPlusRing32>::Module<65521>);
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_4294967291, FieldTest, FiniteFieldCreator<ZPlusRing32>::Module<4294967291>);
+
+//TODO: test bad (overflowing) imports
 
 TEST(BadConstructionDeathTest, SmallNotPrime)
 {

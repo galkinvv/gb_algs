@@ -10,6 +10,17 @@ using UnitTest::PRIVATE_TEST;
 TEST_F(PRIVATE_TEST, method) {this->method();}
 #endif
 
+#ifdef PRIVATE_TYPED_TEST
+namespace UnitTest{
+	template <class Param>
+	struct PRIVATE_TYPED_TEST;
+}
+using UnitTest::PRIVATE_TYPED_TEST;
+#define TEST_METHOD(method) \
+TYPED_TEST_P(PRIVATE_TYPED_TEST, method) {PRIVATE_TYPED_TEST<TypeParam>::method();}
+TYPED_TEST_CASE_P(PRIVATE_TYPED_TEST);
+#endif
+
 #define EXPECT_ASSERT(expr) EXPECT_DEATH((expr), "")
 
 template <class SubComparator>
