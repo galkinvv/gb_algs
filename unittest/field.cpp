@@ -275,7 +275,109 @@ INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_251, FieldTest, FiniteFieldCr
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_65521, FieldTest, FiniteFieldCreator<ZPlusRing32>::Module<65521>);
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_4294967291, FieldTest, FiniteFieldCreator<ZPlusRing32>::Module<4294967291>);
 
-//TODO: test bad (overflowing) imports
+TEST(ImportTest, ring8)
+{
+	typedef FiniteFieldCreator<ZPlusRing8>::Module<3> Creator;
+	auto field = Creator::Create();
+	typename Creator::Field::Value value0, value1;
+	field.Import(uint8_t(2), value0);
+	field.Import(uint8_t(5), value1);
+	EXPECT_TRUE(FieldHelpers::IsEqual(field, value0, value1));
+	field.Import(uint8_t(3), value0);
+	field.Import(uint8_t(6), value1);
+	EXPECT_TRUE(FieldHelpers::IsEqual(field, value0, value1));
+	EXPECT_TRUE(FieldHelpers::IsZero(field, value0));
+	EXPECT_TRUE(FieldHelpers::IsZero(field, value1));
+	field.Import(uint8_t(4), value0);
+	field.Import(uint8_t(1), value1);
+	EXPECT_TRUE(FieldHelpers::IsEqual(field, value0, value1));
+	field.Import(uint8_t(254), value0);
+	field.Import(uint8_t(251), value1);
+	EXPECT_TRUE(FieldHelpers::IsEqual(field, value0, value1));
+	field.Import(uint8_t(252), value0);
+	field.Import(uint8_t(255), value1);
+	EXPECT_TRUE(FieldHelpers::IsEqual(field, value0, value1));
+	field.Import(uint64_t(255), value0);
+	field.Import(uint64_t(252), value1);
+	EXPECT_TRUE(FieldHelpers::IsEqual(field, value0, value1));
+}
+
+TEST(ImportTest, ring32)
+{
+	typedef FiniteFieldCreator<ZPlusRing32>::Module<257> Creator;
+	auto field = Creator::Create();
+	typename Creator::Field::Value value0, value1;
+	field.Import(uint16_t(2), value0);
+	field.Import(uint16_t(2+257), value1);
+	EXPECT_TRUE(FieldHelpers::IsEqual(field, value0, value1));
+	field.Import(uint64_t(257<<13), value0);
+	field.Import(uint32_t(257), value1);
+	EXPECT_TRUE(FieldHelpers::IsEqual(field, value0, value1));
+	EXPECT_TRUE(FieldHelpers::IsZero(field, value0));
+	EXPECT_TRUE(FieldHelpers::IsZero(field, value1));
+	field.Import(uint8_t(4), value0);
+	field.Import(uint8_t(1), value1);
+	EXPECT_FALSE(FieldHelpers::IsEqual(field, value0, value1));
+	field.Import(uint8_t(254), value0);
+	field.Import(uint8_t(251), value1);
+	EXPECT_FALSE(FieldHelpers::IsEqual(field, value0, value1));
+	field.Import(uint8_t(252), value0);
+	field.Import(uint8_t(255), value1);
+	EXPECT_FALSE(FieldHelpers::IsEqual(field, value0, value1));
+	field.Import(uint64_t(0xFFFFFFFFu), value0);
+	field.Import(uint64_t(0xFFFFFFFFu-257u), value1);
+	EXPECT_TRUE(FieldHelpers::IsEqual(field, value0, value1));
+}
+
+
+TEST(BadImportDeathTest, ring8_16)
+{
+	typedef FiniteFieldCreator<ZPlusRing8>::Module<3> Creator;
+	auto field = Creator::Create();
+	typename Creator::Field::Value value;
+	EXPECT_ASSERT(field.Import(uint16_t(256), value));
+}
+
+TEST(BadImportDeathTest, ring8_32)
+{
+	typedef FiniteFieldCreator<ZPlusRing8>::Module<3> Creator;
+	auto field = Creator::Create();
+	typename Creator::Field::Value value;
+	EXPECT_ASSERT(field.Import(uint32_t(256), value));
+}
+
+TEST(BadImportDeathTest, ring8_64)
+{
+	typedef FiniteFieldCreator<ZPlusRing8>::Module<3> Creator;
+	auto field = Creator::Create();
+	typename Creator::Field::Value value;
+	EXPECT_ASSERT(field.Import(uint64_t(256), value));
+}
+
+TEST(BadImportDeathTest, ring8_64_big)
+{
+	typedef FiniteFieldCreator<ZPlusRing8>::Module<3> Creator;
+	auto field = Creator::Create();
+	typename Creator::Field::Value value;
+	EXPECT_ASSERT(field.Import(0xFFFFFFFFFFFFFFFFull, value));
+}
+
+TEST(BadImportDeathTest, ring32_64)
+{
+	typedef FiniteFieldCreator<ZPlusRing32>::Module<2> Creator;
+	auto field = Creator::Create();
+	typename Creator::Field::Value value;
+	EXPECT_ASSERT(field.Import(0x100000000ull, value));
+}
+
+TEST(BadImportDeathTest, ring32_64_big)
+{
+	typedef FiniteFieldCreator<ZPlusRing32>::Module<2> Creator;
+	auto field = Creator::Create();
+	typename Creator::Field::Value value;
+	EXPECT_ASSERT(field.Import(0xFFFFFFFFFFFFFFFFull, value));
+}
+
 
 TEST(BadConstructionDeathTest, SmallNotPrime)
 {
