@@ -100,14 +100,18 @@ namespace{
 	//i-th number in lead_columns corresponds to i-th row in matrix
 	//lead elements of triangulated matrix are NOT set to exact ones - they are arbitrary values
 
+	//throws:
+	//incompatible_system_exception when system can't be triangulated (too much non-zero rows for example)
+	//cant_detect_zero_equality_exception when combined field detected that n exact part is exactly zero, while approx part isn't
+	//unexact_divisor_exception when there is not enough precision in approx part of elements to triangulate
+	
 	const int kRowIsCompletlyZero = -1; //kRowIsCompletlyZero in lead column means  completely zero row
-	const int kUnitializedLeadColumn = -2; //used only internally
 	struct incompatible_system_exception: std::exception{};
-	//throws incompatible_system_exception when system can't be triangulated (too much non-zero rows for example)
 	
 	template <class Field>
 	void TriangulateMatrix(const Field& field, std::vector<auto_unique_ptr<RowWithRightPart<Field>>>& matrix, std::vector<int>& lead_columns)
 	{
+		const int kUnitializedLeadColumn = -2; //used only internally
 		std::vector<typename std::remove_reference<decltype(matrix.back()->left.cbegin())>::type> min_row_iterators;
 		lead_columns.resize(matrix.size(), kUnitializedLeadColumn); //fill with non-initialized
 		int used_rows = matrix.size();
@@ -208,77 +212,130 @@ namespace{
 			}
 		}
 	}
-}
+
+	//fills combined_matrix with data from matrix, assuming that right side consists if one followed by zeroes
+	//expcted  not to throw non-system errors
+	template <class CombinedField, class CombinedMatrix, class ElementMatrixContainer>
+	void ImportToCombinedMatrix(const CombinedField& combined_field,  CombinedMatrix& combined_matrix, const ElementMatrixContainer& matrix)
+	{
+		combined_matrix.reserve(matrix.size());
+		RandomGenerator rand_functor;
+		for (const auto& row: matrix)
+		{
+			auto& pair_row = emplaced_back(combined_matrix);
+			if (combined_matrix.size() == 1)
+			{
+				//first row is one
+				pair_row->right = FieldHelpers::One(combined_field);
+			}
+			else
+			{
+				//all other rows - zeroes
+				pair_row->right = FieldHelpers::Zero(combined_field);
+			}
+			pair_row->left.reserve(row.size());
+			for(const auto& el:row)
+			{
+				auto& pair_el = emplaced_back(pair_row->left);
+				pair_el.column = el.column;
+				combined_field.ExtendWithRandom(el.value, rand_functor, pair_el.value);
+			}
+		}
+	}
+	
+	//fills result based on triangulation
+	//throws:
+	//unexact_divisor_exception when there is not enough precision in approx part of elements to triangulate. This is possible because some lead elements can be not used in inverted form in triangulation
+
+	template <class CombinedField, class CombinedMatrix,  class Field>
+	void CreateResultBasedOnTriangulation(const CombinedField& combined_field,  const CombinedMatrix& combined_matrix, const std::vector<int>& lead_columns, const Field& field, std::vector<Element<Field>>& result)
+	{
+		for (int ir = 0; ir  < lead_columns.size(); ++ir)
+		{
+			const int lead_column = lead_columns[ir];
+			if (lead_column != kRowIsCompletlyZero)
+			{
+				const auto& r = *combined_matrix[ir];
+				const auto lead_element_it = std::lower_bound(r.left.begin(), r.left.end(), lead_column, columnOfElementLessCompare<CombinedField>);
+				assert(lead_element_it != r.left.end());
+				typename Field::Value lead_value;
+				typename Field::Value right_value;
+				combined_field.ExtractApprox(lead_element_it->value, lead_value);
+				combined_field.ExtractApprox(r.right, right_value);
+				//subtract  from ritght side columns corresponding to already foumnd result elements
+				for(auto computed_element:result)
+				{
+					const int other_column = computed_element.column;
+					const auto other_element_it = std::lower_bound(r.left.begin(), r.left.end(), other_column, columnOfElementLessCompare<CombinedField>);
+					if (other_element_it != r.left.end() && other_element_it->column == other_column)
+					{
+						typename Field::Value other_value;
+						combined_field.ExtractApprox(other_element_it->value, other_value);
+						auto other_value_as_frac = FieldHelpers::DivByOne(field, other_value);
+						field.Subtract(CopyValue(right_value), computed_element.value, other_value_as_frac, right_value);
+					}
+				}
+				typename Field::DivResult var_value_as_frac;
+				field.Divide(right_value, lead_value, var_value_as_frac);
+				Element<Field> new_element;
+				new_element.column = lead_column;
+				new_element.value = FieldHelpers::FracAsValue(field, var_value_as_frac);
+				result.emplace_back(new_element);
+			}
+		}
+	}
+	
+} //namespace{}
 
 //solves matrix equation in field with matrix as left side(Container of rows, where each row is container of elements) assuming that right side consists if one followed by zeroes
 //empty result means "no solution"
-template <class Field, class ElementMatrixContainer, class CombinedField = ExactFieldAsCombined<Field>>
-void SolveWithRightSideContainigSingleOne(const Field& field, const ElementMatrixContainer& matrix, std::vector<Element<Field>>& result, int max_diferent_numbers_in_coefficients)
+//expcted  not to throw non-system errors
+template <class CombinedFieldFactory, class Field, class ElementMatrixContainer,  class CombinedFieldFactoryData>
+void SolveWithRightSideContainigSingleOne(const Field& field, const ElementMatrixContainer& matrix, std::vector<Element<Field>>& result, CombinedFieldFactoryData& combined_creator_data)
 {
+	CombinedFieldFactory combined_field_factory;
+	static const int max_attempts = 2;//maximal number of attmpts to select suitable field
+	int attempt = 0;
 	result.clear();
-	//TODO for non-Z2 case:
-	//calculate P_0 based on matrix.size() and max_diferent_numbers_in_coefficients
-	//calculate N_0 based on P_0. 
-	//select field based on P_0 and N_0
-	auto combined_field = CombinedField(field);
-	std::vector<auto_unique_ptr<RowWithRightPart<CombinedField>>> combined_matrix;
-	combined_matrix.reserve(matrix.size());
-	RandomGenerator rand_functor;
-	for (const auto& row: matrix)
+	try
 	{
-		auto& pair_row = emplaced_back(combined_matrix);
-		if (combined_matrix.size() == 1)
+		for (;;)
 		{
-			//first row is one
-			pair_row->right = FieldHelpers::One(combined_field);
-		}
-		else
-		{
-			//all other rows - zeroes
-			pair_row->right = FieldHelpers::Zero(combined_field);
-		}
-		pair_row->left.reserve(row.size());
-		for(const auto& el:row)
-		{
-			auto& pair_el = emplaced_back(pair_row->left);
-			pair_el.column = el.column;
-			combined_field.ExtendWithRandom(el.value, rand_functor, pair_el.value);
+			auto combined_field = combined_field_factory.CreateFieldExpectedAsSuitable(combined_creator_data);
+			std::vector<auto_unique_ptr<RowWithRightPart<decltype(combined_field)>>> combined_matrix;
+			ImportToCombinedMatrix(combined_field, combined_matrix, matrix);
+			std::vector<int> lead_columns;
+			try
+			{
+				TriangulateMatrix(combined_field, combined_matrix, lead_columns);
+			}
+			catch(const cant_detect_zero_equality_exception&)
+			{
+				++attempt;
+				if (attempt >= max_attempts)
+				{
+					assert(result.empty());
+					return;//calculations completed without solution found, because no suitable exact field found
+				}
+				continue;//non-suitable field chosen, try another
+			}
+			catch(const incompatible_system_exception&)
+			{
+				assert(result.empty());
+				return;//calculations completed without solution found, because no suitable exact field found
+				//system is incompatible 
+			}
+			assert(lead_columns.size() == combined_matrix.size());
+			CreateResultBasedOnTriangulation(combined_field, combined_matrix, lead_columns, field, result);
+			assert(!result.empty());
+			return;//calculations completed with suitable field, all done
 		}
 	}
-	std::vector<int> lead_columns;
-	TriangulateMatrix(combined_field, combined_matrix, lead_columns);
-	assert(lead_columns.size() == combined_matrix.size());
-	for (int ir = 0; ir  < lead_columns.size(); ++ir)
+	catch(const unexact_divisor_exception&)
 	{
-		const int lead_column = lead_columns[ir];
-		if (lead_column != kRowIsCompletlyZero)
-		{
-			const auto& r = *combined_matrix[ir];
-			const auto lead_element_it = std::lower_bound(r.left.begin(), r.left.end(), lead_column, columnOfElementLessCompare<decltype(combined_field)>);
-			typename Field::Value lead_value;
-			typename Field::Value right_value;
-			combined_field.ExtractApprox(lead_element_it->value, lead_value);
-			combined_field.ExtractApprox(r.right, right_value);
-			//subtract  from ritght side columns corresponding to already foumnd result elements
-			for(auto computed_element:result)
-			{
-				const int other_column = computed_element.column;
-				const auto other_element_it = std::lower_bound(r.left.begin(), r.left.end(), other_column, columnOfElementLessCompare<decltype(combined_field)>);
-				if (other_element_it != r.left.end() && other_element_it->column == other_column)
-				{
-					typename Field::Value other_value;
-					combined_field.ExtractApprox(other_element_it->value, other_value);
-					auto other_value_as_frac = FieldHelpers::DivByOne(field, other_value);
-					field.Subtract(CopyValue(right_value), computed_element.value, other_value_as_frac, right_value);
-				}
-			}
-			typename Field::DivResult var_value_as_frac;
-			field.Divide(right_value, lead_value, var_value_as_frac);
-			Element<Field> new_element;
-			new_element.column = lead_column;
-			new_element.value = FieldHelpers::FracAsValue(field, var_value_as_frac);
-			result.emplace_back(new_element);
-		}
+		//not enough data precision to solve system
+		result.clear();
+		return;
 	}
 }
 }
