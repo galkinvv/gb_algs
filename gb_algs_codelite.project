@@ -26,6 +26,7 @@
     <File Name="unittest/test_base.h"/>
     <File Name="unittest/field.cpp"/>
     <File Name="unittest/ssg_approx.cpp"/>
+    <File Name="unittest/sparse_matrix_exact.cpp"/>
   </VirtualDirectory>
   <Description/>
   <Dependencies/>

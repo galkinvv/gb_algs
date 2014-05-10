@@ -57,6 +57,15 @@ namespace FieldHelpers
 		return ExactSubtractionResultInfo::Zero ==  field.Subtract(value0, value1, DivByOne(field, One(field)), unused_result);
 	}	
 
+	template <class Field, class Integer>
+	typename Field::Value Imp(const Field& field, const Integer& i)
+	{
+		typename Field::Value result;
+		field.Import(i, result);
+		return result;
+	}	
+
+
 	template <class Field>
 	bool IsZero(const Field& field, const typename Field::Value& value)
 	{

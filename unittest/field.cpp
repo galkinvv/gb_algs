@@ -42,9 +42,7 @@ struct FieldTest :  ::testing::Test
 	template <class Integer>
 	Value Imp(const Integer& i)
 	{
-		Value result;
-		f_.Import(i, result);
-		return result;
+		return FieldHelpers::Imp(f_, i);
 	}
 
 	Value MinusOne()
