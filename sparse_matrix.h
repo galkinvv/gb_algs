@@ -301,7 +301,7 @@ void SolveWithRightSideContainigSingleOne(const Field& field, const ElementMatri
 	{
 		for (;;)
 		{
-			auto combined_field = combined_field_factory.CreateFieldExpectedAsSuitable(combined_creator_data);
+			auto combined_field = combined_field_factory.CreateFieldExpectedAsSuitable(combined_creator_data, field);
 			std::vector<auto_unique_ptr<RowWithRightPart<decltype(combined_field)>>> combined_matrix;
 			ImportToCombinedMatrix(combined_field, combined_matrix, matrix);
 			std::vector<int> lead_columns;

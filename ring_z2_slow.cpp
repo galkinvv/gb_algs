@@ -290,20 +290,19 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const InPolysSetWithOrigMe
 	
 	struct CombinedFieldFactoryReturningZ2Data
 	{
-		ImplementedField field;
 		int max_diferent_numbers_in_coefficients;
 		//for more comple creators here will be stored some information about previousely created fields, that i filled on first creation
 	};
 
 	struct CombinedFieldFactoryReturningZ2
 	{
-		ExactFieldAsCombined<ImplementedField> CreateFieldExpectedAsSuitable(CombinedFieldFactoryReturningZ2Data& data)
+		ExactFieldAsCombined<ImplementedField> CreateFieldExpectedAsSuitable(CombinedFieldFactoryReturningZ2Data& data, const ImplementedField& field)
 		{
 			//TODO for non-Z2 case:
 			//calculate P_0 based on matrix.size() and max_diferent_numbers_in_coefficients
 			//calculate N_0 based on P_0. 
 			//select field based on P_0 and N_0
-			return ExactFieldAsCombined<ImplementedField>(data.field);
+			return ExactFieldAsCombined<ImplementedField>(field);
 		}
 	};
 
@@ -375,8 +374,7 @@ bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const InPolysSetWithOrigMe
 	}
 	std::vector<SparseMatrix::Element<ImplementedField>> solution;
 	auto factory_data =  Initialized<CombinedFieldFactoryReturningZ2Data>(
-			&CombinedFieldFactoryReturningZ2Data::max_diferent_numbers_in_coefficients, std::accumulate(reconstruction_basis.begin(), reconstruction_basis.end(), 0, [](int sum, const SlowPolynomial& poly){return sum + poly.size();}),
-			&CombinedFieldFactoryReturningZ2Data::field, field
+			&CombinedFieldFactoryReturningZ2Data::max_diferent_numbers_in_coefficients, std::accumulate(reconstruction_basis.begin(), reconstruction_basis.end(), 0, [](int sum, const SlowPolynomial& poly){return sum + poly.size();})
 		);
 	//send rows collection to solver that shoud assume that right-side column has 1 in first cell and last rows.size()-1 zeroes
 	//solver returns only non-zeros - list of pairs (coef from ImplementedField; int column number)
