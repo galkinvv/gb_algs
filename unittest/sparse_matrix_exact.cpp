@@ -45,7 +45,10 @@ struct FiniteFieldParam
 				Element element;
 				element.column = column;
 				field.Import(value, element.value);
-				matrix.back().push_back(element);
+				//if (!FieldHelpers::IsZero(field, element.value))
+				{
+					matrix.back().push_back(element);
+				}
 			}
 			Result RunSolver()const
 			{
@@ -87,21 +90,136 @@ struct SparseMatrixExactTest :  ::testing::Test
 	}
 	void SolvesOneBigColumn()
 	{
+		m.AddRow();
+		m.AddElement(42, 1u);
+		auto result = m.RunSolver();
+		EXPECT_EQ(result.size(), 1);
+		EXPECT_EQ(result.front().column, 42);
+		EXPECT_FIELD_VALUE_EQ(result.front().value, 1u);
 	}
-	void NotSolvesZeroZeroColumn()
+	void SolvesOneAndZeroInColumn()
 	{
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddRow();
+		auto result = m.RunSolver();
+		EXPECT_EQ(result.size(), 1);
+		EXPECT_EQ(result.front().column, 0);
+		EXPECT_FIELD_VALUE_EQ(result.front().value, 1u);
 	}
-	void NotSolvesZeroBigColumn()
+	void SolvesOneAndManyZeroInColumn()
 	{
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddRow();
+		m.AddRow();
+		m.AddRow();
+		m.AddRow();
+		auto result = m.RunSolver();
+		EXPECT_EQ(result.size(), 1);
+		EXPECT_EQ(result.front().column, 0);
+		EXPECT_FIELD_VALUE_EQ(result.front().value, 1u);
+	}
+	void SolvesTwoColumn()
+	{
+		m.AddRow();
+		static const unsigned col_values[] = {2,3};
+		m.AddElement(0, col_values[0]);
+		m.AddElement(1, col_values[1]);
+		auto result = m.RunSolver();
+		EXPECT_GT(result.size(), 0);
+		EXPECT_LE(result.size(), 2);
+	}
+	void SolvesTwoColumnTwoRows()
+	{
+		m.AddRow();
+		static const unsigned col_values[] = {2,3};
+		m.AddElement(0, col_values[0]);
+		m.AddElement(1, col_values[1]);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		auto result = m.RunSolver();
+		EXPECT_GT(result.size(), 0);
+		EXPECT_LE(result.size(), 2);
+	}
+	void SolvesTwoColumnManyRows()
+	{
+		m.AddRow();
+		static const unsigned col_values[] = {2,3};
+		m.AddElement(0, col_values[0]);
+		m.AddElement(1, col_values[1]);
+		m.AddRow();
+		m.AddElement(0, 2u);
+		m.AddElement(1, 2u);
+		m.AddRow();
+		m.AddElement(0, 3u);
+		m.AddElement(1, 3u);
+		m.AddRow();
+		m.AddElement(0, 255u);
+		m.AddElement(1, 255u);
+		auto result = m.RunSolver();
+		EXPECT_GT(result.size(), 0);
+		EXPECT_LE(result.size(), 2);
+	}
+	void NotSolvesZeroAndOneInColumn()
+	{
+		m.AddRow();
+		m.AddRow();
+		m.AddElement(0, 1u);
+		auto result = m.RunSolver();
+		EXPECT_EQ(result.size(), 0);
+	}
+	void NotSolvesTwoOnesTwoColumns()
+	{
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		auto result = m.RunSolver();
+		EXPECT_EQ(result.size(), 0);
+	}
+	void NotSolvesTwoOnes()
+	{
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		auto result = m.RunSolver();
+		EXPECT_EQ(result.size(), 0);
+	}
+	void NotSolvesZero()
+	{
+		m.AddRow();
+		auto result = m.RunSolver();
+		EXPECT_EQ(result.size(), 0);
+	}
+	void NotSolvesTwoZeroes()
+	{
+		m.AddRow();
+		m.AddRow();
+		auto result = m.RunSolver();
+		EXPECT_EQ(result.size(), 0);
 	}
 };
 
 
 TEST_METHOD(SolvesOneZeroColumn)
 TEST_METHOD(SolvesOneBigColumn)
-TEST_METHOD(NotSolvesZeroZeroColumn)
-TEST_METHOD(NotSolvesZeroBigColumn)
-REGISTER_TYPED_TEST_CASE_P(SparseMatrixExactTest, SolvesOneZeroColumn, SolvesOneBigColumn, NotSolvesZeroZeroColumn, NotSolvesZeroBigColumn);
+TEST_METHOD(SolvesOneAndZeroInColumn)
+TEST_METHOD(SolvesOneAndManyZeroInColumn)
+TEST_METHOD(SolvesTwoColumn)
+TEST_METHOD(SolvesTwoColumnTwoRows)
+TEST_METHOD(SolvesTwoColumnManyRows)
+TEST_METHOD(NotSolvesZeroAndOneInColumn)
+TEST_METHOD(NotSolvesTwoOnesTwoColumns)
+TEST_METHOD(NotSolvesTwoOnes)
+TEST_METHOD(NotSolvesZero)
+TEST_METHOD(NotSolvesTwoZeroes)
+REGISTER_TYPED_TEST_CASE_P(SparseMatrixExactTest, SolvesOneZeroColumn, SolvesOneBigColumn, SolvesOneAndZeroInColumn, SolvesOneAndManyZeroInColumn, SolvesTwoColumn, SolvesTwoColumnTwoRows, SolvesTwoColumnManyRows, 
+NotSolvesZeroAndOneInColumn, NotSolvesTwoOnesTwoColumns, NotSolvesTwoOnes, NotSolvesZero, NotSolvesTwoZeroes);
 
 
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField8_2, SparseMatrixExactTest, FiniteFieldParam<ZPlusRing8>::Module<2>);

@@ -39,14 +39,14 @@ namespace{
 		auto im = modifier.left.cbegin();
 		auto im_end = modifier.left.cend();
 		bool lead_column_found_and_ignored = false;
-		while(io!=io_end && im!=im_end)
+		while(io!=io_end || im!=im_end)
 		{			
-			if (io->column < im->column)
+			if (im==im_end || io->column < im->column)
 			{
 				result.left.emplace_back(*io);
 				++io;
 			}
-			else if (io->column > im->column)
+			else if (io == io_end || io->column > im->column)
 			{
 				result.left.emplace_back(*im);
 				auto sub_result = field.Subtract(FieldHelpers::Zero(field), im->value, row_multiplier, result.left.back().value);
@@ -55,7 +55,7 @@ namespace{
 			}
 			else
 			{
-				assert(io->column == im->column);
+				assert(io!=io_end && im!=im_end && io->column == im->column);
 				if (io != lead_orig)
 				{
 					typename Field::Value new_value;
@@ -139,7 +139,7 @@ namespace{
 					{
 						ir->swap(*last);
 					}
-					assert(matrix[used_rows]->left.empty()); //should be empty because we positioned in in a such way
+					assert(matrix[used_rows]->left.empty()); //should be empty because we positioned it in a such way
 					lead_columns[used_rows] = kRowIsCompletlyZero;
 				}
 				else
@@ -148,6 +148,7 @@ namespace{
 					const auto min_in_row = std::min_element(left_row_part.begin(), left_row_part.end(), [&field](const Element<Field>& v0, const Element<Field>& v1){return field.IsPreciserDivisor(v0.value, v1.value);});					
 					assert(min_in_row != left_row_part.end());
 					min_row_iterators.push_back(min_in_row);
+					++ir;
 				}
 			}
 			if (min_row_iterators.empty())
@@ -172,7 +173,7 @@ namespace{
 			{
 				found_min_row->swap(*last);
 			}
-			assert(matrix[used_rows]->left.empty()); //should be empty because we positioned in in a such way
+			assert((matrix[used_rows]->left.cbegin() <= lead_item_in_min_row) && (lead_item_in_min_row < matrix[used_rows]->left.cend())); //should contain the ninimal iterator
 			const int lead_column = lead_item_in_min_row->column;
 			lead_columns[used_rows] = lead_column;
 			const auto& last_row = *last;
@@ -239,6 +240,7 @@ namespace{
 				auto& pair_el = emplaced_back(pair_row->left);
 				pair_el.column = el.column;
 				combined_field.ExtendWithRandom(el.value, rand_functor, pair_el.value);
+				assert(!FieldHelpers::IsZero(combined_field, pair_el.value));
 			}
 		}
 	}
