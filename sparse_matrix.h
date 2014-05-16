@@ -73,20 +73,8 @@ namespace{
 				++io;
 				++im;
 			}
-			assert(lead_column_found_and_ignored);
 		}
-		while(io!=io_end){
-			assert(im == im_end);
-			result.left.emplace_back(*io);
-			++io;
-		}
-		while(im!=im_end){
-			assert(io == io_end);
-			result.left.emplace_back(*im);
-			auto sub_result = field.Subtract(FieldHelpers::Zero(field), im->value, row_multiplier, result.left.back().value);
-			assert(sub_result == ExactSubtractionResultInfo::NonZero);
-			++im;
-		}
+		assert(lead_column_found_and_ignored);
 		assert(result.left.size() <= result_reserve);
 	}
 	

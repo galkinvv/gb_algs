@@ -45,7 +45,7 @@ struct FiniteFieldParam
 				Element element;
 				element.column = column;
 				field.Import(value, element.value);
-				//if (!FieldHelpers::IsZero(field, element.value))
+				if (!FieldHelpers::IsZero(field, element.value))
 				{
 					matrix.back().push_back(element);
 				}
