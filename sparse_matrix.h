@@ -262,7 +262,7 @@ namespace{
 						typename Field::Value other_value;
 						combined_field.ExtractApprox(other_element_it->value, other_value);
 						auto other_value_as_frac = FieldHelpers::DivByOne(field, other_value);
-						field.Subtract(CopyValue(right_value), computed_element.value, other_value_as_frac, right_value);
+						field.Subtract(right_value, computed_element.value, other_value_as_frac, right_value);
 					}
 				}
 				typename Field::DivResult var_value_as_frac;

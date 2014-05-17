@@ -54,15 +54,20 @@ struct ZPlusRing
 
 	void Divide(const Value& divident, const Value& divider, DivResult& result)const
 	{
+		//don't use result for quot, because it fields may be reference-equal to some of inputs
+		Value quot;
 		//division never overflows for unsigned integers and always is positive
-		result.quot.i = divident.i/divider.i;
+		quot.i = divident.i/divider.i;
 		result.rem.i = divident.i%divider.i;
+		result.quot = quot;
 	}
 	
 	void AddMulMod(const Value& from, const Value& what, const Value& multiplier, const Value& mod, Value& result)const
 	{
-		MulMod(what, multiplier, mod, result);
-		result.i = narrow_cast<Integer>((wide_cast<BiggerInteger>(from.i) + wide_cast<BiggerInteger>(result.i))%wide_cast<BiggerInteger>(mod.i));
+		//don't use result for temporary var, because it may be reference-equal to some of inputs
+		Value mul_result;
+		MulMod(what, multiplier, mod, mul_result);
+		result.i = narrow_cast<Integer>((wide_cast<BiggerInteger>(from.i) + wide_cast<BiggerInteger>(mul_result.i))%wide_cast<BiggerInteger>(mod.i));
 	}
 
 	void MulMod(const Value& mult0, const Value& mult1, const Value& mod,  Value& result)const

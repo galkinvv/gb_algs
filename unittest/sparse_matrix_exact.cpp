@@ -243,3 +243,55 @@ INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_251, SparseMatrixExactTest, F
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_65521, SparseMatrixExactTest, FiniteFieldParam<ZPlusRing32>::Module<65521>);
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_4294967291, SparseMatrixExactTest, FiniteFieldParam<ZPlusRing32>::Module<4294967291>);
 
+template <class MatWithField>
+void ExpectGoodSolution(const MatWithField& matrix)
+{
+	auto result = matrix.RunSolver();
+	EXPECT_FALSE(result.empty());
+	for(auto& row:matrix.matrix)
+	{
+		auto negated_sum = FieldHelpers::Zero(matrix.field);
+		auto last_subtraction_result = ExactSubtractionResultInfo::Zero;
+		for (auto& res_elem:result)
+		{
+			for (auto& row_elem:row)
+			{
+				if (res_elem.column == row_elem.column)
+				{
+					last_subtraction_result = matrix.field.Subtract(negated_sum, res_elem.value, FieldHelpers::DivByOne(matrix.field, row_elem.value), negated_sum);					
+				}
+			}
+		}
+		bool is_first = (&row == &matrix.matrix.front());
+		if (is_first)
+		{
+			EXPECT_EQ(last_subtraction_result, ExactSubtractionResultInfo::NonZero);
+			decltype(negated_sum) minus_one;
+			matrix.field.Subtract(FieldHelpers::Zero(matrix.field), FieldHelpers::One(matrix.field), FieldHelpers::DivByOne(matrix.field, FieldHelpers::One(matrix.field)), minus_one);
+			EXPECT_PRED3(FieldHelpers::IsEqual<decltype(matrix.field)>, matrix.field, negated_sum, minus_one);
+		}
+		else
+		{
+			EXPECT_EQ(last_subtraction_result, ExactSubtractionResultInfo::Zero);
+			EXPECT_PRED2(FieldHelpers::IsZero<decltype(matrix.field)>, matrix.field, negated_sum);
+		}
+	}
+}
+
+template <class MatWithField>
+void ExpectNoSolution(const MatWithField& matrix)
+{
+	EXPECT_EQ(matrix.RunSolver().size(), 0);
+}
+
+TEST(SparseMatrixExactValues, Z2determined)
+{
+	typedef FiniteFieldParam<ZPlusRing32>::Module<2> Param;
+	Param::Matrix mZero;
+	mZero.AddRow();
+	ExpectNoSolution(mZero);
+	Param::Matrix mOne;
+	mOne.AddRow();
+	mOne.AddElement(0, 1u);
+	ExpectGoodSolution(mOne);
+}

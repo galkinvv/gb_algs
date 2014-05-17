@@ -114,6 +114,10 @@ struct FiniteField {
 	Integer ExportZpModulus()const {
 		return z_.template Export<Integer>(mod_);
 	}
+	
+	friend std::ostream& operator <<(std::ostream &output, const FiniteField &f) {
+		return output << "FiniteField_MOD_" << f.mod_ ;
+	}
 
 private:
 	FiniteField() {}
@@ -176,7 +180,7 @@ private:
 			//solve b*y1 - (a%b) * x1 = -signedOne (equivalent to (a%b) * x1 - b*y1 = signedOne)
 			ExtendedEuclid(b, abDivResult.rem, y, x, NegateOne(signedOne));
 			//original equation is solved as a * x1 - b*(y1 + a/b*x1) = signedOne
-			z_.AddMul(CopyValue(y), x, abDivResult.quot, y);
+			z_.AddMul(y, x, abDivResult.quot, y);
 		}
 		assert([&]{
 			if (z_.IsZero(x))
