@@ -12,8 +12,20 @@ namespace SparseMatrix
 template <class Field>
 struct Element
 {
-	typename Field::Value value;
+	static Element FromCV(int column, typename Field::Value value)
+	{
+		Element result;
+		result.column = column;
+		result.value = value;
+		return result;
+	}
 	int column;
+	typename Field::Value value;
+	
+		friend std::ostream& operator <<(std::ostream &output, const Element &x) {
+			return output << "[" << x.column << "]=" << x.value;
+        }
+
 };
 
 namespace{

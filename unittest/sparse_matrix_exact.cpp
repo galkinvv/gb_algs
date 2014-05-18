@@ -27,7 +27,6 @@ struct FiniteFieldParam
 		typedef FiniteField<BaseForFiniteField> Field;
 		typedef SparseMatrix::Element<Field> Element;
 		typedef std::vector<Element> Result;
-
 		struct Matrix
 		{
 			Matrix():
@@ -65,6 +64,10 @@ struct FiniteFieldParam
 				};
 				SparseMatrix::SolveWithRightSideContainigSingleOne<Factory>(field, matrix, result, factory_data);
 				return result;
+			}
+			void Clear()
+			{
+				matrix.clear();
 			}
 		};
 	};
@@ -279,6 +282,27 @@ void ExpectGoodSolution(const MatWithField& matrix)
 }
 
 template <class MatWithField>
+void ExpectKnownSolution(const MatWithField& matrix, const std::initializer_list<typename decltype(matrix.RunSolver())::value_type>& list)
+{
+	auto result = matrix.RunSolver();
+	EXPECT_EQ(result.size(), list.size());
+	typedef  typename decltype(matrix.RunSolver())::value_type Element;
+	struct LessColumn{
+		bool operator()(const Element& e1, const Element& e2)
+		{
+			return e1.column < e2.column;
+		}
+	};
+	const auto eq_element = [&](const Element& e1, const Element& e2)
+	{
+		return e1.column == e2.column && FieldHelpers::IsEqual(matrix.field, e1.value, e2.value);
+	};
+	ExpecterContainerEqual(eq_element)(result, list);
+	ExpectGoodSolution(matrix);
+}
+
+
+template <class MatWithField>
 void ExpectNoSolution(const MatWithField& matrix)
 {
 	EXPECT_EQ(matrix.RunSolver().size(), 0);
@@ -287,11 +311,47 @@ void ExpectNoSolution(const MatWithField& matrix)
 TEST(SparseMatrixExactValues, Z2determined)
 {
 	typedef FiniteFieldParam<ZPlusRing32>::Module<2> Param;
-	Param::Matrix mZero;
-	mZero.AddRow();
-	ExpectNoSolution(mZero);
-	Param::Matrix mOne;
-	mOne.AddRow();
-	mOne.AddElement(0, 1u);
-	ExpectGoodSolution(mOne);
+	Param::Matrix m;
+	const auto E = [&](int column, unsigned long long value){return Param::Element::FromCV(column, FieldHelpers::Imp(m.field, value));};
+	{
+		m.Clear();
+		m.AddRow();
+		ExpectNoSolution(m);
+	}
+	{
+		m.Clear();
+		m.AddRow();
+		m.AddElement(0, 1u);
+		ExpectKnownSolution(m, ilist({E(0, 1u)}));
+	}
+	{
+		m.Clear();
+		m.AddRow();
+		m.AddElement(42, 1u);
+		ExpectKnownSolution(m, ilist({E(42, 1u)}));
+	}
+	{
+		m.Clear();
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		ExpectNoSolution(m);
+	}
+	{
+		m.Clear();
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		ExpectNoSolution(m);
+	}
+	{
+		m.Clear();
+		m.AddRow();
+		m.AddElement(0, 3u);
+		m.AddRow();
+		m.AddElement(0, 2u);
+		ExpectKnownSolution(m, ilist({E(0, 1u)}));
+	}
 }
