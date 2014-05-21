@@ -314,23 +314,46 @@ TEST(SparseMatrixExactValues, Z2determined)
 	Param::Matrix m;
 	const auto E = [&](int column, unsigned long long value){return Param::Element::FromCV(column, FieldHelpers::Imp(m.field, value));};
 	{
+		//zero matrix size 1
 		m.Clear();
 		m.AddRow();
 		ExpectNoSolution(m);
 	}
 	{
+		//zero matrix size 3
+		m.Clear();
+		m.AddRow();
+		m.AddRow();
+		m.AddRow();
+		ExpectNoSolution(m);
+	}
+	{
+		//identity matrix size 1
 		m.Clear();
 		m.AddRow();
 		m.AddElement(0, 1u);
 		ExpectKnownSolution(m, ilist({E(0, 1u)}));
 	}
 	{
+		//identity matrix size 3
+		m.Clear();
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddRow();
+		m.AddElement(1, 1u);
+		m.AddRow();
+		m.AddElement(2, 1u);
+		ExpectKnownSolution(m, ilist({E(0, 1u)}));
+	}
+	{
+		//matrix with big column number
 		m.Clear();
 		m.AddRow();
 		m.AddElement(42, 1u);
 		ExpectKnownSolution(m, ilist({E(42, 1u)}));
 	}
 	{
+		//matrix with single zero column
 		m.Clear();
 		m.AddRow();
 		m.AddElement(0, 1u);
@@ -339,6 +362,7 @@ TEST(SparseMatrixExactValues, Z2determined)
 		ExpectNoSolution(m);
 	}
 	{
+		//matrix with single columnwith ones
 		m.Clear();
 		m.AddRow();
 		m.AddElement(0, 1u);
@@ -347,11 +371,30 @@ TEST(SparseMatrixExactValues, Z2determined)
 		ExpectNoSolution(m);
 	}
 	{
+		//matrix with single columnw eqaul to result, non-obviousely initialized
 		m.Clear();
 		m.AddRow();
 		m.AddElement(0, 3u);
 		m.AddRow();
 		m.AddElement(0, 2u);
 		ExpectKnownSolution(m, ilist({E(0, 1u)}));
+	}
+	{
+		//matrix with every column needed in sum
+		m.Clear();
+		m.AddRow();
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(3, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(3, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(2, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		ExpectKnownSolution(m, ilist({E(0, 1u), E(0, 1u), E(0, 1u), E(0, 1u)}));
 	}
 }

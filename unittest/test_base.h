@@ -23,6 +23,37 @@ TYPED_TEST_CASE_P(PRIVATE_TYPED_TEST);
 
 #define EXPECT_ASSERT(expr) EXPECT_DEATH((expr), "")
 
+#define EXPECT_FUNCTION_BRGIN bool EXPECT_FUNCTION_NO_FAILURES = true;
+#define EXPECT_FUNCTION_RETURN return EXPECT_FUNCTION_NO_FAILURES;
+
+template <class Comparator>
+struct SavingValueExpector
+{
+	explicit SavingValueExpector(const Comparator& comp, bool& no_failures):
+		no_failures_(no_failures),
+		comp_(comp)
+	{}
+	template <class... Args>
+	bool operator()(Args... args)const
+	{
+		bool result = comp_(std::forward<Args>(args)...);
+		if (!result)
+		{
+			no_failures_ = false;
+		}
+		return result;
+	}
+	bool& no_failures_;
+	const Comparator& comp_;
+};
+
+template <class Comparator> SavingValueExpector<Comparator> SaveValue(const Comparator& equal, bool& no_failures)
+{
+	return SavingValueExpector<Comparator>(equal, no_failures);
+}
+
+#define EXPECT_2(pred, arg0, arg1) EXPECT_PRED_2(SaveValue(pred, EXPECT_FUNCTION_NO_FAILURES), arg0, arg1)
+
 template <class SubComparator>
 struct ContainerEqualExpect
 {
