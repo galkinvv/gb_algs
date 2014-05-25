@@ -1,5 +1,6 @@
 #pragma once
 #include <exception>
+#include <ostream>
 #include <gmpxx.h>
 
 enum class ExactSubtractionResultInfo
@@ -7,6 +8,11 @@ enum class ExactSubtractionResultInfo
 	Zero,
 	NonZero
 };
+
+inline std::ostream& operator <<(std::ostream &output, const ExactSubtractionResultInfo &x) {
+	return output << ((x == ExactSubtractionResultInfo::Zero) ? "Zero" : "NonZero");
+}
+
 enum class ApproxSubtractionResultInfo
 {
 	MaybeZero,

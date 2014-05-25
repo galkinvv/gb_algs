@@ -1,5 +1,6 @@
 #pragma once
 #include <gtest/gtest.h>
+#include "utils.h"
 
 #ifdef PRIVATE_TEST
 namespace UnitTest{
@@ -23,7 +24,7 @@ TYPED_TEST_CASE_P(PRIVATE_TYPED_TEST);
 
 #define EXPECT_ASSERT(expr) EXPECT_DEATH((expr), "")
 
-#define EXPECT_FUNCTION_BRGIN bool EXPECT_FUNCTION_NO_FAILURES = true;
+#define EXPECT_FUNCTION_BEGIN bool EXPECT_FUNCTION_NO_FAILURES = true;
 #define EXPECT_FUNCTION_RETURN return EXPECT_FUNCTION_NO_FAILURES;
 
 template <class Comparator>
@@ -52,7 +53,16 @@ template <class Comparator> SavingValueExpector<Comparator> SaveValue(const Comp
 	return SavingValueExpector<Comparator>(equal, no_failures);
 }
 
-#define EXPECT_2(pred, arg0, arg1) EXPECT_PRED_2(SaveValue(pred, EXPECT_FUNCTION_NO_FAILURES), arg0, arg1)
+#define EXPECT_1(pred, arg0) EXPECT_PRED1(SaveValue(pred, EXPECT_FUNCTION_NO_FAILURES), arg0)
+
+#define EXPECT_2(pred, arg0, arg1) EXPECT_PRED2(SaveValue(pred, EXPECT_FUNCTION_NO_FAILURES), arg0, arg1)
+
+#define EXPECT_3(pred, arg0, arg1, arg2) EXPECT_PRED3(SaveValue(pred, EXPECT_FUNCTION_NO_FAILURES), arg0, arg1, arg2)
+
+#define ASSERT_2(pred, arg0, arg1) do\
+{bool no_failures_as_assert = true; EXPECT_PRED2(SaveValue(pred, no_failures_as_assert), arg0, arg1);\
+if (!no_failures_as_assert){return false;}\
+}while(false)
 
 template <class SubComparator>
 struct ContainerEqualExpect
@@ -62,53 +72,39 @@ struct ContainerEqualExpect
 	{}
 	
 	template <class Container1, class Container2>
-	void ExpectEqual(const Container1& container1, const Container2& container2)const
+	bool operator()(const Container1& container1, const Container2& container2)const
 	{
+		//TODO: add helpers for compare
+		EXPECT_FUNCTION_BEGIN
 		auto container2_cur = container2.begin();
 		for(auto container1_cur:container1)
 		{
-			ASSERT_NE(container2_cur, container2.end());
-			auto elements_comparator = [this](decltype(container1_cur) v1, decltype(*container2_cur) v2){return SavingResultCompareWithComparator(v1,v2, equal_);};
-			EXPECT_PRED2(elements_comparator, container1_cur, *container2_cur);
+			ASSERT_2(NotEqualTo, container2_cur, container2.end());
+			EXPECT_2(equal_, container1_cur, *container2_cur);
 			++container2_cur;
 		}
-		auto iterator_comparator = [this](decltype(container2_cur) v1, decltype(container2.end()) v2){return SavingResultCompare(v1,v2);};
-		EXPECT_PRED2(iterator_comparator, container2_cur, container2.end());
-		no_asserts_happen_ = true;
-	}
-
-	template <class Container1, class Container2>
-	bool operator()(const Container1& container1, const Container2& container2)const
-	{
-		all_equal_ = true;
-		no_asserts_happen_ = false;
-		ExpectEqual(container1, container2);
-		return all_equal_ && no_asserts_happen_;
+		EXPECT_2(EqualTo, container2_cur, container2.end());
+		EXPECT_FUNCTION_RETURN;
 	}
 private:
-	template <class V1, class V2>
-	bool SavingResultCompare(V1& v1, V2& v2)const
-	{
-		return SavingResultCompareWithComparator(v1, v2);
-	}
-
-	template <class V1, class V2, class Comparator =  std::equal_to<V1>>
-	bool SavingResultCompareWithComparator(V1& v1, V2& v2, const Comparator& comp = std::equal_to<V1>())const
-	{
-		bool result = comp(v1, v2);
-		if (!result)
-		{
-			all_equal_ = false;
-		}
-		return result;
-	}
-	
 	const SubComparator&  equal_;
-	mutable bool all_equal_ = false;
-	mutable bool no_asserts_happen_ = false;
 };
 
 template <class SubComparator> ContainerEqualExpect<SubComparator> ExpecterContainerEqual(const SubComparator& equal)
 {
 	return ContainerEqualExpect<SubComparator>(equal);
+}
+
+template <class T> 
+std::ostream& operator <<(std::ostream &output, const std::vector<T> &x) {
+	output << "vector("<<x.size() << "){";
+	for (const auto& el:x)
+	{
+		if (!ReferenceEqualTo(el, x.front()))
+		{
+			output << ", ";
+		}
+		output << x;
+	}
+	return output << "}";
 }

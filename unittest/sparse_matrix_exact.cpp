@@ -69,6 +69,10 @@ struct FiniteFieldParam
 			{
 				matrix.clear();
 			}
+			
+			friend std::ostream& operator <<(std::ostream &output, const Matrix &x) {
+				return output << "Matrix with filed " << x.field;
+			}
 		};
 	};
 };
@@ -247,10 +251,11 @@ INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_65521, SparseMatrixExactTest,
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_4294967291, SparseMatrixExactTest, FiniteFieldParam<ZPlusRing32>::Module<4294967291>);
 
 template <class MatWithField>
-void ExpectGoodSolution(const MatWithField& matrix)
+bool ExpectGoodSolution(const MatWithField& matrix)
 {
+	EXPECT_FUNCTION_BEGIN
 	auto result = matrix.RunSolver();
-	EXPECT_FALSE(result.empty());
+	EXPECT_2(EqualTo, result.empty(), false);
 	for(auto& row:matrix.matrix)
 	{
 		auto negated_sum = FieldHelpers::Zero(matrix.field);
@@ -268,24 +273,26 @@ void ExpectGoodSolution(const MatWithField& matrix)
 		bool is_first = (&row == &matrix.matrix.front());
 		if (is_first)
 		{
-			EXPECT_EQ(last_subtraction_result, ExactSubtractionResultInfo::NonZero);
+			EXPECT_2(EqualTo, last_subtraction_result, ExactSubtractionResultInfo::NonZero);
 			decltype(negated_sum) minus_one;
 			matrix.field.Subtract(FieldHelpers::Zero(matrix.field), FieldHelpers::One(matrix.field), FieldHelpers::DivByOne(matrix.field, FieldHelpers::One(matrix.field)), minus_one);
-			EXPECT_PRED3(FieldHelpers::IsEqual<decltype(matrix.field)>, matrix.field, negated_sum, minus_one);
+			EXPECT_3(FieldHelpers::IsEqual<decltype(matrix.field)>, matrix.field, negated_sum, minus_one);
 		}
 		else
 		{
-			EXPECT_EQ(last_subtraction_result, ExactSubtractionResultInfo::Zero);
-			EXPECT_PRED2(FieldHelpers::IsZero<decltype(matrix.field)>, matrix.field, negated_sum);
+			EXPECT_2(EqualTo, last_subtraction_result, ExactSubtractionResultInfo::Zero);
+			EXPECT_2(FieldHelpers::IsZero<decltype(matrix.field)>, matrix.field, negated_sum);
 		}
 	}
+	EXPECT_FUNCTION_RETURN
 }
 
 template <class MatWithField>
-void ExpectKnownSolution(const MatWithField& matrix, const std::initializer_list<typename decltype(matrix.RunSolver())::value_type>& list)
+bool ExpectKnownSolution(const MatWithField& matrix, const std::initializer_list<typename decltype(matrix.RunSolver())::value_type>& list)
 {
+	EXPECT_FUNCTION_BEGIN
 	auto result = matrix.RunSolver();
-	EXPECT_EQ(result.size(), list.size());
+	EXPECT_2(EqualTo, result.size(), list.size());
 	typedef  typename decltype(matrix.RunSolver())::value_type Element;
 	struct LessColumn{
 		bool operator()(const Element& e1, const Element& e2)
@@ -297,8 +304,9 @@ void ExpectKnownSolution(const MatWithField& matrix, const std::initializer_list
 	{
 		return e1.column == e2.column && FieldHelpers::IsEqual(matrix.field, e1.value, e2.value);
 	};
-	ExpecterContainerEqual(eq_element)(result, list);
-	ExpectGoodSolution(matrix);
+	EXPECT_2(ExpecterContainerEqual(eq_element), result, list);
+	EXPECT_1(ExpectGoodSolution<MatWithField>, matrix);
+	EXPECT_FUNCTION_RETURN
 }
 
 

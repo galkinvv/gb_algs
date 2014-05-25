@@ -34,7 +34,32 @@ constexpr int countof( T ( & /*arr*/ )[ N ] )
 #define DECLARE_FORWARDING_METHOD(return_type, method, forward_to_expr)\
 		template <class... TA> return_type method(TA&&... args){ return (forward_to_expr).method(std::forward<TA>(args)...); }
 
+static struct
+{
+	template <class T1, class T2>
+	bool operator()(T1&& v1, T2&& v2)const
+	{
+		return v1 == v2;
+	}
+} EqualTo;
 
+static struct
+{
+	template <class T1, class T2>
+	bool operator()(T1&& v1, T2&& v2)const
+	{
+		return !(v1 == v2);
+	}
+} NotEqualTo;
+
+static struct
+{
+	template <class T1, class T2>
+	bool operator()(T1& v1, T2& v2)const
+	{
+		return std::addressof(v1) == std::addressof(v2);
+	}
+} ReferenceEqualTo;
 
 template <class T>
 class PseudoPointer
@@ -627,4 +652,9 @@ template <class Unsigned> typename std::make_signed<Unsigned>::type signed_cast(
 	auto result = Signed(i);
 	assert(result >=0);
 	return result;
+}
+
+inline void IgnoreUnusedVars()
+{
+	IgnoreIfUnused(EqualTo, ReferenceEqualTo, NotEqualTo);
 }

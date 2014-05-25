@@ -242,3 +242,4 @@ TEST_F(CrossRingInfoTest, SimpleAdditionWithCoef)
 	int_field_basis_info_.BeginPolynomialConstruction(1);
 	int_field_basis_info_.MonomialAdditionDone(42);
 }
+
