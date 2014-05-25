@@ -53,12 +53,12 @@ namespace{
 		bool lead_column_found_and_ignored = false;
 		while(io!=io_end || im!=im_end)
 		{			
-			if (im==im_end || io->column < im->column)
+			if (im==im_end || (io!=io_end && io->column < im->column))
 			{
 				result.left.emplace_back(*io);
 				++io;
 			}
-			else if (io == io_end || io->column > im->column)
+			else if (io == io_end || (im!=im_end && io->column > im->column))
 			{
 				result.left.emplace_back(*im);
 				auto sub_result = field.Subtract(FieldHelpers::Zero(field), im->value, row_multiplier, result.left.back().value);
