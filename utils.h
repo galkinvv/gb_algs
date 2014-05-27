@@ -92,33 +92,43 @@ template <class Container, class Separator>
 struct  ContainerWriterStruct
 {
 	const Container& data;
-	const Separator& separator;
+	const Separator separator;
+	friend std::ostream& operator <<(std::ostream &output, const ContainerWriterStruct &x) {
+		for(auto i = x.data.begin(); i != x.data.end(); ++i)
+		{
+			if (i != x.data.begin())
+			{
+				output << x.separator;
+			}
+			output << *i;
+		}
+		return output;
+	}
 };
 
 template <class Container, class Separator>
-ContainerWriterStruct<Container, Separator> OutputContainer(const Container& data, const Separator& separator)
+struct  ContainerWriterStructWithSize 
+{
+	ContainerWriterStruct<Container, Separator> writer;
+	const Separator container_name;
+	const Separator container_begin;
+	const Separator container_end;
+	
+	friend std::ostream& operator <<(std::ostream &output, const ContainerWriterStructWithSize  &x) {
+		return output << x.container_name << "[" << x.writer.data.size() << "]" << x.container_begin << x.writer << x.container_end;
+	}	
+};
+
+template <class Container, class Separator>
+ContainerWriterStruct<Container, Separator> OutputContainer(const Container& data, Separator separator)
 {
 	return {data, separator};
 }
 
-template <class Container, class Separator>
-std::ostream& operator<<(std::ostream& s, const ContainerWriterStruct<Container, Separator>& writer)
+template <class Container>
+ContainerWriterStructWithSize<Container, const char*> OutputContainerWithSize(const Container& data, const char* name)
 {
-	for(auto i = writer.data.begin(); i != writer.data.end(); ++i)
-	{
-		if (i != writer.data.begin())
-		{
-			s << writer.separator;
-		}
-		s << *i;
-	}
-	return s;
-}
-
-template <class T>
-std::ostream& operator<<(std::ostream& s, const std::initializer_list<T>& ilist)
-{
-	return s << "{" << OutputContainer(ilist, ", ") << "}";
+	return {{data, ", "}, name, "{", "}"};
 }
 
 template <class T>

@@ -97,14 +97,12 @@ template <class SubComparator> ContainerEqualExpect<SubComparator> ExpecterConta
 
 template <class T> 
 std::ostream& operator <<(std::ostream &output, const std::vector<T> &x) {
-	output << "vector("<<x.size() << "){";
-	for (const auto& el:x)
-	{
-		if (!ReferenceEqualTo(el, x.front()))
-		{
-			output << ", ";
-		}
-		output << x;
-	}
-	return output << "}";
+	return output << OutputContainerWithSize(x, "vector");
 }
+
+template <class T>
+std::ostream& operator<<(std::ostream& output, const std::initializer_list<T>& x)
+{
+	return output << OutputContainerWithSize(x, "initializer_list");
+}
+

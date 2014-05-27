@@ -250,64 +250,71 @@ INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_251, SparseMatrixExactTest, F
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_65521, SparseMatrixExactTest, FiniteFieldParam<ZPlusRing32>::Module<65521>);
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_4294967291, SparseMatrixExactTest, FiniteFieldParam<ZPlusRing32>::Module<4294967291>);
 
-template <class MatWithField>
-bool ExpectGoodSolution(const MatWithField& matrix)
+static struct
 {
-	EXPECT_FUNCTION_BEGIN
-	auto result = matrix.RunSolver();
-	EXPECT_2(EqualTo, result.empty(), false);
-	for(auto& row:matrix.matrix)
+	template <class MatWithField>
+	bool operator()(const MatWithField& matrix)const
 	{
-		auto negated_sum = FieldHelpers::Zero(matrix.field);
-		auto last_subtraction_result = ExactSubtractionResultInfo::Zero;
-		for (auto& res_elem:result)
+		EXPECT_FUNCTION_BEGIN
+		auto result = matrix.RunSolver();
+		EXPECT_2(EqualTo, result.empty(), false);
+		for(auto& row:matrix.matrix)
 		{
-			for (auto& row_elem:row)
+			auto negated_sum = FieldHelpers::Zero(matrix.field);
+			auto last_subtraction_result = ExactSubtractionResultInfo::Zero;
+			for (auto& res_elem:result)
 			{
-				if (res_elem.column == row_elem.column)
+				for (auto& row_elem:row)
 				{
-					last_subtraction_result = matrix.field.Subtract(negated_sum, res_elem.value, FieldHelpers::DivByOne(matrix.field, row_elem.value), negated_sum);					
+					if (res_elem.column == row_elem.column)
+					{
+						last_subtraction_result = matrix.field.Subtract(negated_sum, res_elem.value, FieldHelpers::DivByOne(matrix.field, row_elem.value), negated_sum);					
+					}
 				}
 			}
+			bool is_first = (&row == &matrix.matrix.front());
+			if (is_first)
+			{
+				EXPECT_2(EqualTo, last_subtraction_result, ExactSubtractionResultInfo::NonZero);
+				decltype(negated_sum) minus_one;
+				matrix.field.Subtract(FieldHelpers::Zero(matrix.field), FieldHelpers::One(matrix.field), FieldHelpers::DivByOne(matrix.field, FieldHelpers::One(matrix.field)), minus_one);
+				EXPECT_3(FieldHelpers::IsEqual<decltype(matrix.field)>, matrix.field, negated_sum, minus_one);
+			}
+			else
+			{
+				EXPECT_2(EqualTo, last_subtraction_result, ExactSubtractionResultInfo::Zero);
+				EXPECT_2(FieldHelpers::IsZero<decltype(matrix.field)>, matrix.field, negated_sum);
+			}
 		}
-		bool is_first = (&row == &matrix.matrix.front());
-		if (is_first)
-		{
-			EXPECT_2(EqualTo, last_subtraction_result, ExactSubtractionResultInfo::NonZero);
-			decltype(negated_sum) minus_one;
-			matrix.field.Subtract(FieldHelpers::Zero(matrix.field), FieldHelpers::One(matrix.field), FieldHelpers::DivByOne(matrix.field, FieldHelpers::One(matrix.field)), minus_one);
-			EXPECT_3(FieldHelpers::IsEqual<decltype(matrix.field)>, matrix.field, negated_sum, minus_one);
-		}
-		else
-		{
-			EXPECT_2(EqualTo, last_subtraction_result, ExactSubtractionResultInfo::Zero);
-			EXPECT_2(FieldHelpers::IsZero<decltype(matrix.field)>, matrix.field, negated_sum);
-		}
+		EXPECT_FUNCTION_RETURN
 	}
-	EXPECT_FUNCTION_RETURN
-}
+} ExpectGoodSolution;
 
-template <class MatWithField>
-bool ExpectKnownSolution(const MatWithField& matrix, const std::initializer_list<typename decltype(matrix.RunSolver())::value_type>& list)
+static struct
 {
-	EXPECT_FUNCTION_BEGIN
-	auto result = matrix.RunSolver();
-	EXPECT_2(EqualTo, result.size(), list.size());
-	typedef  typename decltype(matrix.RunSolver())::value_type Element;
-	struct LessColumn{
-		bool operator()(const Element& e1, const Element& e2)
-		{
-			return e1.column < e2.column;
-		}
-	};
-	const auto eq_element = [&](const Element& e1, const Element& e2)
+	template <class MatWithField>
+	bool operator()(const MatWithField& matrix, const std::initializer_list<typename decltype(matrix.RunSolver())::value_type>& list)const
 	{
-		return e1.column == e2.column && FieldHelpers::IsEqual(matrix.field, e1.value, e2.value);
-	};
-	EXPECT_2(ExpecterContainerEqual(eq_element), result, list);
-	EXPECT_1(ExpectGoodSolution<MatWithField>, matrix);
-	EXPECT_FUNCTION_RETURN
-}
+		EXPECT_FUNCTION_BEGIN
+		auto result = matrix.RunSolver();
+		EXPECT_2(EqualTo, result.size(), list.size());
+		typedef  typename decltype(matrix.RunSolver())::value_type Element;
+		struct LessColumn{
+			bool operator()(const Element& e1, const Element& e2)
+			{
+				return e1.column < e2.column;
+			}
+		};
+		std::sort(result.begin(), result.end(), LessColumn());
+		const auto eq_element = [&](const Element& e1, const Element& e2)
+		{
+			return e1.column == e2.column && FieldHelpers::IsEqual(matrix.field, e1.value, e2.value);
+		};
+		EXPECT_2(ExpecterContainerEqual(eq_element), result, list);
+		EXPECT_1(ExpectGoodSolution, matrix);
+		EXPECT_FUNCTION_RETURN
+	}
+} ExpectKnownSolution;
 
 
 template <class MatWithField>
@@ -340,7 +347,7 @@ TEST(SparseMatrixExactValues, Z2determined)
 		m.Clear();
 		m.AddRow();
 		m.AddElement(0, 1u);
-		ExpectKnownSolution(m, ilist({E(0, 1u)}));
+		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u)}));
 	}
 	{
 		//identity matrix size 3
@@ -351,14 +358,14 @@ TEST(SparseMatrixExactValues, Z2determined)
 		m.AddElement(1, 1u);
 		m.AddRow();
 		m.AddElement(2, 1u);
-		ExpectKnownSolution(m, ilist({E(0, 1u)}));
+		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u)}));
 	}
 	{
 		//matrix with big column number
 		m.Clear();
 		m.AddRow();
 		m.AddElement(42, 1u);
-		ExpectKnownSolution(m, ilist({E(42, 1u)}));
+		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(42, 1u)}));
 	}
 	{
 		//matrix with single zero column
@@ -385,7 +392,7 @@ TEST(SparseMatrixExactValues, Z2determined)
 		m.AddElement(0, 3u);
 		m.AddRow();
 		m.AddElement(0, 2u);
-		ExpectKnownSolution(m, ilist({E(0, 1u)}));
+		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u)}));
 	}
 	{
 		//matrix with every column needed in sum
@@ -403,6 +410,6 @@ TEST(SparseMatrixExactValues, Z2determined)
 		m.AddRow();
 		m.AddElement(0, 1u);
 		m.AddElement(1, 1u);
-		ExpectKnownSolution(m, ilist({E(0, 1u), E(0, 1u), E(0, 1u), E(0, 1u)}));
+		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u), E(1, 1u), E(2, 1u), E(3, 1u)}));
 	}
 }
