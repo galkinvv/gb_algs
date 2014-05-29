@@ -297,8 +297,10 @@ static struct
 	{
 		EXPECT_FUNCTION_BEGIN
 		auto result = matrix.RunSolver();
-		EXPECT_2(EqualTo, result.size(), list.size());
 		typedef  typename decltype(matrix.RunSolver())::value_type Element;
+		//due to treating field as inexact zeroes can be in result. Erase them.
+		result.erase(std::remove_if(result.begin(), result.end(), [&](const Element& e){return FieldHelpers::IsZero(matrix.field, e.value);}), result.end());
+		EXPECT_2(EqualTo, result.size(), list.size());
 		struct LessColumn{
 			bool operator()(const Element& e1, const Element& e2)
 			{
