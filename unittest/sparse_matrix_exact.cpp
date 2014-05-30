@@ -363,6 +363,17 @@ TEST(SparseMatrixExactValues, Z2determined)
 		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u)}));
 	}
 	{
+		//matrix with only last column needed
+		m.Clear();
+		m.AddRow();
+		m.AddElement(2, 1u);
+		m.AddRow();
+		m.AddElement(1, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(2, 1u)}));
+	}
+	{
 		//matrix with big column number
 		m.Clear();
 		m.AddRow();
@@ -414,4 +425,61 @@ TEST(SparseMatrixExactValues, Z2determined)
 		m.AddElement(1, 1u);
 		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u), E(1, 1u), E(2, 1u), E(3, 1u)}));
 	}
+	{
+		//matrix with every column needed in sum - other column order
+		m.Clear();
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(3, 1u);
+		m.AddRow();
+		m.AddElement(1, 1u);
+		m.AddElement(3, 1u);
+		m.AddRow();
+		m.AddElement(2, 1u);
+		m.AddElement(3, 1u);
+		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u), E(1, 1u), E(2, 1u), E(3, 1u)}));
+	}
+	{
+		//matrix with NOT every column needed in sum
+		m.Clear();
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(3, 1u);
+		m.AddRow();
+		m.AddElement(3, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(2, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(3, 1u);
+		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u), E(2, 1u)}));
+	}
+	{
+		//matrix with NOT every column needed in sum - other column order
+		m.Clear();
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(3, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddRow();
+		m.AddElement(1, 1u);
+		m.AddElement(3, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(3, 1u);
+		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(1, 1u), E(3, 1u)}));
+	}
+	//TODO: add determined tests for non-rectangular matrices
 }
