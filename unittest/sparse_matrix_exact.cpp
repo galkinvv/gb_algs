@@ -482,4 +482,5 @@ TEST(SparseMatrixExactValues, Z2determined)
 		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(1, 1u), E(3, 1u)}));
 	}
 	//TODO: add determined tests for non-rectangular matrices
+	//TODO: add tests for big matrices based on https://cloud.sagemath.com/projects/16ae0d9e-83b0-46c0-9630-d8d4469ec367/files/solvable%20matrices.sagews
 }
