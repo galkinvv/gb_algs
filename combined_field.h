@@ -5,6 +5,7 @@
 template <class ExactField, class ApproxField>
 class CombinedField
 {
+  public:
 	class Value
 	{
 		friend class CombinedField;
@@ -73,7 +74,8 @@ class CombinedField
 		}
 		return ExactSubtractionResultInfo::Zero;
 	}
-
+  
+  private:
 	ExactField ef_;
 	ApproxField af_;
 };

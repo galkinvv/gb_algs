@@ -187,7 +187,7 @@ private:
 			{
 				return true;
 			}
-			ZValue xMinusOne = x;
+			ZValue xMinusOne{x};
 			z_.Decrement(xMinusOne);
 			return !z_.Less(b ,xMinusOne);
 		}());

@@ -34,6 +34,12 @@ constexpr int countof( T ( & /*arr*/ )[ N ] )
 #define DECLARE_FORWARDING_METHOD(return_type, method, forward_to_expr)\
 		template <class... TA> return_type method(TA&&... args){ return (forward_to_expr).method(std::forward<TA>(args)...); }
 
+#define DECLARE_FUNCTOR_TEMPLATE_T(ResultType, Name, Param_Declaration)\
+static struct Name##StructHelper{\
+template <class T> ResultType operator()(Param_Declaration)const;\
+} const Name;\
+template <class T> ResultType Name##StructHelper::operator()(Param_Declaration)const
+
 static struct
 {
 	template <class T1, class T2>
@@ -134,7 +140,7 @@ ContainerWriterStructWithSize<Container, const char*> OutputContainerWithSize(co
 template <class T>
 struct optionalof
 {
-	optionalof(): has_value_(false)
+	optionalof(): has_value_(false), data_()
 	{}
 
 	~optionalof()
@@ -145,7 +151,7 @@ struct optionalof
 	optionalof(optionalof&&) = delete;
 
 	optionalof(const optionalof& other)
-		:has_value_(other.has_value_)
+		:has_value_(other.has_value_), data_()
 	{
 		if (has_value_)
 		{
@@ -582,8 +588,7 @@ auto emplaced_back(Container& container, Args... args) -> decltype(std::declval<
 	return container.back();
 }
 
-
- inline std::ostream&PrintTo(std::ostream& stream)
+ inline std::ostream& PrintTo(std::ostream& stream)
 {
 	return stream;
 }

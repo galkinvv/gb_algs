@@ -296,12 +296,12 @@ template <class CombinedFieldFactory, class Field, class ElementMatrixContainer,
 void SolveWithRightSideContainigSingleOne(const Field& field, const ElementMatrixContainer& matrix, std::vector<Element<Field>>& result, CombinedFieldFactoryData& combined_creator_data)
 {
 	CombinedFieldFactory combined_field_factory;
-	static const int max_attempts = 2;//maximal number of attmpts to select suitable field
-	int attempt = 0;
 	result.clear();
 	try
 	{
-		for (;;)
+		static const int kMaxAttempts = 2;//maximal number of attmpts to select suitable field
+		int attempt = 0;
+		for (; attempt < kMaxAttempts; ++attempt)
 		{
 			auto combined_field = combined_field_factory.CreateFieldExpectedAsSuitable(combined_creator_data, field);
 			std::vector<auto_unique_ptr<RowWithRightPart<decltype(combined_field)>>> combined_matrix;
@@ -313,12 +313,6 @@ void SolveWithRightSideContainigSingleOne(const Field& field, const ElementMatri
 			}
 			catch(const cant_detect_zero_equality_exception&)
 			{
-				++attempt;
-				if (attempt >= max_attempts)
-				{
-					assert(result.empty());
-					return;//calculations completed without solution found, because no suitable exact field found
-				}
 				continue;//non-suitable field chosen, try another
 			}
 			catch(const incompatible_system_exception&)
@@ -332,6 +326,9 @@ void SolveWithRightSideContainigSingleOne(const Field& field, const ElementMatri
 			assert(!result.empty());
 			return;//calculations completed with suitable field, all done
 		}
+		assert(attempt == kMaxAttempts);
+		assert(result.empty());
+		return;//calculations completed without solution found, because no suitable exact field found
 	}
 	catch(const unexact_divisor_exception&)
 	{

@@ -41,12 +41,15 @@ struct FiniteFieldParam
 			template <class Integer>
 			void AddElement(int column, Integer value)
 			{
+				assert(!matrix.empty()); // has rows
+				auto& last_row = matrix.back();
+				assert(last_row.empty() || last_row.back().column < column);
 				Element element;
 				element.column = column;
 				field.Import(value, element.value);
 				if (!FieldHelpers::IsZero(field, element.value))
 				{
-					matrix.back().push_back(element);
+					last_row.push_back(element);
 				}
 			}
 			Result RunSolver()const
@@ -250,48 +253,72 @@ INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_251, SparseMatrixExactTest, F
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_65521, SparseMatrixExactTest, FiniteFieldParam<ZPlusRing32>::Module<65521>);
 INSTANTIATE_TYPED_TEST_CASE_P(FiniteField_ZField32_4294967291, SparseMatrixExactTest, FiniteFieldParam<ZPlusRing32>::Module<4294967291>);
 
-static struct
+DECLARE_FUNCTOR_TEMPLATE_T(bool, ExpectGoodSolution, const T& matrix)
 {
+	EXPECT_FUNCTION_BEGIN
+	auto result = matrix.RunSolver();
+	EXPECT_2(EqualTo, result.empty(), false);
+	for(auto& row:matrix.matrix)
+	{
+		auto negated_sum = FieldHelpers::Zero(matrix.field);
+		auto last_subtraction_result = ExactSubtractionResultInfo::Zero;
+		for (auto& res_elem:result)
+		{
+			for (auto& row_elem:row)
+			{
+				if (res_elem.column == row_elem.column)
+				{
+					last_subtraction_result = matrix.field.Subtract(negated_sum, res_elem.value, FieldHelpers::DivByOne(matrix.field, row_elem.value), negated_sum);					
+				}
+			}
+		}
+		bool is_first = (&row == &matrix.matrix.front());
+		if (is_first)
+		{
+			EXPECT_2(EqualTo, last_subtraction_result, ExactSubtractionResultInfo::NonZero);
+			decltype(negated_sum) minus_one;
+			matrix.field.Subtract(FieldHelpers::Zero(matrix.field), FieldHelpers::One(matrix.field), FieldHelpers::DivByOne(matrix.field, FieldHelpers::One(matrix.field)), minus_one);
+			EXPECT_3(FieldHelpers::IsEqual<decltype(matrix.field)>, matrix.field, negated_sum, minus_one);
+		}
+		else
+		{
+			EXPECT_2(EqualTo, last_subtraction_result, ExactSubtractionResultInfo::Zero);
+			EXPECT_2(FieldHelpers::IsZero<decltype(matrix.field)>, matrix.field, negated_sum);
+		}
+	}
+	EXPECT_FUNCTION_RETURN
+}
+
+/*
+static struct{//used to expect exact solution
 	template <class MatWithField>
-	bool operator()(const MatWithField& matrix)const
+	bool operator()(const MatWithField& matrix, const std::initializer_list<typename decltype(matrix.RunSolver())::value_type>& list)const
 	{
 		EXPECT_FUNCTION_BEGIN
 		auto result = matrix.RunSolver();
-		EXPECT_2(EqualTo, result.empty(), false);
-		for(auto& row:matrix.matrix)
+		typedef  typename decltype(matrix.RunSolver())::value_type Element;
+		//due to treating field as inexact zeroes can be in result. Erase them.
+		result.erase(std::remove_if(result.begin(), result.end(), [&](const Element& e){return FieldHelpers::IsZero(matrix.field, e.value);}), result.end());
+		EXPECT_2(EqualTo, result.size(), list.size());
+		struct LessColumn{
+			bool operator()(const Element& e1, const Element& e2)
+			{
+				return e1.column < e2.column;
+			}
+		};
+		std::sort(result.begin(), result.end(), LessColumn());
+		const auto eq_element = [&](const Element& e1, const Element& e2)
 		{
-			auto negated_sum = FieldHelpers::Zero(matrix.field);
-			auto last_subtraction_result = ExactSubtractionResultInfo::Zero;
-			for (auto& res_elem:result)
-			{
-				for (auto& row_elem:row)
-				{
-					if (res_elem.column == row_elem.column)
-					{
-						last_subtraction_result = matrix.field.Subtract(negated_sum, res_elem.value, FieldHelpers::DivByOne(matrix.field, row_elem.value), negated_sum);					
-					}
-				}
-			}
-			bool is_first = (&row == &matrix.matrix.front());
-			if (is_first)
-			{
-				EXPECT_2(EqualTo, last_subtraction_result, ExactSubtractionResultInfo::NonZero);
-				decltype(negated_sum) minus_one;
-				matrix.field.Subtract(FieldHelpers::Zero(matrix.field), FieldHelpers::One(matrix.field), FieldHelpers::DivByOne(matrix.field, FieldHelpers::One(matrix.field)), minus_one);
-				EXPECT_3(FieldHelpers::IsEqual<decltype(matrix.field)>, matrix.field, negated_sum, minus_one);
-			}
-			else
-			{
-				EXPECT_2(EqualTo, last_subtraction_result, ExactSubtractionResultInfo::Zero);
-				EXPECT_2(FieldHelpers::IsZero<decltype(matrix.field)>, matrix.field, negated_sum);
-			}
-		}
+			return e1.column == e2.column && FieldHelpers::IsEqual(matrix.field, e1.value, e2.value);
+		};
+		EXPECT_2(ExpecterContainerEqual(eq_element), result, list);
+		EXPECT_1(ExpectGoodSolution, matrix);
 		EXPECT_FUNCTION_RETURN
 	}
-} ExpectGoodSolution;
+} ExpectFilteredEqualToSolution;
+*/
 
-static struct
-{
+static struct{//used to expect exact solution
 	template <class MatWithField>
 	bool operator()(const MatWithField& matrix, const std::initializer_list<typename decltype(matrix.RunSolver())::value_type>& list)const
 	{
@@ -319,6 +346,34 @@ static struct
 } ExpectKnownSolution;
 
 
+static struct{//used to expect partially known solution
+	template <class MatWithField>
+	bool operator()(const MatWithField& matrix, const std::initializer_list<typename decltype(matrix.RunSolver())::value_type>& list)const
+	{
+		EXPECT_FUNCTION_BEGIN
+		auto result = matrix.RunSolver();
+		typedef  typename decltype(matrix.RunSolver())::value_type Element;
+		//due to treating field as inexact zeroes can be in result. Erase them.
+		result.erase(std::remove_if(result.begin(), result.end(), [&](const Element& e){return FieldHelpers::IsZero(matrix.field, e.value);}), result.end());
+		EXPECT_2(EqualTo, result.size(), list.size());
+		struct LessColumn{
+			bool operator()(const Element& e1, const Element& e2)
+			{
+				return e1.column < e2.column;
+			}
+		};
+		std::sort(result.begin(), result.end(), LessColumn());
+		const auto eq_element = [&](const Element& e1, const Element& e2)
+		{
+			return e1.column == e2.column && FieldHelpers::IsEqual(matrix.field, e1.value, e2.value);
+		};
+		EXPECT_2(ExpecterContainerEqual(eq_element), result, list);
+		EXPECT_1(ExpectGoodSolution, matrix);
+		EXPECT_FUNCTION_RETURN
+	}
+} ExpectColumnsInSolution;
+
+
 template <class MatWithField>
 void ExpectNoSolution(const MatWithField& matrix)
 {
@@ -330,29 +385,25 @@ TEST(SparseMatrixExactValues, Z2determined)
 	typedef FiniteFieldParam<ZPlusRing32>::Module<2> Param;
 	Param::Matrix m;
 	const auto E = [&](int column, unsigned long long value){return Param::Element::FromCV(column, FieldHelpers::Imp(m.field, value));};
-	{
-		//zero matrix size 1
+	{//zero matrix size 1
 		m.Clear();
 		m.AddRow();
 		ExpectNoSolution(m);
 	}
-	{
-		//zero matrix size 3
+	{//zero matrix size 3
 		m.Clear();
 		m.AddRow();
 		m.AddRow();
 		m.AddRow();
 		ExpectNoSolution(m);
 	}
-	{
-		//identity matrix size 1
+	{//identity matrix size 1
 		m.Clear();
 		m.AddRow();
 		m.AddElement(0, 1u);
 		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u)}));
 	}
-	{
-		//identity matrix size 3
+	{//identity matrix size 3
 		m.Clear();
 		m.AddRow();
 		m.AddElement(0, 1u);
@@ -362,8 +413,7 @@ TEST(SparseMatrixExactValues, Z2determined)
 		m.AddElement(2, 1u);
 		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u)}));
 	}
-	{
-		//matrix with only last column needed
+	{//matrix with only last column needed
 		m.Clear();
 		m.AddRow();
 		m.AddElement(2, 1u);
@@ -373,15 +423,13 @@ TEST(SparseMatrixExactValues, Z2determined)
 		m.AddElement(0, 1u);
 		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(2, 1u)}));
 	}
-	{
-		//matrix with big column number
+	{//matrix with big column number
 		m.Clear();
 		m.AddRow();
 		m.AddElement(42, 1u);
 		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(42, 1u)}));
 	}
-	{
-		//matrix with single zero column
+	{//matrix with single zero column
 		m.Clear();
 		m.AddRow();
 		m.AddElement(0, 1u);
@@ -389,8 +437,7 @@ TEST(SparseMatrixExactValues, Z2determined)
 		m.AddElement(0, 1u);
 		ExpectNoSolution(m);
 	}
-	{
-		//matrix with single columnwith ones
+	{//matrix with single columnwith ones
 		m.Clear();
 		m.AddRow();
 		m.AddElement(0, 1u);
@@ -398,8 +445,7 @@ TEST(SparseMatrixExactValues, Z2determined)
 		m.AddElement(0, 1u);
 		ExpectNoSolution(m);
 	}
-	{
-		//matrix with single columnw eqaul to result, non-obviousely initialized
+	{//matrix with single columnw eqaul to result, non-obviousely initialized
 		m.Clear();
 		m.AddRow();
 		m.AddElement(0, 3u);
@@ -407,8 +453,7 @@ TEST(SparseMatrixExactValues, Z2determined)
 		m.AddElement(0, 2u);
 		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u)}));
 	}
-	{
-		//matrix with every column needed in sum
+	{//matrix with every column needed in sum
 		m.Clear();
 		m.AddRow();
 		m.AddElement(1, 1u);
@@ -425,8 +470,7 @@ TEST(SparseMatrixExactValues, Z2determined)
 		m.AddElement(1, 1u);
 		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u), E(1, 1u), E(2, 1u), E(3, 1u)}));
 	}
-	{
-		//matrix with every column needed in sum - other column order
+	{//matrix with every column needed in sum - other column order
 		m.Clear();
 		m.AddRow();
 		m.AddElement(0, 1u);
@@ -443,8 +487,7 @@ TEST(SparseMatrixExactValues, Z2determined)
 		m.AddElement(3, 1u);
 		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u), E(1, 1u), E(2, 1u), E(3, 1u)}));
 	}
-	{
-		//matrix with NOT every column needed in sum
+	{//matrix with NOT every column needed in sum
 		m.Clear();
 		m.AddRow();
 		m.AddElement(0, 1u);
@@ -462,8 +505,7 @@ TEST(SparseMatrixExactValues, Z2determined)
 		m.AddElement(3, 1u);
 		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u), E(2, 1u)}));
 	}
-	{
-		//matrix with NOT every column needed in sum - other column order
+	{//matrix with NOT every column needed in sum - other column order
 		m.Clear();
 		m.AddRow();
 		m.AddElement(0, 1u);
@@ -481,6 +523,186 @@ TEST(SparseMatrixExactValues, Z2determined)
 		m.AddElement(3, 1u);
 		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(1, 1u), E(3, 1u)}));
 	}
-	//TODO: add determined tests for non-rectangular matrices
-	//TODO: add tests for big matrices based on https://cloud.sagemath.com/projects/16ae0d9e-83b0-46c0-9630-d8d4469ec367/files/solvable%20matrices.sagews
+	//tests for big matrices based on https://cloud.sagemath.com/projects/16ae0d9e-83b0-46c0-9630-d8d4469ec367/files/solvable%20matrices.sagews
+	{//9x9 matrix with det 1
+		m.Clear();
+		m.AddRow();
+		m.AddElement(1, 1u);
+		m.AddElement(4, 1u);
+		m.AddElement(6, 1u);
+		m.AddElement(8, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(4, 1u);
+		m.AddElement(5, 1u);
+		m.AddElement(7, 1u);
+		m.AddRow();
+		m.AddElement(1, 1u);
+		m.AddElement(3, 1u);
+		m.AddElement(4, 1u);
+		m.AddElement(5, 1u);
+		m.AddElement(6, 1u);
+		m.AddElement(8, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(3, 1u);
+		m.AddElement(4, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(3, 1u);
+		m.AddElement(4, 1u);
+		m.AddElement(5, 1u);
+		m.AddElement(6, 1u);
+		m.AddElement(8, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(3, 1u);
+		m.AddElement(6, 1u);
+		m.AddElement(8, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(3, 1u);
+		m.AddElement(5, 1u);
+		m.AddRow();
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(4, 1u);
+		m.AddElement(8, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(3, 1u);
+		m.AddElement(6, 1u);
+		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u), E(1, 1u), E(3, 1u), E(4, 1u), E(6, 1u), E(7, 1u)}));
+	}
+	{//the same matrix with to identical additional colums and rows (on the top)
+		m.Clear();
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(10, 1u);
+		m.AddRow();
+		m.AddElement(2, 1u);
+		m.AddElement(5, 1u);
+		m.AddElement(7, 1u);
+		m.AddElement(9, 1u);
+		m.AddRow();
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(3, 1u);
+		m.AddElement(5, 1u);
+		m.AddElement(6, 1u);
+		m.AddElement(8, 1u);
+		m.AddRow();
+		m.AddElement(2, 1u);
+		m.AddElement(4, 1u);
+		m.AddElement(5, 1u);
+		m.AddElement(6, 1u);
+		m.AddElement(7, 1u);
+		m.AddElement(9, 1u);
+		m.AddRow();
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(3, 1u);
+		m.AddElement(4, 1u);
+		m.AddElement(5, 1u);
+		m.AddRow();
+		m.AddElement(1, 1u);
+		m.AddElement(3, 1u);
+		m.AddElement(4, 1u);
+		m.AddElement(5, 1u);
+		m.AddElement(6, 1u);
+		m.AddElement(7, 1u);
+		m.AddElement(9, 1u);
+		m.AddRow();
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(4, 1u);
+		m.AddElement(7, 1u);
+		m.AddElement(9, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(3, 1u);
+		m.AddElement(4, 1u);
+		m.AddElement(6, 1u);
+		m.AddElement(10, 1u);
+		m.AddRow();
+		m.AddElement(2, 1u);
+		m.AddElement(3, 1u);
+		m.AddElement(5, 1u);
+		m.AddElement(9, 1u);
+		m.AddRow();
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(4, 1u);
+		m.AddElement(7, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(10, 1u);
+		ExpectNoSolution(m);
+	}
+	{//wide matrix with zero columns; wide matrix with non-zero columns would have non-determined result, so is not included in this test
+		m.Clear();
+		m.AddRow();
+		m.AddElement(42, 1u);
+		m.AddRow();
+		m.AddElement(12, 1u);
+		m.AddElement(32, 1u);
+		m.AddElement(42, 1u);
+		m.AddRow();
+		m.AddElement(2, 1u);
+		m.AddElement(32, 1u);
+		m.AddRow();
+		m.AddElement(2, 1u);
+		m.AddElement(12, 1u);
+		m.AddElement(32, 1u);
+		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(2, 1u), E(32, 1u), E(42, 1u)}));
+	}
+	{//tall matrix
+		m.Clear();
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddRow();
+		m.AddElement(1, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(2, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(3, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(3, 1u);
+		m.AddElement(4, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(3, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(3, 1u);
+		m.AddElement(4, 1u);
+		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u), E(2, 1u), E(3, 1u), E(4, 1u)}));
+	}	
 }
