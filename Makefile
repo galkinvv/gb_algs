@@ -86,9 +86,15 @@ $(BUILDDIR)/%.o: %.cpp 3rd/gmp/include/gmp.h
 
 clean:
 	$(RM) $(BUILDDIR)
+QUICKCOMPILE_OPTIONS = $(ALL_CXX_LANG_FLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -I 3rd/gmp/include/ -S -x c++ -o /dev/null
+
+
+quickcompile_options: 
+#3rd/gtest/src/gtest-all.cc 3rd/gmp/include/gmp.h
+	echo $(QUICKCOMPILE_OPTIONS) 
 
 quickcompile: 3rd/gtest/src/gtest-all.cc 3rd/gmp/include/gmp.h
-	$(CXX11) $(ALL_CXX_LANG_FLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -I 3rd/gmp/include/ -S -x c++ $(QUICK_SOURCE) -o /dev/null
+	$(CXX11) $(QUICKCOMPILE_OPTIONS) $(QUICK_SOURCE)
 
 3rd/gtest/src/gtest-all.cc:
 	rm -rf 3rd/gtest/ tmp/gtest.zip tmp/gtest_version

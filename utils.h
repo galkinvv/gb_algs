@@ -34,38 +34,30 @@ constexpr int countof( T ( & /*arr*/ )[ N ] )
 #define DECLARE_FORWARDING_METHOD(return_type, method, forward_to_expr)\
 		template <class... TA> return_type method(TA&&... args){ return (forward_to_expr).method(std::forward<TA>(args)...); }
 
-#define DECLARE_FUNCTOR_TEMPLATE_T(ResultType, Name, Param_Declaration)\
+#define DECLARE_FUNCTOR_TEMPLATE_T(ResultType, Name, ...)\
 static struct Name##StructHelper{\
-template <class T> ResultType operator()(Param_Declaration)const;\
+template <class T> ResultType operator()(__VA_ARGS__)const;\
 } const Name;\
-template <class T> ResultType Name##StructHelper::operator()(Param_Declaration)const
+template <class T> ResultType Name##StructHelper::operator()(__VA_ARGS__)const
 
-static struct
-{
-	template <class T1, class T2>
-	bool operator()(T1&& v1, T2&& v2)const
-	{
-		return v1 == v2;
-	}
-} EqualTo;
 
-static struct
-{
-	template <class T1, class T2>
-	bool operator()(T1&& v1, T2&& v2)const
-	{
-		return !(v1 == v2);
-	}
-} NotEqualTo;
+#define DECLARE_FUNCTOR_TEMPLATE_T1_T2(ResultType, Name, ...)\
+static struct Name##StructHelper{\
+template <class T1, class T2> ResultType operator()(__VA_ARGS__)const;\
+} const Name;\
+template <class T1, class T2> ResultType Name##StructHelper::operator()(__VA_ARGS__)const
 
-static struct
-{
-	template <class T1, class T2>
-	bool operator()(T1& v1, T2& v2)const
-	{
-		return std::addressof(v1) == std::addressof(v2);
-	}
-} ReferenceEqualTo;
+DECLARE_FUNCTOR_TEMPLATE_T1_T2(bool, EqualTo, T1&& v1, T2&& v2){
+	return v1 == v2;
+}
+
+DECLARE_FUNCTOR_TEMPLATE_T1_T2(bool, NotEqualTo, T1&& v1, T2&& v2){
+	return !(v1 == v2);
+}
+
+DECLARE_FUNCTOR_TEMPLATE_T1_T2(bool, ReferenceEqualTo, T1&& v1, T2&& v2){
+	return std::addressof(v1) == std::addressof(v2);
+}
 
 template <class T>
 class PseudoPointer
