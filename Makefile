@@ -12,6 +12,9 @@ endif
 ifndef OPTIMIZE
 	OPTIMIZE = 0
 endif
+ifndef BUILDDIR
+	BUILDDIR = build
+endif
 
 GCC_WARNINGS=-Wall -Wextra -Wuninitialized -W -Wparentheses -Wformat=2 -Wswitch-default -Wcast-align -Wpointer-arith -Wwrite-strings -Wstrict-aliasing=2
 GCC_WARNINGS_OFF=-Wno-missing-field-initializers -Wno-format-nonliteral -Wno-unknown-pragmas -Wno-reorder
@@ -26,9 +29,8 @@ LDFLAGS = -O$(OPTIMIZE) -g
 #-Wl,--gc-sections -Wl,--print-gc-sections
 #LDFLAGS = -O3 -g -pg
 
-MAINTARGET = integrtest/runalgo
+MAINTARGET = runalgo
 
-BUILDDIR = build
 ifeq ($(OS),Windows_NT)
 ifeq ($(WITH_MPI),1)
 CXXFLAGS+=-I"$(ProgramFiles)\MPICH2\include"
@@ -48,7 +50,7 @@ MAINBIN=$(MAINTARGET)$(BINEXT)
 LD=$(CXX11)
 
 MAINLIB=nmf5
-FULLLIBNAME=$(BUILDDIR)/lib$(MAINLIB).a
+FULLLIBNAME=$(BUILDDIR)/obj/lib$(MAINLIB).a
 
 LIBSOURCES = $(wildcard *.cpp)
 ifeq ($(WITH_MPI),1)
@@ -56,7 +58,6 @@ ifeq ($(WITH_MPI),1)
 endif
 
 
-ALLSOURCES=$(LIBSOURCES) $(MAINTARGET).cpp
 LIBOBJECTS = $(LIBSOURCES:%.cpp=build/%.o)
 
 all: $(BUILDDIR)/$(MAINBIN) $(BUILDDIR)/run-gt$(BINEXT)
