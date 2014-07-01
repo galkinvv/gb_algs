@@ -523,6 +523,63 @@ TEST(SparseMatrixExactValues, Z2determined)
 		m.AddElement(3, 1u);
 		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(1, 1u), E(3, 1u)}));
 	}
+	{//wide matrix with zero columns; wide matrix with non-zero columns would have non-determined result, so is not included in this test
+		m.Clear();
+		m.AddRow();
+		m.AddElement(42, 1u);
+		m.AddRow();
+		m.AddElement(12, 1u);
+		m.AddElement(32, 1u);
+		m.AddElement(42, 1u);
+		m.AddRow();
+		m.AddElement(2, 1u);
+		m.AddElement(32, 1u);
+		m.AddRow();
+		m.AddElement(2, 1u);
+		m.AddElement(12, 1u);
+		m.AddElement(32, 1u);
+		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(2, 1u), E(32, 1u), E(42, 1u)}));
+	}
+	{//tall matrix
+		m.Clear();
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddRow();
+		m.AddElement(1, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(2, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(3, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(3, 1u);
+		m.AddElement(4, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(3, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(1, 1u);
+		m.AddElement(2, 1u);
+		m.AddElement(3, 1u);
+		m.AddElement(4, 1u);
+		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u), E(2, 1u), E(3, 1u), E(4, 1u)}));
+	}
 	//tests for big matrices based on https://cloud.sagemath.com/projects/16ae0d9e-83b0-46c0-9630-d8d4469ec367/files/solvable%20matrices.sagews
 	{//9x9 matrix with det 1
 		m.Clear();
@@ -648,61 +705,4 @@ TEST(SparseMatrixExactValues, Z2determined)
 		m.AddElement(10, 1u);
 		ExpectNoSolution(m);
 	}
-	{//wide matrix with zero columns; wide matrix with non-zero columns would have non-determined result, so is not included in this test
-		m.Clear();
-		m.AddRow();
-		m.AddElement(42, 1u);
-		m.AddRow();
-		m.AddElement(12, 1u);
-		m.AddElement(32, 1u);
-		m.AddElement(42, 1u);
-		m.AddRow();
-		m.AddElement(2, 1u);
-		m.AddElement(32, 1u);
-		m.AddRow();
-		m.AddElement(2, 1u);
-		m.AddElement(12, 1u);
-		m.AddElement(32, 1u);
-		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(2, 1u), E(32, 1u), E(42, 1u)}));
-	}
-	{//tall matrix
-		m.Clear();
-		m.AddRow();
-		m.AddElement(0, 1u);
-		m.AddElement(1, 1u);
-		m.AddRow();
-		m.AddElement(1, 1u);
-		m.AddRow();
-		m.AddElement(0, 1u);
-		m.AddElement(2, 1u);
-		m.AddRow();
-		m.AddElement(0, 1u);
-		m.AddElement(1, 1u);
-		m.AddElement(2, 1u);
-		m.AddRow();
-		m.AddElement(0, 1u);
-		m.AddElement(1, 1u);
-		m.AddElement(3, 1u);
-		m.AddRow();
-		m.AddElement(0, 1u);
-		m.AddElement(1, 1u);
-		m.AddElement(2, 1u);
-		m.AddElement(3, 1u);
-		m.AddElement(4, 1u);
-		m.AddRow();
-		m.AddElement(0, 1u);
-		m.AddElement(1, 1u);
-		m.AddElement(3, 1u);
-		m.AddRow();
-		m.AddElement(0, 1u);
-		m.AddElement(1, 1u);
-		m.AddElement(2, 1u);
-		m.AddRow();
-		m.AddElement(0, 1u);
-		m.AddElement(1, 1u);
-		m.AddElement(2, 1u);
-		m.AddElement(3, 1u);
-		m.AddElement(4, 1u);
-		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u), E(2, 1u), E(3, 1u), E(4, 1u)}));
-	}	
 }
