@@ -50,7 +50,9 @@ MAINBIN=$(MAINTARGET)$(BINEXT)
 LD=$(CXX11)
 
 MAINLIB=nmf5
-FULLLIBNAME=$(BUILDDIR)/obj/lib$(MAINLIB).a
+OBJDIR=$(BUILDDIR)/obj
+TMPDIR=$(BUILDDIR)/tmp
+FULLLIBNAME=$(OBJDIR)/lib$(MAINLIB).a
 
 LIBSOURCES = $(wildcard *.cpp)
 ifeq ($(WITH_MPI),1)
@@ -58,32 +60,32 @@ ifeq ($(WITH_MPI),1)
 endif
 
 
-LIBOBJECTS = $(LIBSOURCES:%.cpp=build/%.o)
+LIBOBJECTS = $(LIBSOURCES:%.cpp=$(OBJDIR)/%.o)
 
 all: $(BUILDDIR)/$(MAINBIN) $(BUILDDIR)/run-gt$(BINEXT)
-$(BUILDDIR)/$(MAINBIN): $(BUILDDIR)/$(MAINTARGET).o $(FULLLIBNAME)
-	$(LD) $(BUILDDIR)/$(MAINTARGET).o -L $(BUILDDIR) -l $(MAINLIB) -L 3rd/gmp/lib -l gmp -l gmpxx -o $@ $(LDFLAGS)
+$(BUILDDIR)/$(MAINBIN): $(OBJDIR)/$(MAINTARGET).o $(FULLLIBNAME)
+	$(LD) $(OBJDIR)/$(MAINTARGET).o -L $(OBJDIR) -l $(MAINLIB) -L 3rd/gmp/lib -l gmp -l gmpxx -o $@ $(LDFLAGS)
 
 TEST_SOURCES=$(wildcard unittest/*.cpp)
 TEST_SOURCES+=$(wildcard unittest/mock/*.cpp)
-TEST_OBJECTS = $(TEST_SOURCES:unittest/%.cpp=build/unittest/%.o)
+TEST_OBJECTS = $(TEST_SOURCES:unittest/%.cpp=$(OBJDIR)/unittest/%.o)
 
 $(BUILDDIR)/run-gt$(BINEXT): $(TEST_OBJECTS) $(FULLLIBNAME)
-	$(LD) -pthread $^ -L $(BUILDDIR) -l $(MAINLIB) -L 3rd/gmp/lib -l gmp -l gmpxx -o $@ $(LDFLAGS)
+	$(LD) -pthread $^ -L $(OBJDIR) -l $(MAINLIB) -L 3rd/gmp/lib -l gmp -l gmpxx -o $@ $(LDFLAGS)
 
 $(FULLLIBNAME): $(LIBOBJECTS)
 	ar cr $@ $^
 
-$(BUILDDIR)/unittest/%.o: unittest/%.cpp 3rd/gtest/src/gtest-all.cc 3rd/gmp/include/gmp.h
+$(OBJDIR)/unittest/%.o: unittest/%.cpp 3rd/gtest/src/gtest-all.cc 3rd/gmp/include/gmp.h
 	mkdir -p $(dir $@)
 	$(CXX11) $(CXXFLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -I 3rd/gmp/include/ -c $< -o $@
 
-parse.tab:
-	bison parse.ypp
-
-$(BUILDDIR)/%.o: %.cpp 3rd/gmp/include/gmp.h
+$(OBJDIR)/%.o: %.cpp 3rd/gmp/include/gmp.h
 	mkdir -p $(dir $@)
 	$(CXX11) $(CXXFLAGS) -I . -I 3rd/gmp/include/ -c $< -o $@
+
+parse.tab:
+	bison parse.ypp
 
 clean:
 	$(RM) $(BUILDDIR)
@@ -91,30 +93,29 @@ QUICKCOMPILE_OPTIONS = $(ALL_CXX_LANG_FLAGS) -I . -I 3rd/gtest -I 3rd/gtest/incl
 
 
 quickcompile_options: 
-#3rd/gtest/src/gtest-all.cc 3rd/gmp/include/gmp.h
 	echo $(QUICKCOMPILE_OPTIONS) 
 
 quickcompile: 3rd/gtest/src/gtest-all.cc 3rd/gmp/include/gmp.h
 	$(CXX11) $(QUICKCOMPILE_OPTIONS) $(QUICK_SOURCE)
 
 3rd/gtest/src/gtest-all.cc:
-	rm -rf 3rd/gtest/ tmp/gtest.zip tmp/gtest_version
-	mkdir -p tmp
-	wget http://googletest.googlecode.com/files/gtest-1.7.0.zip -O tmp/gtest.zip
-	unzip tmp/gtest.zip -d tmp/gtest_version
+	rm -rf 3rd/gtest/ $(TMPDIR)/gtest.zip tmp/gtest_build
+	mkdir -p $(TMPDIR)/gtest_build
+	wget http://googletest.googlecode.com/files/gtest-1.7.0.zip -O $(TMPDIR)/gtest.zip
+	unzip $(TMPDIR)/gtest.zip -d $(TMPDIR)/gtest_build
 	mkdir -p 3rd/
-	mv tmp/gtest_version/gtest* 3rd/gtest
+	mv $(TMPDIR)/gtest_build/gtest* 3rd/gtest
 
 3rd/gmp/include/gmp.h:
-	rm -rf 3rd/gmp/ tmp/gmp_build
-	mkdir -p tmp/gmp_build
-	wget https://gmplib.org/download/gmp/gmp-6.0.0a.tar.xz -O tmp/gmp_build/gmp-6.0.0a.tar.xz
-	tar xf tmp/gmp_build/gmp-6.0.0a.tar.xz -C tmp/gmp_build
+	rm -rf 3rd/gmp/ $(TMPDIR)/gmp_build
+	mkdir -p $(TMPDIR)/gmp_build
+	wget https://gmplib.org/download/gmp/gmp-6.0.0a.tar.xz -O $(TMPDIR)/gmp.tar.xz
+	tar xf $(TMPDIR)/gmp.tar.xz -C $(TMPDIR)/gmp_build
 	mkdir -p 3rd/
-	cd tmp/gmp_build/gmp-6.0.0 && CC=$(CC_FORCXX) CXX=$(firstword $(CXX11)) CXXFLAGS=$(wordlist 2,999,$(CXX11)) ./configure --prefix=tmp/gmp_build/gmp_install --enable-cxx=yes && make -j 4 && make install
-	cp -r tmp/gmp_build/gmp_install 3rd/gmp
+	cd $(TMPDIR)/gmp_build/gmp-* && CC=$(CC_FORCXX) CXX=$(firstword $(CXX11)) CXXFLAGS=$(wordlist 2,999,$(CXX11)) ./configure --prefix=$(TMPDIR)/gmp_install --enable-cxx=yes && make -j 4 && make install
+	cp -r $(TMPDIR)/gmp_install 3rd/gmp
 
 check: $(BUILDDIR)/run-gt$(BINEXT)
-	$(BUILDDIR)/run-gt$(BINEXT)
+	$^
 
 -include $(shell find $(BUILDDIR) -name '*.d')
