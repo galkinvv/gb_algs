@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
 ifndef CXX11
-	CXX11=g++-4.8 -std=c++11
+	CXX11=g++-4.8
 endif
 ifndef CC_FORCXX
 	CC_FORCXX=gcc-4.8
@@ -18,10 +18,9 @@ endif
 
 GCC_WARNINGS=-Wall -Wextra -Wuninitialized -W -Wparentheses -Wformat=2 -Wswitch-default -Wcast-align -Wpointer-arith -Wwrite-strings -Wstrict-aliasing=2
 GCC_WARNINGS_OFF=-Wno-missing-field-initializers -Wno-format-nonliteral -Wno-unknown-pragmas -Wno-reorder
-ALL_CXX_LANG_FLAGS=-DWITH_MPI=$(WITH_MPI) $(GCC_WARNINGS_OFF) $(GCC_WARNINGS)
+ALL_CXX_LANG_FLAGS=-DWITH_MPI=$(WITH_MPI) $(GCC_WARNINGS_OFF) $(GCC_WARNINGS) -std=c++11
 
-CXXFLAGS = $(ALL_CXX_LANG_FLAGS) -O$(OPTIMIZE) -ffunction-sections -fdata-sections -g -march=native -mtune=native -MD -MP
-#-ffunction-sections -fdata-sections
+CXXFLAGS = $(ALL_CXX_LANG_FLAGS) -O$(OPTIMIZE) -g -march=native -mtune=native -MD -MP -ffunction-sections -fdata-sections
 #CXXFLAGS = -g -pg -O3 -march=native -mtune=native
 
 LDFLAGS = -O$(OPTIMIZE) -g 
@@ -47,7 +46,7 @@ RM=rm -rvf
 endif
 MAINBIN=$(MAINTARGET)$(BINEXT)
 
-LD=$(CXX11)
+LD=$(CXX11) -std=c++11
 
 MAINLIB=nmf5
 OBJDIR=$(BUILDDIR)/obj
@@ -63,8 +62,8 @@ endif
 LIBOBJECTS = $(LIBSOURCES:%.cpp=$(OBJDIR)/%.o)
 
 all: $(BUILDDIR)/$(MAINBIN) $(BUILDDIR)/run-gt$(BINEXT)
-$(BUILDDIR)/$(MAINBIN): $(OBJDIR)/$(MAINTARGET).o $(FULLLIBNAME)
-	$(LD) $(OBJDIR)/$(MAINTARGET).o -L $(OBJDIR) -l $(MAINLIB) -L 3rd/gmp/lib -l gmp -l gmpxx -o $@ $(LDFLAGS)
+$(BUILDDIR)/$(MAINBIN): $(OBJDIR)/integrtest/$(MAINTARGET).o $(FULLLIBNAME)
+	$(LD) $< -L $(OBJDIR) -l $(MAINLIB) -L 3rd/gmp/lib -l gmp -l gmpxx -o $@ $(LDFLAGS)
 
 TEST_SOURCES=$(wildcard unittest/*.cpp)
 TEST_SOURCES+=$(wildcard unittest/mock/*.cpp)
@@ -89,7 +88,8 @@ parse.tab:
 
 clean:
 	$(RM) $(BUILDDIR)
-QUICKCOMPILE_OPTIONS = $(ALL_CXX_LANG_FLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -I 3rd/gmp/include/ -S -o /dev/null
+FD=$(shell pwd)
+QUICKCOMPILE_OPTIONS = $(ALL_CXX_LANG_FLAGS) -I $(FD) -I $(FD)/3rd/gtest -I $(FD)/3rd/gtest/include -I $(FD)/3rd/gmp/include/ -S -o /dev/null
 
 quickcompile_options: 
 	echo $(QUICKCOMPILE_OPTIONS) 

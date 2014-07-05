@@ -143,6 +143,7 @@ private:
 			return SignedOne::PlusOne;
 		default:
 			assert(!"bad value for signedOne");
+			return SignedOne::PlusOne; //only for return statement checkers or compilation with NDEBUG
 		}
 	}
 	
