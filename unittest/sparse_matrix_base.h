@@ -103,10 +103,8 @@ DECLARE_FUNCTOR_TEMPLATE_T(bool, ExpectGoodSolution, const T& matrix)
 	EXPECT_FUNCTION_RETURN
 }
 
-static struct{//used to expect exact solution
-	template <class MatWithField>
-	bool operator()(const MatWithField& matrix, const std::initializer_list<typename decltype(matrix.RunSolver())::value_type>& list)const
-	{
+DECLARE_FUNCTOR_TEMPLATE_T(bool, ExpectKnownSolution, const T& matrix, const std::initializer_list<typename decltype(matrix.RunSolver())::value_type>& list)
+{
 		EXPECT_FUNCTION_BEGIN
 		auto result = matrix.RunSolver();
 		typedef  typename decltype(matrix.RunSolver())::value_type Element;
@@ -127,9 +125,7 @@ static struct{//used to expect exact solution
 		EXPECT_2(ExpecterContainerEqual(eq_element), result, list);
 		EXPECT_1(ExpectGoodSolution, matrix);
 		EXPECT_FUNCTION_RETURN
-	}
-} ExpectKnownSolution;
-
+}
 
 static struct{//used to expect partially known solution
 	template <class MatWithField>
