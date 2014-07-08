@@ -105,54 +105,52 @@ DECLARE_FUNCTOR_TEMPLATE_T(bool, ExpectGoodSolution, const T& matrix)
 
 DECLARE_FUNCTOR_TEMPLATE_T(bool, ExpectKnownSolution, const T& matrix, const std::initializer_list<typename decltype(matrix.RunSolver())::value_type>& list)
 {
-		EXPECT_FUNCTION_BEGIN
-		auto result = matrix.RunSolver();
-		typedef  typename decltype(matrix.RunSolver())::value_type Element;
-		//due to treating field as inexact zeroes can be in result. Erase them.
-		result.erase(std::remove_if(result.begin(), result.end(), [&](const Element& e){return FieldHelpers::IsZero(matrix.field, e.value);}), result.end());
-		EXPECT_2(EqualTo, result.size(), list.size());
-		struct LessColumn{
-			bool operator()(const Element& e1, const Element& e2)
-			{
-				return e1.column < e2.column;
-			}
-		};
-		std::sort(result.begin(), result.end(), LessColumn());
-		const auto eq_element = [&](const Element& e1, const Element& e2)
+	EXPECT_FUNCTION_BEGIN
+	auto result = matrix.RunSolver();
+	typedef  typename decltype(matrix.RunSolver())::value_type Element;
+	//due to treating field as inexact zeroes can be in result. Erase them.
+	result.erase(std::remove_if(result.begin(), result.end(), [&](const Element& e){return FieldHelpers::IsZero(matrix.field, e.value);}), result.end());
+	EXPECT_2(EqualTo, result.size(), list.size());
+	struct LessColumn{
+		bool operator()(const Element& e1, const Element& e2)
 		{
-			return e1.column == e2.column && FieldHelpers::IsEqual(matrix.field, e1.value, e2.value);
-		};
-		EXPECT_2(ExpecterContainerEqual(eq_element), result, list);
-		EXPECT_1(ExpectGoodSolution, matrix);
-		EXPECT_FUNCTION_RETURN
+			return e1.column < e2.column;
+		}
+	};
+	std::sort(result.begin(), result.end(), LessColumn());
+	const auto eq_element = [&](const Element& e1, const Element& e2)
+	{
+		return e1.column == e2.column && FieldHelpers::IsEqual(matrix.field, e1.value, e2.value);
+	};
+	EXPECT_2(ExpecterContainerEqual(eq_element), result, list);
+	EXPECT_1(ExpectGoodSolution, matrix);
+	EXPECT_FUNCTION_RETURN
 }
 
-static struct{//used to expect partially known solution
-	template <class MatWithField>
-	bool operator()(const MatWithField& matrix, const std::initializer_list<typename decltype(matrix.RunSolver())::value_type>& list)const
-	{
-		EXPECT_FUNCTION_BEGIN
-		auto result = matrix.RunSolver();
-		typedef  typename decltype(matrix.RunSolver())::value_type Element;
-		//due to treating field as inexact zeroes can be in result. Erase them.
-		result.erase(std::remove_if(result.begin(), result.end(), [&](const Element& e){return FieldHelpers::IsZero(matrix.field, e.value);}), result.end());
-		EXPECT_2(EqualTo, result.size(), list.size());
-		struct LessColumn{
-			bool operator()(const Element& e1, const Element& e2)
-			{
-				return e1.column < e2.column;
-			}
-		};
-		std::sort(result.begin(), result.end(), LessColumn());
-		const auto eq_element = [&](const Element& e1, const Element& e2)
+//used to expect partially known solution
+DECLARE_FUNCTOR_TEMPLATE_T(bool, ExpectColumnsInSolution, const T& matrix, const std::initializer_list<typename decltype(matrix.RunSolver())::value_type>& list)
+{
+	EXPECT_FUNCTION_BEGIN
+	auto result = matrix.RunSolver();
+	typedef  typename decltype(matrix.RunSolver())::value_type Element;
+	//due to treating field as inexact zeroes can be in result. Erase them.
+	result.erase(std::remove_if(result.begin(), result.end(), [&](const Element& e){return FieldHelpers::IsZero(matrix.field, e.value);}), result.end());
+	EXPECT_2(EqualTo, result.size(), list.size());
+	struct LessColumn{
+		bool operator()(const Element& e1, const Element& e2)
 		{
-			return e1.column == e2.column && FieldHelpers::IsEqual(matrix.field, e1.value, e2.value);
-		};
-		EXPECT_2(ExpecterContainerEqual(eq_element), result, list);
-		EXPECT_1(ExpectGoodSolution, matrix);
-		EXPECT_FUNCTION_RETURN
-	}
-} ExpectColumnsInSolution;
+			return e1.column < e2.column;
+		}
+	};
+	std::sort(result.begin(), result.end(), LessColumn());
+	const auto eq_element = [&](const Element& e1, const Element& e2)
+	{
+		return e1.column == e2.column && FieldHelpers::IsEqual(matrix.field, e1.value, e2.value);
+	};
+	EXPECT_2(ExpecterContainerEqual(eq_element), result, list);
+	EXPECT_1(ExpectGoodSolution, matrix);
+	EXPECT_FUNCTION_RETURN
+}
 
 
 template <class MatWithField>
