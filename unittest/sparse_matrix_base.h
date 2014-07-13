@@ -53,6 +53,10 @@ struct FiniteFieldParam
 				SparseMatrix::SolveWithRightSideContainigSingleOne<Factory>(field, matrix, result, factory_data);
 				return result;
 			}
+			std::function<Element(int column, uint64_t value)> ElementConstructor()
+			{
+				return [this](int column, uint64_t value){return Element::FromCV(column, FieldHelpers::Imp(field, value));};
+			}
 			void Clear()
 			{
 				matrix.clear();

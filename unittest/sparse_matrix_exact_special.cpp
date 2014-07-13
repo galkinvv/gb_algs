@@ -182,7 +182,7 @@ TEST(SparseMatrixExactSpecial, Z2determined)
 {
 	typedef FiniteFieldParam<ZPlusRing32>::Module<2> Param;
 	Param::Matrix m;
-	const auto E = [&](int column, unsigned long long value){return Param::Element::FromCV(column, FieldHelpers::Imp(m.field, value));};
+	const auto E = m.ElementConstructor();
 	{//zero matrix size 1
 		m.Clear();
 		m.AddRow();
