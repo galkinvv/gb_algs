@@ -205,3 +205,34 @@ TEST(SparseMatrixSpecialValues, Z2determined)
 		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u), E(2, 1u), E(3, 1u), E(4, 1u)}));
 	}
 }
+
+TEST(SparseMatrixSpecialValues, Z3determined)
+{
+	typedef FiniteFieldParam<ZPlusRing32>::Module<3> Param;
+	Param::Matrix m;
+	const auto E = m.ElementConstructor();
+	{//1x1 non-identity
+		m.Clear();
+		m.AddRow();
+		m.AddElement(0, 2u);
+		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 2u)}));
+	}
+	{//first column is fixed by others with different coef relations
+		m.Clear();
+		m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddRow();
+		m.AddElement(0, 2u);
+		m.AddElement(1, 1u);
+		m.AddRow();
+		m.AddElement(0, 1u);
+	 	m.AddElement(2, 2u);
+	 	m.AddRow();
+		m.AddElement(0, 1u);
+		m.AddElement(3, 1u);
+	 	m.AddRow();
+		m.AddElement(0, 2u);
+		m.AddElement(4, 2u);
+		EXPECT_PRED2(ExpectKnownSolution, m, ilist({E(0, 1u), E(1, 1u), E(2, 1u), E(3, 2u), E(4, 2u)}));
+	}
+}
