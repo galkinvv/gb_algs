@@ -47,6 +47,24 @@ template <class T1, class T2> ResultType operator()(__VA_ARGS__)const;\
 } const Name;\
 template <class T1, class T2> ResultType Name##StructHelper::operator()(__VA_ARGS__)const
 
+#define DECLARE_PARAM_FUNCTOR_TEMPLATE_T(ResultType, Name, ...)\
+template<class Param> struct Name##StructHelper{\
+Param param_;\
+explicit Name##StructHelper(Param&&  param):param_(std::forward<Param>(param)){}\
+template <class T> ResultType operator()(__VA_ARGS__)const;\
+};\
+template <class Param> Name##StructHelper<Param> Name(Param&&  param){return Name##StructHelper<Param>(std::forward<Param>(param));}\
+template <class Param> template <class T> ResultType Name##StructHelper<Param>::operator()(__VA_ARGS__)const
+
+#define DECLARE_PARAM_FUNCTOR_TEMPLATE_T1_T2(ResultType, Name, ...)\
+template<class Param> struct Name##StructHelper{\
+Param param_;\
+explicit Name##StructHelper(Param&&  param):param_(std::forward<Param>(param)){}\
+template <class T1, class T2> ResultType operator()(__VA_ARGS__)const;\
+};\
+template <class Param> Name##StructHelper<Param> Name(Param&&  param){return Name##StructHelper<Param>(std::forward<Param>(param));}\
+template <class Param> template <class T1, class T2> ResultType Name##StructHelper<Param>::operator()(__VA_ARGS__)const
+
 DECLARE_FUNCTOR_TEMPLATE_T1_T2(bool, EqualTo, T1&& v1, T2&& v2){
 	return v1 == v2;
 }

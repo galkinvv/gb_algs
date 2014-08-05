@@ -9,22 +9,11 @@
 #include "finite_field.h"
 #include "utils.h"
 
-template <class TField>
-struct MonomialCoefNonZeroEnsurer
+DECLARE_PARAM_FUNCTOR_TEMPLATE_T(const T&, MonomialCoefNonZeroEnsurer, const T& mon)
 {
-	template <class TMonomial>
-	const TMonomial& operator()(const TMonomial& mon)const
-	{
-		assert(!FieldHelpers::IsZero(field_,mon.coef()));
-		return mon;
-	}
-
-	MonomialCoefNonZeroEnsurer(const TField& field):
-		field_(field)
-	{}
-	
-	const TField& field_;
-};
+	assert(!FieldHelpers::IsZero(param_,mon.coef()));
+	return mon;
+}
 
 struct BaseMon : std::map<int,int> {
 	friend bool operator<(const BaseMon&, const BaseMon&); //undefined
@@ -126,8 +115,7 @@ struct RingZ2Slow final: public RingBase<MonomialMetadata, Field, RingZ2Slow<Mon
 		typedef decltype(poly_enumerator.GetAndMove()) PolynomialAsRange;
 		auto nochecking_mon_enumerator = ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<PolynomialAsRange>)>(poly_enumerator);
 
-		MonomialCoefNonZeroEnsurer<Field> monomial_coef_nonzero_checker(input.Field());
-		auto polynomial_coef_nonzero_checker = ConverterOfInnerEnumerator(monomial_coef_nonzero_checker);
+		auto polynomial_coef_nonzero_checker = ConverterOfInnerEnumerator(MonomialCoefNonZeroEnsurer(input.Field()));
 		
 		auto mon_enumerator = ConverterEnumerator(nochecking_mon_enumerator, polynomial_coef_nonzero_checker);
 		typedef decltype(mon_enumerator.GetAndMove().GetAndMove()) MonomialAsRange;
@@ -254,8 +242,7 @@ public:
 		typedef decltype(poly_enumerator.GetAndMove()) PolynomialAsRange;
 		auto nochecking_mon_enumerator = ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<PolynomialAsRange>)>(poly_enumerator);
 		
-		MonomialCoefNonZeroEnsurer<Field> monomial_coef_nonzero_checker(input.Field());
-		auto polynomial_coef_nonzero_checker = ConverterOfInnerEnumerator(monomial_coef_nonzero_checker);
+		auto polynomial_coef_nonzero_checker = ConverterOfInnerEnumerator(MonomialCoefNonZeroEnsurer(input.Field()));
 
 		auto mon_enumerator = ConverterEnumerator(nochecking_mon_enumerator, polynomial_coef_nonzero_checker);
 		typedef decltype(mon_enumerator.GetAndMove().GetAndMove()) MonomialAsRange;

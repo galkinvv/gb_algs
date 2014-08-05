@@ -163,13 +163,13 @@ TEST_F(CrossRingInfoTest, TopMon)
 	poly_rec_info_.AddVariable(V(1,6));
 	poly_rec_info_.AddVariable(V(99,5));
 	poly_rec_info_.TopInfoAdditionDone();
-	ExpecterContainerEqual(VarDegEqual)(const_poly_rec_info_.TopInfo(), ilist({V(99,5), V(1,6)}));
+	ContainerEqualExpect(VarDegEqual)(const_poly_rec_info_.TopInfo(), ilist({V(99,5), V(1,6)}));
 }
 
 TEST_F(CrossRingInfoTest, TopMonEmpty)
 {
 	poly_rec_info_.TopInfoAdditionDone();
-	ExpecterContainerEqual(VarDegEqual)(const_poly_rec_info_.TopInfo(), ilist<V>({}));
+	ContainerEqualExpect(VarDegEqual)(const_poly_rec_info_.TopInfo(), ilist<V>({}));
 }
 
 
@@ -188,13 +188,13 @@ TEST_F(CrossRingInfoTest, 3x3)
 	auto first_poly = *const_poly_rec_info_.begin();
 	auto monomial_it = first_poly.begin();
 	EXPECT_NE(monomial_it , first_poly.end());
-	ExpecterContainerEqual(VarDegEqual)(*monomial_it,  ilist<V>({}));
+	ContainerEqualExpect(VarDegEqual)(*monomial_it,  ilist<V>({}));
 	++monomial_it ;
 	EXPECT_NE(monomial_it , first_poly.end());
-	ExpecterContainerEqual(VarDegEqual)(*monomial_it,  ilist({V(1,1), V(2,3)}));
+	ContainerEqualExpect(VarDegEqual)(*monomial_it,  ilist({V(1,1), V(2,3)}));
 	++monomial_it ;
 	EXPECT_NE(monomial_it , first_poly.end());
-	ExpecterContainerEqual(VarDegEqual)(*monomial_it,  ilist({V(2,4), V(99,5), V(1,6)}));
+	ContainerEqualExpect(VarDegEqual)(*monomial_it,  ilist({V(2,4), V(99,5), V(1,6)}));
 	++monomial_it ;
 	EXPECT_FALSE(monomial_it  != first_poly.end());
 
@@ -215,7 +215,7 @@ TEST_F(CrossRingInfoTest, 3x3)
 	
 	EXPECT_NE(const_basis_info_.begin(), const_basis_info_.end());
 
-	ExpecterContainerEqual(ExpecterContainerEqual(ExpecterContainerEqual(VarDegEqual)))(const_basis_info_,
+	ContainerEqualExpect(ContainerEqualExpect(ContainerEqualExpect(VarDegEqual)))(const_basis_info_,
 		ilist({
 			ilist({
 				ilist({V(4,1), V(1,3)}),
@@ -232,7 +232,7 @@ TEST_F(CrossRingInfoTest, 3x3)
 	single_mon_.AddVariable(V(3,3));
 	single_mon_.AddVariable(V(6,1));
 	single_mon_.AddVariable(V(5,5));
-	ExpecterContainerEqual(VarDegEqual)(const_single_mon_, ilist({V(6,1), V(3,3), V(5,5)}));
+	ContainerEqualExpect(VarDegEqual)(const_single_mon_, ilist({V(6,1), V(3,3), V(5,5)}));
 }
 
 TEST_F(CrossRingInfoTest, SimpleAdditionWithCoef)

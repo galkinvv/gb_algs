@@ -126,7 +126,7 @@ DECLARE_FUNCTOR_TEMPLATE_T(bool, ExpectKnownSolution, const T& matrix, const std
 	{
 		return e1.column == e2.column && FieldHelpers::IsEqual(matrix.field, e1.value, e2.value);
 	};
-	EXPECT_2(ExpecterContainerEqual(eq_element), result, list);
+	EXPECT_2(ContainerEqualExpect(eq_element), result, list);
 	EXPECT_1(ExpectGoodSolution, matrix);
 	EXPECT_FUNCTION_RETURN
 }

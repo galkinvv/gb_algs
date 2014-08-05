@@ -24,6 +24,7 @@ TYPED_TEST_CASE_P(PRIVATE_TYPED_TEST);
 
 #define EXPECT_ASSERT(expr) EXPECT_DEATH((expr), "")
 
+//EXPECT_FUNCTION_NO_FAILURES is local variable name used in functions EXPECT_FUNCTION_*
 #define EXPECT_FUNCTION_BEGIN bool EXPECT_FUNCTION_NO_FAILURES = true;
 #define EXPECT_FUNCTION_RETURN return EXPECT_FUNCTION_NO_FAILURES;
 
@@ -64,35 +65,18 @@ template <class Comparator> SavingValueExpector<Comparator> SaveValue(const Comp
 if (!no_failures_as_assert){return false;}\
 }while(false)
 
-template <class SubComparator>
-struct ContainerEqualExpect
+DECLARE_PARAM_FUNCTOR_TEMPLATE_T1_T2(bool, ContainerEqualExpect, const T1& container1, const T2& container2)
 {
-	explicit ContainerEqualExpect(const SubComparator& equal)
-		:equal_(equal)
-	{}
-	
-	template <class Container1, class Container2>
-	bool operator()(const Container1& container1, const Container2& container2)const
-	{
-		//TODO: add helpers for compare
 		EXPECT_FUNCTION_BEGIN
 		auto container2_cur = container2.begin();
 		for(auto container1_cur:container1)
 		{
 			ASSERT_2(NotEqualTo, container2_cur, container2.end());
-			EXPECT_2(equal_, container1_cur, *container2_cur);
+			EXPECT_2(param_, container1_cur, *container2_cur);
 			++container2_cur;
 		}
 		EXPECT_2(EqualTo, container2_cur, container2.end());
 		EXPECT_FUNCTION_RETURN;
-	}
-private:
-	const SubComparator&  equal_;
-};
-
-template <class SubComparator> ContainerEqualExpect<SubComparator> ExpecterContainerEqual(const SubComparator& equal)
-{
-	return ContainerEqualExpect<SubComparator>(equal);
 }
 
 template <class T> 
