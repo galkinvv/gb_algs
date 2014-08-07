@@ -5,6 +5,7 @@
 #include "cross_ring_info.h"
 #include "cmonomial.h"
 #include "finite_field.h"
+#include "ringbase.h"
 #include "z_ring.h"
 
 namespace F4MPI
@@ -48,10 +49,9 @@ namespace F4MPI
 		}
 	}
 
-	template <class TRing, template <class Metadata> class TFastRing, template <class, template <class> class> class TAlgoT>
+	template <class TRing, template <class Metadata> class TFastRing, template <class Ring, template <class Metadata> class FastRing> class TAlgoT>
 	PolynomSet GBwithRingAlgo(PolynomSet F, const F4AlgData* /*f4options*/){
-		typedef typename TRing::IOData IOData;
-		typedef typename IOData::IOPolynomSet IOPolynomSet;
+		typedef typename TRing::IOPolynomSet IOPolynomSet;
 		typedef typename TRing::Field Field;
 		typedef typename TRing::MonomialMetadata MonomialMetadata;
 		
@@ -65,7 +65,7 @@ namespace F4MPI
 		TRing out_ring{monomial_metadata, field};
 		IOPolynomSet io_poly_set_in {monomial_metadata, field};
 		ConvertF4MPIInputData<typename Field::Value>(F, io_poly_set_in);
-		IOData io_data {io_poly_set_in, out_ring};
+		IOData<TRing> io_data {io_poly_set_in, out_ring};
 		TAlgoT<TRing, TFastRing>::Do(io_data);
 		PolynomSet result;
 		CreateF4MPIResult(*io_data.out_data, *io_data.out_ring.VarMapping(), result);

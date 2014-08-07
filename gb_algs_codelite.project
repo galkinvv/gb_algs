@@ -28,7 +28,8 @@
     <File Name="unittest/ssg_approx.cpp"/>
     <File Name="unittest/sparse_matrix_base.h"/>
     <File Name="unittest/sparse_matrix_exact_rand.cpp"/>
-    <File Name="unittest/sparse_matrix_exact_special.cpp"/>
+    <File Name="unittest/sparse_matrix_exact_special_form.cpp"/>
+    <File Name="unittest/sparse_matrix_exact_special_values.cpp"/>
   </VirtualDirectory>
   <Description/>
   <Dependencies/>

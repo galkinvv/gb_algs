@@ -20,8 +20,8 @@ struct PRIVATE_TEST: ::testing::Test{
 		MonomialMetadata monomial_metadata;
 		monomial_metadata.var_count = 1;
 		R out_ring{monomial_metadata, field};
-		R::IOData::IOPolynomSet io_poly_set_in {monomial_metadata, field};
-		R::IOData io_data {io_poly_set_in, out_ring};
+		R::IOPolynomSet io_poly_set_in {monomial_metadata, field};
+		IOData<R> io_data {io_poly_set_in, out_ring};
 		ApproxSignatureGroebner<R, Mock::FastRingWithTracking>::Do(io_data);
 		EXPECT_EQ(io_data.out_data->begin(), io_data.out_data->end());
 		auto mapping = io_data.out_ring.VarMapping();

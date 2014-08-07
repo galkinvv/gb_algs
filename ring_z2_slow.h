@@ -21,7 +21,7 @@ struct BaseMon : std::map<int,int> {
 
 bool MonomialLessDegRevLex(const BaseMon& m1, const BaseMon& m2);
 
-class RingZ2SlowBase
+class RingZ2SlowBase: private NoCopy
 {
 public:
 	struct InPolysSetWithOrigMetadata;
@@ -37,7 +37,7 @@ protected:
 		{}
 	};
 
-	bool ConstructAndInsertNormalizedImpl(const InPolysSetWithOrigMetadata& reconstruction_basis,
+	bool ReconstructAndInsertNormalizedImpl(const InPolysSetWithOrigMetadata& reconstruction_basis,
 	                                      Enumerator<CrossRingInfo::PerVariableData> top_info,
 	                                      Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input_polys_mons,
 	                                      const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& result);
@@ -64,9 +64,8 @@ protected:
 
 //Z_2 ring with degrevlex oredr on variables
 template <class MonomialMetadata, class Field>
-struct RingZ2Slow final: public RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialMetadata, Field>>, public RingZ2SlowBase {
-	typedef  RingBase<MonomialMetadata, Field, RingZ2Slow<MonomialMetadata, Field>> Base;
-	RingZ2Slow(const RingZ2Slow& copy_from) = default;
+struct RingZ2Slow final: public RingBase<MonomialMetadata, Field>, public RingZ2SlowBase {
+	typedef  RingBase<MonomialMetadata, Field> Base;
 
 	RingZ2Slow(const MonomialMetadata& monomial_metadata, const Field& field)
 		: Base(monomial_metadata, field)
@@ -75,9 +74,7 @@ struct RingZ2Slow final: public RingBase<MonomialMetadata, Field, RingZ2Slow<Mon
 		assert(MonomialMetadata::order == CrossRingInfo::MonomialOrder::DegRevLex);
 	}
 
-	RingZ2Slow& operator=(const RingZ2Slow& copy_from) = delete;
-
-	bool ConstructAndInsertNormalized(const unique_deleter_ptr<InPolysSetWithOrigMetadata>& reconstruction_basis, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info, const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& result) {
+	bool ReconstructAndInsertNormalized(const unique_deleter_ptr<InPolysSetWithOrigMetadata>& reconstruction_basis, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info, const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& result) {
 		auto poly_enumerator = FullRangeEnumerator(*info);
 		typedef decltype(poly_enumerator.GetAndMove()) PolynomialAsRange;
 		auto mon_enumerator = ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<PolynomialAsRange>)>(poly_enumerator);
@@ -91,7 +88,7 @@ struct RingZ2Slow final: public RingBase<MonomialMetadata, Field, RingZ2Slow<Mon
 		            ))>(mon_enumerator);
 
 
-		return ConstructAndInsertNormalizedImpl(
+		return ReconstructAndInsertNormalizedImpl(
 		           *reconstruction_basis,
 		           FullNonSizedRangeEnumerator(info->TopInfo()),
 		           var_enumerator,
@@ -159,13 +156,13 @@ struct RingZ2Slow final: public RingBase<MonomialMetadata, Field, RingZ2Slow<Mon
 		return MoveToResultType(result_ptr);
 	}
 	
-	std::unique_ptr<const typename Base::IOData::IOPolynomSet> ConvertResultToFixedMetadata(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result) {
+	std::unique_ptr<const typename Base::IOPolynomSet> ConvertResultToFixedMetadata(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result) {
 		ImplementedOrder implemented_order;
 		implemented_order.var_count = Base::monomial_metadata_.var_count;
 		ImplementedField implemented_field;
 		CrossRingInfo::MonomialListListWithCoef<ImplementedOrder, ImplementedField> basic_result {implemented_order, implemented_field};
 		ConvertResultToFixedMetadataImpl(constructed_result, basic_result);
-		std::unique_ptr<typename Base::IOData::IOPolynomSet> result_ptr {new typename Base::IOData::IOPolynomSet{Base::monomial_metadata_, Base::field_}};
+		std::unique_ptr<typename Base::IOPolynomSet> result_ptr {new typename Base::IOPolynomSet{Base::monomial_metadata_, Base::field_}};
 		//convert from ImplementedOrder, ImplementedField to actual
 		for(auto poly:basic_result) {
 			result_ptr->BeginPolynomialConstruction(slow_distance(poly.begin(), poly.end()));
@@ -187,7 +184,7 @@ struct RingZ2Slow final: public RingBase<MonomialMetadata, Field, RingZ2Slow<Mon
 	}
 };
 
-class  FastZ2SlowBasedRingBase:NoCopy
+class  FastZ2SlowBasedRingBase:private NoCopy
 {
 public:
 	struct LPoly {
@@ -227,10 +224,8 @@ private:
 };
 
 template <class MonomialMetadata>
-class FastZ2SlowBasedRing final: public FastZ2SlowBasedRingBase
+struct FastZ2SlowBasedRing final: public FastZ2SlowBasedRingBase
 {
-public:
-
 	FastZ2SlowBasedRing(const MonomialMetadata& metadata)
 		:metadata_(metadata)
 	{}

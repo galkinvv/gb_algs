@@ -262,7 +262,7 @@ RingZ2SlowBase::RingZ2SlowBase(int var_count):
 	impl_(new Impl(var_count))
 {}
 
-bool RingZ2SlowBase::ConstructAndInsertNormalizedImpl(const InPolysSetWithOrigMetadata& reconstruction_basis,
+bool RingZ2SlowBase::ReconstructAndInsertNormalizedImpl(const InPolysSetWithOrigMetadata& reconstruction_basis,
         Enumerator<CrossRingInfo::PerVariableData> top_info,
         Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input_polys_mons,
         const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& result)

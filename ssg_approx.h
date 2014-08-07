@@ -6,12 +6,11 @@
 template<class TRing, template <class Metadata> class TFastRing>
 class ApproxSignatureGroebner
 {
-	typedef typename TRing::IOData IOData;
-	typedef typename IOData::IOPolynomSet IOPolysSet;
+	typedef typename TRing::IOPolynomSet IOPolysSet;
 	template <class TExactFastRing>
 	struct ApproxSignatureGroebnerCalculator
 	{
-		ApproxSignatureGroebnerCalculator(IOData& io_data, TExactFastRing& fast_ring):
+		ApproxSignatureGroebnerCalculator(IOData<TRing>& io_data, TExactFastRing& fast_ring):
 			in_(io_data.in_data), out_ring_(io_data.out_ring), out_(io_data.out_data), fast_ring_(fast_ring)
 		{}
 
@@ -33,7 +32,7 @@ class ApproxSignatureGroebner
 				{
 					fast_ring_.ReduceCheckingSignatures(labeled_poly_to_reduce, R);
 					auto reconstruction_info = fast_ring_.FieldAgnosticReconstructionInfo(labeled_poly_to_reduce);
-					if (out_ring_.ConstructAndInsertNormalized(reconstruction_basis, reconstruction_info, reconstructed_result))
+					if (out_ring_.ReconstructAndInsertNormalized(reconstruction_basis, reconstruction_info, reconstructed_result))
 					{
 						//normalized polynomial was reconstructed in base ring
 						break;
@@ -52,7 +51,7 @@ class ApproxSignatureGroebner
 		}
 	};
 public:
-	static void Do(typename TRing::IOData& io_data)
+	static void Do(IOData<TRing>& io_data)
 	{
 		typedef TFastRing<typename TRing::MonomialMetadata> TExactFastRing;
 		TExactFastRing fast_ring {io_data.in_data.Metadata()};

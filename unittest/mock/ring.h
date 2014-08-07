@@ -13,9 +13,9 @@
 namespace Mock
 {
 	template <class MonomialMetadata, class Field>
-	class Ring: public RingBase<MonomialMetadata, Field, Ring<MonomialMetadata, Field>>
+	class Ring: public RingBase<MonomialMetadata, Field>
 	{
-		typedef RingBase<MonomialMetadata, Field, Ring<MonomialMetadata, Field>> Base;
+		typedef RingBase<MonomialMetadata, Field> Base;
 	public:
 
 		struct InPolysSetWithOrigMetadata:NoCopy{};
@@ -26,7 +26,7 @@ namespace Mock
 		{}
 		Ring& operator=(const Ring& copy_from) = delete;
 
-		bool ConstructAndInsertNormalized(const std::unique_ptr<InPolysSetWithOrigMetadata>& reconstruction_basis, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info, const std::unique_ptr<OutPolysSetForVariyingMetadata>& result)
+		bool ReconstructAndInsertNormalized(const std::unique_ptr<InPolysSetWithOrigMetadata>& reconstruction_basis, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info, const std::unique_ptr<OutPolysSetForVariyingMetadata>& result)
 		{
 			IgnoreIfUnused(reconstruction_basis, info, result);
 			return true;
@@ -49,10 +49,10 @@ namespace Mock
 			return nullptr;
 		}
 		
-		std::unique_ptr<const typename Base::IOData::IOPolynomSet> ConvertResultToFixedMetadata(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result)
+		std::unique_ptr<const typename Base::IOPolynomSet> ConvertResultToFixedMetadata(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result)
 		{
 			IgnoreIfUnused(constructed_result);
-			return MoveToResultType(new typename Base::IOData::IOPolynomSet(this->monomial_metadata_, this->field_));
+			return MoveToResultType(new typename Base::IOPolynomSet(this->monomial_metadata_, this->field_));
 		}
 		
 		std::unique_ptr<const CrossRingInfo::VariableMapping<MonomialMetadata>> VarMapping()const
