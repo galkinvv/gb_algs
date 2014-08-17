@@ -62,12 +62,12 @@ endif
 LIBOBJECTS = $(LIBSOURCES:%.cpp=$(OBJDIR)/%.o)
 
 all: $(BUILDDIR)/$(MAINBIN) $(BUILDDIR)/run-gt$(BINEXT)
-$(BUILDDIR)/$(MAINBIN): $(OBJDIR)/integrtest/$(MAINTARGET).o $(FULLLIBNAME)
+$(BUILDDIR)/$(MAINBIN): $(OBJDIR)/testapps/$(MAINTARGET).o $(FULLLIBNAME)
 	$(LD) $< -L $(OBJDIR) -l $(MAINLIB) -L 3rd/gmp/lib -l gmp -l gmpxx -o $@ $(LDFLAGS)
 
-TEST_SOURCES=$(wildcard unittest/*.cpp)
-TEST_SOURCES+=$(wildcard unittest/mock/*.cpp)
-TEST_OBJECTS = $(TEST_SOURCES:unittest/%.cpp=$(OBJDIR)/unittest/%.o)
+TEST_SOURCES=$(wildcard libtests/*.cpp)
+TEST_SOURCES+=$(wildcard libtests/mock/*.cpp)
+TEST_OBJECTS = $(TEST_SOURCES:libtests/%.cpp=$(OBJDIR)/libtests/%.o)
 
 $(BUILDDIR)/run-gt$(BINEXT): $(TEST_OBJECTS) $(FULLLIBNAME)
 	$(LD) -pthread $^ -L $(OBJDIR) -l $(MAINLIB) -L 3rd/gmp/lib -l gmp -l gmpxx -o $@ $(LDFLAGS)
@@ -75,7 +75,7 @@ $(BUILDDIR)/run-gt$(BINEXT): $(TEST_OBJECTS) $(FULLLIBNAME)
 $(FULLLIBNAME): $(LIBOBJECTS)
 	ar cr $@ $^
 
-$(OBJDIR)/unittest/%.o: unittest/%.cpp 3rd/gtest/src/gtest-all.cc 3rd/gmp/include/gmp.h
+$(OBJDIR)/libtests/%.o: libtests/%.cpp 3rd/gtest/src/gtest-all.cc 3rd/gmp/include/gmp.h
 	mkdir -p $(dir $@)
 	$(CXX11) $(CXXFLAGS) -I . -I 3rd/gtest -I 3rd/gtest/include -I 3rd/gmp/include/ -c $< -o $@
 

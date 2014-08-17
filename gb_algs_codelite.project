@@ -1,35 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <CodeLite_Project Name="gb_algs_codelite" InternalType="">
-  <Plugins>
-    <Plugin Name="CMakePlugin">
-      <![CDATA[[{
-		"name":	"Debug",
-		"enabled":	false,
-		"buildDirectory":	"build",
-		"sourceDirectory":	"$(ProjectPath)",
-		"generator":	"",
-		"buildType":	"",
-		"arguments":	[],
-		"parentProject":	""
-	}]]]>
-    </Plugin>
-  </Plugins>
-  <VirtualDirectory Name="unittest">
+  <VirtualDirectory Name="libtests">
     <VirtualDirectory Name="mock">
-      <File Name="unittest/mock/mock_base.h"/>
-      <File Name="unittest/mock/ring.h"/>
+      <File Name="libtests/mock/mock_base.h"/>
+      <File Name="libtests/mock/ring.h"/>
     </VirtualDirectory>
-    <File Name="unittest/run-gt.cpp"/>
-    <File Name="unittest/cmodular.cpp"/>
-    <File Name="unittest/zero_skipping_indexed_iterator.cpp"/>
-    <File Name="unittest/cross_ring_info.cpp"/>
-    <File Name="unittest/test_base.h"/>
-    <File Name="unittest/field.cpp"/>
-    <File Name="unittest/ssg_approx.cpp"/>
-    <File Name="unittest/sparse_matrix_base.h"/>
-    <File Name="unittest/sparse_matrix_exact_rand.cpp"/>
-    <File Name="unittest/sparse_matrix_exact_special_form.cpp"/>
-    <File Name="unittest/sparse_matrix_exact_special_values.cpp"/>
+    <File Name="libtests/run-gt.cpp"/>
+    <File Name="libtests/cmodular.cpp"/>
+    <File Name="libtests/zero_skipping_indexed_iterator.cpp"/>
+    <File Name="libtests/cross_ring_info.cpp"/>
+    <File Name="libtests/test_base.h"/>
+    <File Name="libtests/field.cpp"/>
+    <File Name="libtests/ssg_approx.cpp"/>
+    <File Name="libtests/sparse_matrix_base.h"/>
+    <File Name="libtests/sparse_matrix_exact_rand.cpp"/>
+    <File Name="libtests/sparse_matrix_exact_special_form.cpp"/>
+    <File Name="libtests/sparse_matrix_exact_special_values.cpp"/>
   </VirtualDirectory>
   <Description/>
   <Dependencies/>
@@ -102,8 +88,8 @@
   <VirtualDirectory Name="mpi">
     <File Name="mpi/mpimatrix.cpp"/>
   </VirtualDirectory>
-  <VirtualDirectory Name="integrtest">
-    <File Name="integrtest/runalgo.cpp"/>
+  <VirtualDirectory Name="testapps">
+    <File Name="testapps/runalgo.cpp"/>
   </VirtualDirectory>
   <Dependencies Name="Debug"/>
   <Dependencies Name="Release"/>
@@ -149,7 +135,7 @@
         <CustomPostBuild/>
         <CustomPreBuild/>
       </AdditionalRules>
-      <Completion EnableCpp11="no">
+      <Completion EnableCpp11="yes">
         <ClangCmpFlagsC/>
         <ClangCmpFlags/>
         <ClangPP/>
@@ -187,7 +173,7 @@
         <CustomPostBuild/>
         <CustomPreBuild/>
       </AdditionalRules>
-      <Completion EnableCpp11="no">
+      <Completion EnableCpp11="yes">
         <ClangCmpFlagsC/>
         <ClangCmpFlags/>
         <ClangPP/>
