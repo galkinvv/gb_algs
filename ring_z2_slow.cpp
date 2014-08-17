@@ -8,27 +8,7 @@
 namespace
 {
 
-struct MonomialHash {
 	template <class TMonomial>
-	std::size_t operator()(TMonomial const& mon) const {
-		std::size_t result = 0;
-		for(auto var : mon) {
-			result = result *(1 + (1 << 4)) ^ pair_hash(var);
-		}
-		return result;
-	}
-
-	template <class T>
-	std::size_t std_hash(const T& var) const {
-		return std::hash<T>()(var);
-	}
-	template <class Pair>
-	std::size_t pair_hash(const Pair& pair) const {
-		return std_hash(pair.first) + (1 + (1 << 2)) * std_hash(pair.second) ;
-	}
-};
-
-template <class TMonomial>
 TMonomial Mmul(const TMonomial& m1, const TMonomial& m2)
 {
 	TMonomial result = m1;
@@ -149,7 +129,7 @@ TConstMonomialRef HM(const TPolynomial& p)
 template <class TPolynomial, class TMonomial>
 TPolynomial PAdd(const TPolynomial& not_muled_item, const TPolynomial& muled_item, const TMonomial& mul_by)
 {
-	std::unordered_set<TMonomial, MonomialHash> presence_count;
+	std::unordered_set<TMonomial, decltype(SmallCollectionHash)> presence_count;
 	for (auto mon:not_muled_item) {
 		presence_count.insert(mon);
 	}

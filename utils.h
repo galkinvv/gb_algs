@@ -1,4 +1,5 @@
 #pragma once
+#include <climits>
 #include <limits>
 #include <type_traits>
 #include <utility>
@@ -64,6 +65,10 @@ template <class T1, class T2> ResultType operator()(__VA_ARGS__)const;\
 };\
 template <class Param> Name##StructHelper<Param> Name(Param&&  param){return Name##StructHelper<Param>(std::forward<Param>(param));}\
 template <class Param> template <class T1, class T2> ResultType Name##StructHelper<Param>::operator()(__VA_ARGS__)const
+
+DECLARE_FUNCTOR_TEMPLATE_T(std::size_t, CallStdHash, const T& v){
+	return std::hash<T>()(v);
+}
 
 DECLARE_FUNCTOR_TEMPLATE_T1_T2(bool, EqualTo, T1&& v1, T2&& v2){
 	return v1 == v2;
@@ -497,6 +502,7 @@ struct auto_unique_ptr: std::unique_ptr<T>
 	{}
 };
 
+//incapsulates reference to a deleter function (typically destructor) in  pointer so that the object can be destroyed where only a forward declaration is available
 template <class T>
 struct unique_deleter_ptr: std::unique_ptr<T, void(*)(T*)>
 {
@@ -651,7 +657,7 @@ template <class  WideInteger, class NarrowInteger> WideInteger wide_cast(const N
 template <class ValueContainer, decltype(ValueContainer::value) expected_value>
 struct StaticAsserter{
 	static bool const value = ValueContainer::value == expected_value;
-	static_assert(value, "BadTypeReporter reports that it's type arguments is bad, see below for other assertion explaining why");
+	static_assert(value, "StaticAsserter reports that it's type arguments is bad, see below for other assertion explaining why");
 };
 
 //need a macro to be able to cast to non-publicly visible bases
@@ -660,8 +666,6 @@ struct StaticAsserter{
 		static_assert(StaticAsserter<std::is_base_of<typename std::remove_reference<TBase>::type, typename std::remove_reference<decltype(child)>::type>, true>::value, "TO_BASE_CAST can cast only to base");\
 		return static_cast<TBase>(child_in_lambda); \
 	}(child))
-	
-
 
 template <class Signed> typename std::make_unsigned<Signed>::type unsigned_cast(const Signed& i)
 {
@@ -679,7 +683,40 @@ template <class Unsigned> typename std::make_signed<Unsigned>::type signed_cast(
 	return result;
 }
 
-inline void IgnoreUnusedVars()
+#define BIT_SIZEOF(type_or_value) (sizeof(type_or_value) * CHAR_BIT)
+
+template <class Unsigned> Unsigned RotateBitsRight(const Unsigned& v, int shift)
 {
-	IgnoreIfUnused(EqualTo, ReferenceEqualTo, NotEqualTo);
+	static_assert(std::is_unsigned<Unsigned>::value, "Can be used only with Unsigned type");
+	assert(shift >= 0);
+	static const int kBitsInValue = BIT_SIZEOF(Unsigned);
+	int normalized_shift = shift % kBitsInValue; //the division is a quite heavy operation in a bit rotation function implementation, but kBitsInValue in all typical saces would be power of 2.
+	return (v >> normalized_shift) ^ (v << (kBitsInValue - normalized_shift));
+}
+//std::hash for pairs
+namespace std
+{
+	template <class T1, class T2>
+	struct hash<std::pair<T1, T2>>
+	{
+		std::size_t operator()(const std::pair<T1, T2>& value)const
+		{
+			static const int kHalfSizeShift = BIT_SIZEOF(std::size_t)/2; //bit count in std::size_t
+			return CallStdHash(value.first) ^ RotateBitsRight(CallStdHash(value.second), kHalfSizeShift);
+		}
+	};
+}
+
+//hash function for small collections
+DECLARE_FUNCTOR_TEMPLATE_T(std::size_t, SmallCollectionHash, const T& collection){
+	std::size_t result = 0;
+	if (collection.size() != 0)
+	{
+		const int rotation_per_value = std::max(1, signed_cast(BIT_SIZEOF(result) / collection.size()));
+		for(auto i : collection)
+		{
+			result = RotateBitsRight(result, rotation_per_value) ^ CallStdHash(i);
+		}
+	}
+	return result;
 }
