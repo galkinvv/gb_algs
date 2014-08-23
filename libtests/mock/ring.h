@@ -17,15 +17,19 @@ namespace Mock
 	{
 		typedef RingBase<MonomialMetadata, Field> Base;
 	public:
-
+        //methods from ring contract which signatures contains implementation-defined types only
 		struct InPolysSetWithOrigMetadata:NoCopy{};
 		struct OutPolysSetForVariyingMetadata:NoCopy{};
-		Ring(const Ring& copy_from){IgnoreIfUnused(copy_from);}
 		Ring(const MonomialMetadata& monomial_metadata, const Field& field):
 			Base(monomial_metadata, field)
 		{}
-		Ring& operator=(const Ring& copy_from) = delete;
 
+		std::unique_ptr<OutPolysSetForVariyingMetadata> PrepareEmptyResult()
+		{
+			return nullptr;
+		}
+		
+        //methods from ring contract which signature contains specific types from CrossRingInfo 
 		bool ReconstructAndInsertNormalized(const std::unique_ptr<InPolysSetWithOrigMetadata>& reconstruction_basis, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info, const std::unique_ptr<OutPolysSetForVariyingMetadata>& result)
 		{
 			IgnoreIfUnused(reconstruction_basis, info, result);
@@ -41,11 +45,6 @@ namespace Mock
 		std::unique_ptr<InPolysSetWithOrigMetadata> PrepareForReconstruction(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input)
 		{
 			IgnoreIfUnused(input);
-			return nullptr;
-		}
-		
-		std::unique_ptr<OutPolysSetForVariyingMetadata> PrepareEmptyResult()
-		{
 			return nullptr;
 		}
 		
@@ -71,6 +70,7 @@ namespace Mock
 	class FastRingWithTracking : NoCopy
 	{
 	public:
+        //methods from fast ring contract which signatures contains implementation-defined types only
 		struct LPoly{};
 		struct MultLPolysQueue{};
 		struct LPolysResult{};
@@ -89,13 +89,6 @@ namespace Mock
 			IgnoreIfUnused(queue);
 			return LPoly();
 		}
-		
-		template <class Field>
-		MultLPolysQueue PutInQueueExtendLabeledPolys(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input)
-		{
-			IgnoreIfUnused(input);
-			return MultLPolysQueue();
-		}
 		LPolysResult FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue)
 		{
 			IgnoreIfUnused(queue);
@@ -104,12 +97,6 @@ namespace Mock
 		void ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
 		{
 			IgnoreIfUnused(poly, reducers);
-		}
-
-		std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>  FieldAgnosticReconstructionInfo(const LPoly& poly)
-		{
-			IgnoreIfUnused(poly);
-			return nullptr;
 		}
 		bool IsZero(const LPoly& poly)
 		{
@@ -120,10 +107,6 @@ namespace Mock
 		{
 			IgnoreIfUnused(poly);
 		}
-		void AddLabeledPolyBefore(const std::unique_ptr<const CrossRingInfo::AddedVarInfo<MonomialMetadata>>& added_info, LPolysResult& reducers, const LPoly& poly_before)
-		{
-			IgnoreIfUnused(added_info, reducers, poly_before);
-		}
 		void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
 		{
 			IgnoreIfUnused(left_parts, right_part, queue);
@@ -131,6 +114,24 @@ namespace Mock
 		void InsertInResult(LPoly&& poly, LPolysResult& result)
 		{
 			IgnoreIfUnused(poly, result);
+		}
+        //methods from fast ring contract which signature contains specific types from CrossRingInfo 
+		
+		void AddLabeledPolyBefore(const std::unique_ptr<const CrossRingInfo::AddedVarInfo<MonomialMetadata>>& added_info, LPolysResult& reducers, const LPoly& poly_before)
+		{
+			IgnoreIfUnused(added_info, reducers, poly_before);
+		}
+		std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>  FieldAgnosticReconstructionInfo(const LPoly& poly)
+		{
+			IgnoreIfUnused(poly);
+			return nullptr;
+		}
+
+		template <class Field>
+		MultLPolysQueue PutInQueueExtendLabeledPolys(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input)
+		{
+			IgnoreIfUnused(input);
+			return MultLPolysQueue();
 		}
 	};
 }

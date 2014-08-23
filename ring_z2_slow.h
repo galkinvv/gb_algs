@@ -187,15 +187,12 @@ struct RingZ2Slow final: public RingBase<MonomialMetadata, Field>, public RingZ2
 class  FastZ2SlowBasedRingBase:private NoCopy
 {
 public:
-	struct LPoly {
-		DECLARE_AUTO_PIMPL;
-	};
-	struct MultLPolysQueue {
-		DECLARE_AUTO_PIMPL;
-	};
-	struct LPolysResult {
-		DECLARE_AUTO_PIMPL;
-	};
+	struct LPolyImpl;
+	struct MultLPolysQueueImpl;
+	struct LPolysResultImpl;
+    typedef auto_pimpl_ptr<LPolyImpl> LPoly;
+    typedef auto_pimpl_ptr<MultLPolysQueueImpl> MultLPolysQueue;
+    typedef auto_pimpl_ptr<LPolysResultImpl> LPolysResult;
 
 	FastZ2SlowBasedRingBase();
 

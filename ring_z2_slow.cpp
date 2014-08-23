@@ -8,7 +8,7 @@
 namespace
 {
 
-	template <class TMonomial>
+template <class TMonomial>
 TMonomial Mmul(const TMonomial& m1, const TMonomial& m2)
 {
 	TMonomial result = m1;
@@ -156,20 +156,20 @@ TPolynomial PReduce(const TPolynomial& poly_to_red, const TPolynomial& by, const
 template <class TMultLPoly, class TMonomial = decltype(std::declval<TMultLPoly>().mul_by)>
 TMonomial  MultSig(const TMultLPoly& mp)
 {
-	return Mmul(mp.mul_by, mp.poly.impl_->sig.mon);
+	return Mmul(mp.mul_by, mp.poly->sig.mon);
 }
 
 template <class TMultLPoly, class TMonomial = decltype(std::declval<TMultLPoly>().mul_by)>
 TMonomial  MultHM(const TMultLPoly& mp)
 {
-	return Mmul(mp.mul_by, HM(mp.poly.impl_->value));
+	return Mmul(mp.mul_by, HM(mp.poly->value));
 }
 
 template <class TMultLPoly, class MonCompare>
 bool SigLess(const TMultLPoly& mp1, const TMultLPoly& mp2, MonCompare monLess)
 {
 	bool item_less;
-	if (unequal(mp1.poly.impl_->sig.index, mp2.poly.impl_->sig.index, item_less)) {
+	if (unequal(mp1.poly->sig.index, mp2.poly->sig.index, item_less)) {
 		return item_less; //index1 < index2
 	}
 	auto sig1 = MultSig(mp1);
@@ -183,7 +183,7 @@ bool SigLess(const TMultLPoly& mp1, const TMultLPoly& mp2, MonCompare monLess)
 template <class TMultLPoly, class MonCompare>
 bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by, MonCompare monLess)
 {
-	if (maybe_supded.poly.impl_->sig.index !=  sup_by.poly.impl_->sig.index) {
+	if (maybe_supded.poly->sig.index !=  sup_by.poly->sig.index) {
 		return false; //can't supersede wth different indexes
 	}
 	auto sig_supded = MultSig(maybe_supded);
@@ -191,8 +191,8 @@ bool IsSupersededBy(const TMultLPoly& maybe_supded, const TMultLPoly& sup_by, Mo
 	if (!DivideIfCan(sig_supded, sig_by)) {
 		return false; //index_old not divisible by index_new
 	}
-	if (IsZeroImpl(sup_by.poly.impl_->value)) return true; //zero polynomial with dividing sig
-	if (IsZeroImpl(maybe_supded.poly.impl_->value)) return false; //zero polynomial with sig divisible by non-zero
+	if (IsZeroImpl(sup_by.poly->value)) return true; //zero polynomial with dividing sig
+	if (IsZeroImpl(maybe_supded.poly->value)) return false; //zero polynomial with sig divisible by non-zero
 
 	auto sig_supded_hm_by = Mmul(sig_supded, MultHM(sup_by));
 	auto sig_by_hm_supded = Mmul(sig_by, MultHM(maybe_supded));
@@ -213,16 +213,6 @@ bool MonomialLessDegRevLex(const BaseMon& m1, const BaseMon& m2)
 struct SlowMon : BaseMon {};
 struct SlowPolynomial : std::vector<SlowMon> {};
 
-typedef FastZ2SlowBasedRingBase::FastMonomial FastMonomial;
-typedef std::uint64_t SigIdx;
-
-struct Signature {
-	SigIdx index;
-	FastMonomial mon;
-};
-
-//struct SLowPol : std::vector<SlowMon> {};
-
 struct RingZ2SlowBase::Impl {
 	//this struct shoulld contain data corresponding to polynomial ring, but not to some polynomials of this ring
 	Impl(int keeped_vars_count)
@@ -235,7 +225,7 @@ struct RingZ2SlowBase::Impl {
 //input polynomials in ring with original monomial count
 struct RingZ2SlowBase::InPolysSetWithOrigMetadata : std::vector<SlowPolynomial> {};
 
-//input polynomials in ring with new monomial count
+//output polynomials in ring with new monomial count
 struct RingZ2SlowBase::OutPolysSetForVariyingMetadata : std::vector<SlowPolynomial> {};
 
 RingZ2SlowBase::RingZ2SlowBase(int var_count):
@@ -448,9 +438,17 @@ unique_deleter_ptr<RingZ2SlowBase::InPolysSetWithOrigMetadata> RingZ2SlowBase::P
 	return MoveToResultType(result);
 }
 
+typedef FastZ2SlowBasedRingBase::FastMonomial FastMonomial;
+typedef std::uint64_t SigIdx;
+
+struct Signature {
+	SigIdx index;
+	FastMonomial mon;
+};
+
 struct FastPolynomial : std::vector<FastMonomial> {};
 
-struct FastZ2SlowBasedRingBase::LPoly::Impl {	
+struct FastZ2SlowBasedRingBase::LPolyImpl {	
 	FastPolynomial value;
 	std::vector<FastPolynomial> reconstruction_info;
 	Signature sig;
@@ -466,11 +464,10 @@ struct MultLPoly
 	FastMonomial mul_by;
 };
 
-
-struct FastZ2SlowBasedRingBase::MultLPolysQueue::Impl : std::list<MultLPoly>
+struct FastZ2SlowBasedRingBase::MultLPolysQueueImpl : std::list<MultLPoly>
 {};
 
-struct FastZ2SlowBasedRingBase::LPolysResult::Impl : std::deque<FastZ2SlowBasedRingBase::LPoly>
+struct FastZ2SlowBasedRingBase::LPolysResultImpl : std::deque<FastZ2SlowBasedRingBase::LPoly>
 {};
 
 struct FastZ2SlowBasedRingBase::Impl
@@ -501,52 +498,51 @@ struct LessComparer
 void FastZ2SlowBasedRingBase::AddLabeledPolyBeforeImpl(int new_var_index, int new_poly_index_in_rec_basis, Enumerator<CrossRingInfo::PerVariableData> monomial, LPolysResult& reducers, const LPoly& poly_before)
 {
 	//a new polynomial that would allow reducing monomial would be added
-	LPoly& new_poly = emplaced_back(*reducers.impl_);
-	new_poly.impl_.reset(new LPoly::Impl());
+	LPoly& new_poly = emplaced_back(*reducers);
 	FastMonomial old_mons;
 	FastMonomial new_mon;
 	for (auto var: monomial) {
 		old_mons[var.index] = var.degree;
 	}
 	new_mon[ new_var_index] = 1;
-	//set new_poly.impl_->value to (old_mon - new_mon)
-	new_poly.impl_->value.push_back(old_mons);
-	new_poly.impl_->value.push_back(new_mon);
+	//set new_poly->value to (old_mon - new_mon)
+	new_poly->value.push_back(old_mons);
+	new_poly->value.push_back(new_mon);
 	//reconstruction info - exactly corresponds to added polynomial. So use single "1" monomial with "1" coefficient
-	new_poly.impl_->reconstruction_info.resize(new_poly_index_in_rec_basis + 1);
-	new_poly.impl_->reconstruction_info[new_poly_index_in_rec_basis].emplace_back();
+	new_poly->reconstruction_info.resize(new_poly_index_in_rec_basis + 1);
+	new_poly->reconstruction_info[new_poly_index_in_rec_basis].emplace_back();
 	//set signature to new value, just before poly_before
 	//monomial is the same, since poly_before is already multiplied polynomial
-	new_poly.impl_->sig.mon = poly_before.impl_->sig.mon;
-	const auto greater_idx_pos = impl_->all_indices.find(new_poly.impl_->sig.index);
+	new_poly->sig.mon = poly_before->sig.mon;
+	const auto greater_idx_pos = impl_->all_indices.find(new_poly->sig.index);
 	assert(greater_idx_pos != impl_->all_indices.end());
 	SigIdx smaller_idx = 
 		(greater_idx_pos == impl_->all_indices.begin()) ? 
 			std::numeric_limits<SigIdx>::min() : 
 			*std::prev(greater_idx_pos);
-	new_poly.impl_->sig.index  = smaller_idx + (*greater_idx_pos - smaller_idx)/2;
+	new_poly->sig.index  = smaller_idx + (*greater_idx_pos - smaller_idx)/2;
 	//those assertions can fail during correct operation of an algorithm if too much additions were performed in same place
-	assert(new_poly.impl_->sig.index > smaller_idx);
-	assert(new_poly.impl_->sig.index < *greater_idx_pos);
-	impl_->all_indices.insert(new_poly.impl_->sig.index);
+	assert(new_poly->sig.index > smaller_idx);
+	assert(new_poly->sig.index < *greater_idx_pos);
+	impl_->all_indices.insert(new_poly->sig.index);
 }
 
 FastZ2SlowBasedRingBase::LPoly FastZ2SlowBasedRingBase::DequeueSigSmallest(MultLPolysQueue& queue)
 {
 	LessComparer ms_less{&FastZ2SlowBasedRingBase::MonomialLess, *this};
-	auto& queue_impl = *(queue.impl_);
+	auto& queue_impl = *(queue);
 	assert(!queue_impl.empty());
 	auto min_it = std::min_element(queue_impl.begin(), queue_impl.end(), ms_less);
 	assert(min_it != queue_impl.end());
 	LPoly result;
-	result.impl_->sig.index = min_it->poly.impl_->sig.index;
-	result.impl_->sig.mon = Mmul(min_it->poly.impl_->sig.mon, min_it->mul_by);
-	result.impl_->value = Pmul(min_it->poly.impl_->value, min_it->mul_by);
-	result.impl_->reconstruction_info.reserve(min_it->poly.impl_->reconstruction_info.size());
-	for (auto rec_info_poly:min_it->poly.impl_->reconstruction_info) {
-		result.impl_->reconstruction_info.push_back(Pmul(rec_info_poly, min_it->mul_by));
+	result->sig.index = min_it->poly->sig.index;
+	result->sig.mon = Mmul(min_it->poly->sig.mon, min_it->mul_by);
+	result->value = Pmul(min_it->poly->value, min_it->mul_by);
+	result->reconstruction_info.reserve(min_it->poly->reconstruction_info.size());
+	for (auto rec_info_poly:min_it->poly->reconstruction_info) {
+		result->reconstruction_info.push_back(Pmul(rec_info_poly, min_it->mul_by));
 	}
-	 queue_impl.erase(min_it);
+	queue_impl.erase(min_it);
 	return result;
 }
 
@@ -554,17 +550,17 @@ void FastZ2SlowBasedRingBase::ExtendQueueBySpairPartsAndFilterUnneeded(const LPo
 {
 	LessComparer ms_less{&FastZ2SlowBasedRingBase::MonomialLess, *this};
 	assert(!IsZero(right_part));
-	for (const auto& left_part:*left_parts.impl_) {
+	for (const auto& left_part:*left_parts) {
 		if (IsZero(left_part)) {
 			continue;
 		}
 		MultLPoly left(left_part);
-		left.mul_by = ToLCMMultiplier(HM(left_part.impl_->value), HM(right_part.impl_->value));
+		left.mul_by = ToLCMMultiplier(HM(left_part->value), HM(right_part->value));
 		MultLPoly right(right_part);
-		right.mul_by = ToLCMMultiplier(HM(right_part.impl_->value), HM(left_part.impl_->value));
+		right.mul_by = ToLCMMultiplier(HM(right_part->value), HM(left_part->value));
 		MultLPoly &new_lpoly = ms_less(left, right) ? right : left;
 		bool was_supeseded;
-		auto& queue_impl = *queue.impl_;
+		auto& queue_impl = *queue;
 		for(auto existing_lpoly : queue_impl) {
 			if (IsSupersededBy(new_lpoly, existing_lpoly, ms_less)) {
 				was_supeseded = true;
@@ -587,7 +583,7 @@ CrossRingInfo::PerVariableData VarDataFromMapItem(const std::pair<const int, int
 
 Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> FastZ2SlowBasedRingBase::FieldAgnosticReconstructionInfoPolysImpl(const LPoly& poly)
 {
-	auto poly_enumerator = FullRangeEnumerator(poly.impl_->reconstruction_info);
+	auto poly_enumerator = FullRangeEnumerator(poly->reconstruction_info);
 	typedef decltype(poly_enumerator.GetAndMove()) PolynomialAsRange;
 	auto poly_with_mon_enumerator = ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(FullRangeEnumerator<PolynomialAsRange>)>(poly_enumerator);
 	typedef decltype(poly_with_mon_enumerator.GetAndMove().GetAndMove()) MonomialAsRange;
@@ -613,23 +609,23 @@ Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> FastZ2SlowBas
 
 Enumerator<CrossRingInfo::PerVariableData> FastZ2SlowBasedRingBase::FieldAgnosticReconstructionInfoTopImpl(const LPoly& poly)
 {
-	return ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(VarDataFromMapItem)>(FullRangeEnumerator(HM(poly.impl_->value)));
+	return ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(VarDataFromMapItem)>(FullRangeEnumerator(HM(poly->value)));
 }
 
 FastZ2SlowBasedRingBase::LPolysResult FastZ2SlowBasedRingBase::FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue)
 {
 	LPolysResult result;
 	LessComparer ms_less{&FastZ2SlowBasedRingBase::MonomialLess, *this};
-	const auto& queue_impl = *queue.impl_;
+	const auto& queue_impl = *queue;
 	for(auto i0 = queue_impl.begin(); i0 != queue_impl.end(); ++i0) {
-		assert(MDeg(i0->mul_by)  == 0 && MDeg(i0->poly.impl_->sig.mon) == 0) ;
+		assert(MDeg(i0->mul_by)  == 0 && MDeg(i0->poly->sig.mon) == 0) ;
 		for(auto i1 = std::next(i0); i1 != queue_impl.end(); ++i1) {		
 			LPoly syz_part[2];
 			//value and reconstruction info are zero
-			syz_part[0].impl_->sig.index = i0->poly.impl_->sig.index;
-			syz_part[0].impl_->sig.mon = HM(i1->poly.impl_->value);
-			syz_part[1].impl_->sig.index = i1->poly.impl_->sig.index;
-			syz_part[1].impl_->sig.mon = HM(i0->poly.impl_->value);
+			syz_part[0]->sig.index = i0->poly->sig.index;
+			syz_part[0]->sig.mon = HM(i1->poly->value);
+			syz_part[1]->sig.index = i1->poly->sig.index;
+			syz_part[1]->sig.mon = HM(i0->poly->value);
 			//mul_by is identity nomomial
 			MultLPoly mult[2] = {{syz_part[0]}, {syz_part[1]}};
 			int greater_sig_idx = ms_less(mult[0], mult[1]) ? 1 : 0;
@@ -641,12 +637,12 @@ FastZ2SlowBasedRingBase::LPolysResult FastZ2SlowBasedRingBase::FillWithTrivialSy
 
 void FastZ2SlowBasedRingBase::InsertInResult(LPoly&& poly, LPolysResult& result)
 {
-	result.impl_->emplace_back(std::move(poly));
+	result->emplace_back(std::move(poly));
 }
 
 bool FastZ2SlowBasedRingBase::IsZero(const LPoly& poly)
 {
-	return poly.impl_->value.empty();
+	return poly->value.empty();
 }
 
 void FastZ2SlowBasedRingBase::Normalize(LPoly& poly)
@@ -671,31 +667,31 @@ FastZ2SlowBasedRingBase::MultLPolysQueue FastZ2SlowBasedRingBase::PutInQueueExte
 			{
 				mon[var.index] = var.degree;
 			}
-			labeled_poly.impl_->value.push_back(mon);
+			labeled_poly->value.push_back(mon);
 		}
-		labeled_poly.impl_->reconstruction_info.resize(input.size());
-		labeled_poly.impl_->reconstruction_info[cur_poly_index].resize(1);
-		labeled_poly.impl_->sig.index = static_cast<SigIdx>(cur_poly_index)*kStepPerIdx;
-		result.impl_->emplace_back(MultLPoly{labeled_poly});
-		impl_->all_indices.insert(labeled_poly.impl_->sig.index);
+		labeled_poly->reconstruction_info.resize(input.size());
+		labeled_poly->reconstruction_info[cur_poly_index].resize(1);
+		labeled_poly->sig.index = static_cast<SigIdx>(cur_poly_index)*kStepPerIdx;
+		result->emplace_back(MultLPoly{labeled_poly});
+		impl_->all_indices.insert(labeled_poly->sig.index);
 	}
 	return result;
 }
 
 bool FastZ2SlowBasedRingBase::QueueEmpty(const MultLPolysQueue& queue)
 {
-	return queue.impl_->empty();
+	return queue->empty();
 }
 
 void FastZ2SlowBasedRingBase::ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
 {
 	LessComparer ms_less{&FastZ2SlowBasedRingBase::MonomialLess, *this};
 	bool failed_to_find_reducer = false;
-	while(!poly.impl_->value.empty() && !failed_to_find_reducer) {
+	while(!poly->value.empty() && !failed_to_find_reducer) {
 		failed_to_find_reducer = true;
-		for(const auto& reducer:*reducers.impl_) {
-			if(!reducer.impl_->value.empty()) {
-				auto divider = DivideIfCan(HM(poly.impl_->value), HM(reducer.impl_->value));
+		for(const auto& reducer:*reducers) {
+			if(!reducer->value.empty()) {
+				auto divider = DivideIfCan(HM(poly->value), HM(reducer->value));
 				if (!divider) {
 					continue;
 				}
@@ -707,11 +703,11 @@ void FastZ2SlowBasedRingBase::ReduceCheckingSignatures(LPoly& poly, LPolysResult
 					continue;
 				}
 				failed_to_find_reducer = false;
-				poly.impl_->value = PReduce(poly.impl_->value,  reducer.impl_->value, *divider);
-				assert(poly.impl_->reconstruction_info.size() == reducer.impl_->reconstruction_info.size());
-				for (int rec_info_idx = 0; rec_info_idx < int(poly.impl_->reconstruction_info.size()); ++rec_info_idx) {
-					auto& rec_info_ref = poly.impl_->reconstruction_info[rec_info_idx];
-					rec_info_ref = PAdd(rec_info_ref, reducer.impl_->reconstruction_info[rec_info_idx], *divider);
+				poly->value = PReduce(poly->value,  reducer->value, *divider);
+				assert(poly->reconstruction_info.size() == reducer->reconstruction_info.size());
+				for (int rec_info_idx = 0; rec_info_idx < int(poly->reconstruction_info.size()); ++rec_info_idx) {
+					auto& rec_info_ref = poly->reconstruction_info[rec_info_idx];
+					rec_info_ref = PAdd(rec_info_ref, reducer->reconstruction_info[rec_info_idx], *divider);
 				}
 				break;
 			}
