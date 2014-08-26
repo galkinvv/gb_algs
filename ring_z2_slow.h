@@ -156,7 +156,7 @@ struct RingZ2Slow final: public RingBase<MonomialMetadata, Field>, public RingZ2
 		return MoveToResultType(result_ptr);
 	}
 	
-	std::unique_ptr<const typename Base::IOPolynomSet> ConvertResultToFixedMetadata(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result) {
+	unique_deleter_ptr<const typename Base::IOPolynomSet> ConvertResultToFixedMetadata(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result) {
 		ImplementedOrder implemented_order;
 		implemented_order.var_count = Base::monomial_metadata_.var_count;
 		ImplementedField implemented_field;
@@ -173,7 +173,7 @@ struct RingZ2Slow final: public RingBase<MonomialMetadata, Field>, public RingZ2
 				result_ptr->MonomialAdditionDone(mon.coef());
 			}
 		}
-		return MoveToResultType(result_ptr);
+		return MoveToResultType(result_ptr.release());
 	}
   private:
 	virtual bool MonomialLess(const BaseMon& m1, const BaseMon& m2) const override

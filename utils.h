@@ -521,6 +521,11 @@ struct unique_deleter_ptr: std::unique_ptr<T, void(*)(T*)>
 		BasePtr(other.release(), reinterpret_cast<typename BasePtr::deleter_type>(other.get_deleter()))
 	{
 	}
+	//fix dunplicate specialization with enable_if
+	unique_deleter_ptr(unique_deleter_ptr&& other):
+		BasePtr(other)
+	{
+	}
 	unique_deleter_ptr& operator=(unique_deleter_ptr&& other) = default;
 
 	static void Delete(T* ptr)

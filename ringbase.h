@@ -30,5 +30,5 @@ struct IOData
 
 	const IOPolynomSet& in_data;
 	DerivedRing& out_ring;
-	std::unique_ptr<const IOPolynomSet> out_data;
+	unique_deleter_ptr<const IOPolynomSet> out_data;
 };

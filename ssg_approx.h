@@ -16,7 +16,7 @@ class ApproxSignatureGroebner
 
 		const IOPolysSet& in_;
 		TRing& out_ring_;
-		std::unique_ptr<const IOPolysSet>& out_;
+		unique_deleter_ptr<const IOPolysSet>& out_;
 		TExactFastRing& fast_ring_;
 		void CalcGB()
 		{

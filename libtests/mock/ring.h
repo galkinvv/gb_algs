@@ -17,6 +17,7 @@ namespace Mock
 	{
 		typedef RingBase<MonomialMetadata, Field> Base;
 	public:
+		using typename Base::IOPolynomSet;
         //methods from ring contract which signatures contains implementation-defined types only
 		struct InPolysSetWithOrigMetadata:NoCopy{};
 		struct OutPolysSetForVariyingMetadata:NoCopy{};
@@ -29,7 +30,7 @@ namespace Mock
 			return nullptr;
 		}
 		
-        //methods from ring contract which signature contains specific types from CrossRingInfo 
+        //methods from ring contract which signature contains types from CrossRingInfo that depdend on MonomialMetadata
 		bool ReconstructAndInsertNormalized(const std::unique_ptr<InPolysSetWithOrigMetadata>& reconstruction_basis, const std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>>& info, const std::unique_ptr<OutPolysSetForVariyingMetadata>& result)
 		{
 			IgnoreIfUnused(reconstruction_basis, info, result);
@@ -48,10 +49,10 @@ namespace Mock
 			return nullptr;
 		}
 		
-		std::unique_ptr<const typename Base::IOPolynomSet> ConvertResultToFixedMetadata(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result)
+		unique_deleter_ptr<const IOPolynomSet> ConvertResultToFixedMetadata(const std::unique_ptr<OutPolysSetForVariyingMetadata>& constructed_result)
 		{
 			IgnoreIfUnused(constructed_result);
-			return MoveToResultType(new typename Base::IOPolynomSet(this->monomial_metadata_, this->field_));
+			return MoveToResultType(new IOPolynomSet(this->monomial_metadata_, this->field_));
 		}
 		
 		std::unique_ptr<const CrossRingInfo::VariableMapping<MonomialMetadata>> VarMapping()const
@@ -115,8 +116,8 @@ namespace Mock
 		{
 			IgnoreIfUnused(poly, result);
 		}
-        //methods from fast ring contract which signature contains specific types from CrossRingInfo 
-		
+
+		//methods from fast ring contract which signature contains types from CrossRingInfo that depdend on MonomialMetadata
 		void AddLabeledPolyBefore(const std::unique_ptr<const CrossRingInfo::AddedVarInfo<MonomialMetadata>>& added_info, LPolysResult& reducers, const LPoly& poly_before)
 		{
 			IgnoreIfUnused(added_info, reducers, poly_before);
@@ -126,7 +127,6 @@ namespace Mock
 			IgnoreIfUnused(poly);
 			return nullptr;
 		}
-
 		template <class Field>
 		MultLPolysQueue PutInQueueExtendLabeledPolys(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input)
 		{
