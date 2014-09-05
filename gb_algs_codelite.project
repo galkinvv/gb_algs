@@ -34,7 +34,6 @@
     <File Name=".gitignore"/>
     <File Name="ringbase.h"/>
     <File Name="reducebyset.cpp"/>
-    <File Name="ring_z2_slow.h"/>
     <File Name="conversions.h"/>
     <File Name="f4mpi_to_native_bridge.h"/>
     <File Name="commonpolyops.h"/>
@@ -61,7 +60,6 @@
     <File Name="cpolynomial.h"/>
     <File Name="cmonomial.h"/>
     <File Name="cmatrix.h"/>
-    <File Name="ring_z2_slow.cpp"/>
     <File Name="libf4mpi.h"/>
     <File Name="parse.tab.h"/>
     <File Name="reducebyset.h"/>
@@ -84,6 +82,13 @@
     <File Name="field_base.h"/>
     <File Name="combined_field.h"/>
     <File Name="sparse_matrix.h"/>
+    <File Name="ring_z2_simple.cpp"/>
+    <File Name="ring_z2_simple.h"/>
+    <File Name="ringfastbase.h"/>
+    <File Name="ringfast_z2_simple.cpp"/>
+    <File Name="ringfast_z2_simple.h"/>
+    <File Name="simple_mon.h"/>
+    <File Name="simple_sig.h"/>
   </VirtualDirectory>
   <VirtualDirectory Name="mpi">
     <File Name="mpi/mpimatrix.cpp"/>

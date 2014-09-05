@@ -180,7 +180,7 @@ bool RejectedByF5Criteria(const CMonomial& monToMulLabel, LPolyPtr poly, ReduceB
 	CPolynomial poly_to_test;
 	poly_to_test.pushTermBack(1, monToMulLabel * poly->label.mon());
 	CMonomial mulby_unused;
-	auto result = phi.findTopReducer(poly_to_test, mulby_unused);
+	auto result = phi.findToPReduceZ2r(poly_to_test, mulby_unused);
 	if (result && f5_globals.latex_log)
 	{
 		*f5_globals.latex_log << " отбрасывается $\\varphi$-проверкой, ибо моном сигнатуры $"<<Latex(monToMulLabel)<<"\\cdot"<<Latex(poly->label)

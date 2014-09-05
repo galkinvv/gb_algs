@@ -12,7 +12,7 @@ struct ReduceBySet
 	void appendReducerGreater(const CPolynomial& reducer);
 	const SortedReducersSet& allReducers();
 	void reduceTopWithCache(CPolynomial& polyToReduce);
-	const CPolynomial* findTopReducer(const CPolynomial& poly, CMonomial& mulby);
+	const CPolynomial* findToPReduceZ2r(const CPolynomial& poly, CMonomial& mulby);
 	bool reduceTopOnceWithCache(CPolynomial& polyToReduce);
 	//void reduceWithFullCache(CPolynomial& polyToReduce);
 	void reduceWithSearchCache(CPolynomial& polyToReduce);

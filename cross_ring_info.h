@@ -524,3 +524,9 @@ namespace CrossRingInfo
 	}
 }
 
+DECLARE_PARAM_FUNCTOR_TEMPLATE_T(const T&, MonomialCoefNonZeroEnsurer, const T& mon)
+{
+	assert(!FieldHelpers::IsZero(param_,mon.coef()));
+	return mon;
+}
+

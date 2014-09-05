@@ -562,17 +562,20 @@ ImplicitlyConvertible<typename std::remove_reference<T>::type&&> MoveToResultTyp
 }
 
 template <class T>
-struct auto_pimpl_ptr: unique_deleter_ptr<T>
+struct unique_created_ptr: unique_deleter_ptr<T>
 {
-	auto_pimpl_ptr():
-		unique_deleter_ptr<T>(new T{})
+	 unique_created_ptr():
+		unique_deleter_ptr<T>(new T())
+	{}
+
+	template <class... Args>
+	explicit unique_created_ptr(Args... args):
+		unique_deleter_ptr<T>(new T(std::forward<Args...>(args...)))
 	{}
 };
 
-//pimpl declaration that requires pimpl_ setting
-#define DECLARE_PIMPL  struct Impl; unique_deleter_ptr<Impl> impl_
 //pimpl declaration that allows constructing of on objetc only in places where impl is defined and always value-initializes impl
-#define DECLARE_AUTO_PIMPL  struct Impl; auto_pimpl_ptr<Impl> impl_
+#define DECLARE_PIMPL  struct Impl; unique_created_ptr<Impl> impl_
 
 template <class Enumerator>
 struct EnumeratorTraits
@@ -717,4 +720,18 @@ DECLARE_FUNCTOR_TEMPLATE_T(std::size_t, SmallCollectionHash, const T& collection
 		}
 	}
 	return result;
+}
+
+template <class T, class Comp = std::less<T>>
+bool unequal(const T& t1, const T& t2, bool& less, Comp compare = Comp())
+{
+	if (compare(t1, t2)) {
+		less = true;
+		return true;
+	}
+	if (compare(t2, t1)) {
+		less = false;
+		return true;
+	}
+	return false;
 }

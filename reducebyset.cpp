@@ -24,7 +24,7 @@ void ReduceBySet::reduceTopWithCache(CPolynomial& polyToReduce)
 	do {} while(reduceTopOnceWithCache(polyToReduce));
 }
 
-const CPolynomial* ReduceBySet::findTopReducer(const CPolynomial& poly, CMonomial& mulby)
+const CPolynomial* ReduceBySet::findToPReduceZ2r(const CPolynomial& poly, CMonomial& mulby)
 {
 	return GetReducerAndMulFromSearchCache(poly.HM(), mulby);
 }
