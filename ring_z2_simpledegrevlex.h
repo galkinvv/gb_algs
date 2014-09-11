@@ -9,13 +9,7 @@
 #include "finite_field.h"
 #include "utils.h"
 
-DECLARE_PARAM_FUNCTOR_TEMPLATE_T(const T&, MonomialCoefNonZeroEnsurer, const T& mon)
-{
-	assert(!FieldHelpers::IsZero(param_,mon.coef()));
-	return mon;
-}
-
-class RingZ2SimpleBase
+class RingZ2SimpleDegrevlexBase
 {
 public:
 	struct InPolysSetWithOrigMetadata;
@@ -49,21 +43,19 @@ protected:
 
 	void ConvertResultToFixedMetadataImpl(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result, CrossRingInfo::MonomialListListWithCoef<ImplementedOrder, ImplementedField>& basic_result);
 
-	explicit RingZ2SimpleBase(int var_count);
-
-	virtual bool MonomialLess(const SimpleMon& m1, const SimpleMon& m2) const = 0;
+	explicit RingZ2SimpleDegrevlexBase(int var_count);
 
 	DECLARE_PIMPL;
 };
 
 //Z_2 ring with degrevlex oredr on variables
 template <class MonomialMetadata, class Field>
-struct RingZ2Simple final: public RingBase<MonomialMetadata, Field>, public RingZ2SimpleBase {
+struct RingZ2SimpleDegrevlex final: public RingBase<MonomialMetadata, Field>, public RingZ2SimpleDegrevlexBase {
 	typedef  RingBase<MonomialMetadata, Field> Base;
 
-	RingZ2Simple(const MonomialMetadata& monomial_metadata, const Field& field)
+	RingZ2SimpleDegrevlex(const MonomialMetadata& monomial_metadata, const Field& field)
 		: Base(monomial_metadata, field)
-		, RingZ2SimpleBase(monomial_metadata.var_count) {
+		, RingZ2SimpleDegrevlexBase(monomial_metadata.var_count) {
 		assert(field.template ExportZpModulus<int>() == 2);
 		assert(MonomialMetadata::order == CrossRingInfo::MonomialOrder::DegRevLex);
 	}
@@ -168,13 +160,6 @@ struct RingZ2Simple final: public RingBase<MonomialMetadata, Field>, public Ring
 			}
 		}
 		return MoveToResultType(result_ptr.release());
-	}
-  private:
-	virtual bool MonomialLess(const SimpleMon& m1, const SimpleMon& m2) const override
-	{
-		//this field is constructed only with degrevlex order
-		assert(Base::monomial_metadata_.order == CrossRingInfo::MonomialOrder::DegRevLex);
-		return MonomialLessDegRevLex(m1, m2);
 	}
 };
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "utils.h"
 #include "cross_ring_info.h"
+#include "field_base.h"
 
 template <class TMonomialMetadata, class TField>
 struct RingBase: private NoCopy
@@ -32,3 +33,9 @@ struct IOData
 	DerivedRing& out_ring;
 	unique_deleter_ptr<const IOPolynomSet> out_data;
 };
+
+DECLARE_PARAM_FUNCTOR_TEMPLATE_T(const T&, MonomialCoefNonZeroEnsurer, const T& mon)
+{
+	assert(!FieldHelpers::IsZero(param_,mon.coef()));
+	return mon;
+}

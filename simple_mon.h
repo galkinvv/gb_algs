@@ -1,5 +1,11 @@
 #pragma once
 #include <map>
+#include <unordered_set>
+#include <memory>
+#include <algorithm>
+
+#include "utils.h"
+
 
 struct SimpleMon : std::map<int,int> {
 	friend bool operator<(const SimpleMon&, const SimpleMon&); //undefined

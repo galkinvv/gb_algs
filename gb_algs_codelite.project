@@ -82,13 +82,13 @@
     <File Name="field_base.h"/>
     <File Name="combined_field.h"/>
     <File Name="sparse_matrix.h"/>
-    <File Name="ring_z2_simple.cpp"/>
-    <File Name="ring_z2_simple.h"/>
     <File Name="ringfastbase.h"/>
-    <File Name="ringfast_z2_simple.cpp"/>
-    <File Name="ringfast_z2_simple.h"/>
     <File Name="simple_mon.h"/>
     <File Name="simple_sig.h"/>
+    <File Name="ring_z2_simpledegrevlex.h"/>
+    <File Name="ring_z2_simpledegrevlex.cpp"/>
+    <File Name="ringfast_z2_simpledegrevlex.h"/>
+    <File Name="ringfast_z2_simpledegrevlex.cpp"/>
   </VirtualDirectory>
   <VirtualDirectory Name="mpi">
     <File Name="mpi/mpimatrix.cpp"/>

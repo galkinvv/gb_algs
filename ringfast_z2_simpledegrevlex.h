@@ -3,13 +3,15 @@
 #include <set>
 #include <vector>
 #include <memory>
+#include "cross_ring_info.h"
 #include "algs.h"
+#include "simple_mon.h"
 #include "ringfastbase.h"
 #include "z_ring.h"
 #include "finite_field.h"
 #include "utils.h"
 
-class  RingFastZ2SimpleBase
+class  RingFastZ2SimpleDegrevlexBase
 {
 public:
 	struct LPolyImpl;
@@ -19,7 +21,7 @@ public:
     typedef unique_created_ptr<MultLPolysQueueImpl> MultLPolysQueue;
     typedef unique_created_ptr<LPolysResultImpl> LPolysResult;
 
-	RingFastZ2SimpleBase();
+	RingFastZ2SimpleDegrevlexBase();
 
 	bool QueueEmpty(const MultLPolysQueue& queue);
 
@@ -33,10 +35,7 @@ public:
 
 	void ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue);
 	void InsertInResult(LPoly&& poly, LPolysResult& result);
-	struct FastMonomial : SimpleMon{};
 protected:
-	virtual bool MonomialLess(const FastMonomial& m1, const FastMonomial& m2) const = 0;
-	
 	MultLPolysQueue PutInQueueExtendLabeledPolysImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input);
 	void AddLabeledPolyBeforeImpl(int new_var_index, int new_poly_index_in_rec_basis, Enumerator<CrossRingInfo::PerVariableData> monomial, LPolysResult& reducers, const LPoly& poly_before);
 	Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> FieldAgnosticReconstructionInfoPolysImpl(const LPoly& poly);
@@ -46,11 +45,13 @@ private:
 };
 
 template <class MonomialMetadata>
-struct RingFastZ2Simple final: public RingFastZ2SimpleBase
+struct RingFastZ2SimpleDegrevlex final: public RingFastZ2SimpleDegrevlexBase
 {
-	RingFastZ2Simple(const MonomialMetadata& metadata)
+	RingFastZ2SimpleDegrevlex(const MonomialMetadata& metadata)
 		:metadata_(metadata)
-	{}
+	{
+		assert(MonomialMetadata::order == CrossRingInfo::MonomialOrder::DegRevLex);
+	}
 
 	template <class Field>
 	MultLPolysQueue PutInQueueExtendLabeledPolys(const CrossRingInfo::MonomialListListWithCoef<MonomialMetadata, Field>& input)
@@ -105,12 +106,5 @@ struct RingFastZ2Simple final: public RingFastZ2SimpleBase
 		AddLabeledPolyBeforeImpl(added_info->AddedMonomialIndex(), added_info->AddedPolynomialIndex(), FullNonSizedRangeEnumerator(*added_info), reducers, poly_before);
 	}
 
-private:
-	virtual bool MonomialLess(const FastMonomial& m1, const FastMonomial& m2) const override
-	{
-		//this field is constructed only with degrevlex order
-		assert(metadata_.order == CrossRingInfo::MonomialOrder::DegRevLex);
-		return MonomialLessDegRevLex(m1, m2);
-	}
 	const MonomialMetadata& metadata_;
 };

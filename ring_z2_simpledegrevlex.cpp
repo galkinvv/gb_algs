@@ -1,55 +1,52 @@
-#include "ring_z2_simple.h"
-#include "simple_mon.h"
-#include "sparse_matrix.h"
-#include <algorithm>
+#include <vector>
 #include <deque>
-#include <cassert>
-#include <unordered_set>
-#include <list>
+#include "ring_z2_simpledegrevlex.h"
+#include "simple_mon.h"
+#include "combined_field.h"
+#include "sparse_matrix.h"
 
-struct SlowMon : SimpleMon {};
-struct SlowPolynomial : std::vector<SlowMon> {};
+struct SlowPolynomial : std::vector<SimpleMon> {};
 
-struct RingZ2SimpleBase::Impl {
+struct RingZ2SimpleDegrevlexBase::Impl {
 	//this struct shoulld contain data corresponding to polynomial ring, but not to some polynomials of this ring
 	Impl(int keeped_vars_count)
 		:keeped_vars_count_(keeped_vars_count)
 	{}
 	const int keeped_vars_count_;
-	std::vector<SlowMon> new_variables;
+	std::vector<SimpleMon> new_variables;
 };
 
 //input polynomials in ring with original monomial count
-struct RingZ2SimpleBase::InPolysSetWithOrigMetadata : std::vector<SlowPolynomial> {};
+struct RingZ2SimpleDegrevlexBase::InPolysSetWithOrigMetadata : std::vector<SlowPolynomial> {};
 
 //output polynomials in ring with new monomial count
-struct RingZ2SimpleBase::OutPolysSetForVariyingMetadata : std::vector<SlowPolynomial> {};
+struct RingZ2SimpleDegrevlexBase::OutPolysSetForVariyingMetadata : std::vector<SlowPolynomial> {};
 
-RingZ2SimpleBase::RingZ2SimpleBase(int var_count):
+RingZ2SimpleDegrevlexBase::RingZ2SimpleDegrevlexBase(int var_count):
 	impl_(var_count)
 {}
 
-bool RingZ2SimpleBase::ReconstructAndInsertNormalizedImpl(const InPolysSetWithOrigMetadata& reconstruction_basis,
+bool RingZ2SimpleDegrevlexBase::ReconstructAndInsertNormalizedImpl(const InPolysSetWithOrigMetadata& reconstruction_basis,
         Enumerator<CrossRingInfo::PerVariableData> top_info,
         Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input_polys_mons,
         const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& result)
 {
-	SlowMon top;
+	SimpleMon top;
 	for (auto top_var: top_info) {
 		top[top_var.index] = top_var.degree;
 	}
-	auto mon_less = [this](const SlowMon& m1, const SlowMon& m2){return this->MonomialLess(m1, m2);};
+	auto mon_less = MDegRevLexless<SimpleMon>;
 
 	struct MultSlowPolyIterator
 	{
 		MultSlowPolyIterator(const SlowPolynomial& a_poly)
 			:poly(a_poly)
 		{}
-		SlowMon mul_by;
+		SimpleMon mul_by;
 		SlowPolynomial::const_iterator it;
 		SlowPolynomial::const_iterator first_smaller_top_it;//iterator to first element smaller than top (or end)
 		const SlowPolynomial& poly;
-		SlowMon GetMultMon()
+		SimpleMon GetMultMon()
 		{
 			return Mmul(mul_by, *it);
 		}
@@ -78,7 +75,7 @@ bool RingZ2SimpleBase::ReconstructAndInsertNormalizedImpl(const InPolysSetWithOr
 	//this associates each polynomial in question (corresponding to monomialss of input_polys_mons) with unique number, corresponding to column number
 	std::deque<MultSlowPolyIterator> mult_inputs_with_iters;
 	//a sorted collection of their monomials in question (only gretear-or-equal than top_info) - each corresponds to matrix row
-	std::set<SlowMon, decltype(mon_less)> high_mons(mon_less);
+	std::set<SimpleMon, decltype(mon_less)> high_mons(mon_less);
 	auto mul_by_it = input_polys_mons.begin();
 	auto orig_poly_it = reconstruction_basis.begin();
 	for (;orig_poly_it != reconstruction_basis.end(); ++mul_by_it, ++orig_poly_it)
@@ -86,7 +83,7 @@ bool RingZ2SimpleBase::ReconstructAndInsertNormalizedImpl(const InPolysSetWithOr
 		assert(mul_by_it != input_polys_mons.end());
 		for (auto mon: *mul_by_it) {
 			auto &mult = emplaced_back(mult_inputs_with_iters, *orig_poly_it);
-			SlowMon mul_by;
+			SimpleMon mul_by;
 			for (auto var: mon) {
 				mult.mul_by[var.index] = var.degree;
 			}
@@ -165,7 +162,7 @@ bool RingZ2SimpleBase::ReconstructAndInsertNormalizedImpl(const InPolysSetWithOr
 	return true;
 }
 
-void RingZ2SimpleBase::ConvertResultToFixedMetadataImpl(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result, CrossRingInfo::MonomialListListWithCoef<ImplementedOrder, ImplementedField>& basic_result)
+void RingZ2SimpleDegrevlexBase::ConvertResultToFixedMetadataImpl(const unique_deleter_ptr<OutPolysSetForVariyingMetadata>& constructed_result, CrossRingInfo::MonomialListListWithCoef<ImplementedOrder, ImplementedField>& basic_result)
 {
 	for (auto poly: *constructed_result) {
 		basic_result.BeginPolynomialConstruction(poly.size());
@@ -178,7 +175,7 @@ void RingZ2SimpleBase::ConvertResultToFixedMetadataImpl(const unique_deleter_ptr
 	}
 }
 
-int RingZ2SimpleBase::VarMappingImplReturningOldVarCount(std::vector<int>& new_monomial_vars) const
+int RingZ2SimpleDegrevlexBase::VarMappingImplReturningOldVarCount(std::vector<int>& new_monomial_vars) const
 {
 
 	new_monomial_vars.resize(impl_->keeped_vars_count_ * impl_->new_variables.size());
@@ -196,9 +193,9 @@ int RingZ2SimpleBase::VarMappingImplReturningOldVarCount(std::vector<int>& new_m
 }
 
 
-RingZ2SimpleBase::NewIndices RingZ2SimpleBase::ExtendRingWithMonomialToHelpReconstructImpl(const unique_deleter_ptr<InPolysSetWithOrigMetadata>& reconstruction_basis, Enumerator<CrossRingInfo::PerVariableData> info)
+RingZ2SimpleDegrevlexBase::NewIndices RingZ2SimpleDegrevlexBase::ExtendRingWithMonomialToHelpReconstructImpl(const unique_deleter_ptr<InPolysSetWithOrigMetadata>& reconstruction_basis, Enumerator<CrossRingInfo::PerVariableData> info)
 {
-	SlowMon& old_mons = emplaced_back(impl_->new_variables);
+	SimpleMon& old_mons = emplaced_back(impl_->new_variables);
 	for (auto var:info)
 	{
 		int& new_degree =old_mons[var.index];
@@ -206,7 +203,7 @@ RingZ2SimpleBase::NewIndices RingZ2SimpleBase::ExtendRingWithMonomialToHelpRecon
 		new_degree = var.degree;
 	}
 	const int new_var_index = impl_->keeped_vars_count_ + impl_->new_variables.size() - 1;
-	SlowMon new_mon;
+	SimpleMon new_mon;
 	new_mon[new_var_index] = 1;
 	//new polynomial = old_mons - new_mon
 	auto& new_poly = emplaced_back(*reconstruction_basis);
@@ -215,12 +212,12 @@ RingZ2SimpleBase::NewIndices RingZ2SimpleBase::ExtendRingWithMonomialToHelpRecon
 	return Initialized<NewIndices>(&NewIndices::new_var_index, new_var_index, &NewIndices::new_poly_index, static_cast<int>(reconstruction_basis->size() - 1));
 }
 
-unique_deleter_ptr<RingZ2SimpleBase::OutPolysSetForVariyingMetadata> RingZ2SimpleBase::PrepareEmptyResult()
+unique_deleter_ptr<RingZ2SimpleDegrevlexBase::OutPolysSetForVariyingMetadata> RingZ2SimpleDegrevlexBase::PrepareEmptyResult()
 {
 	return MoveToResultType(new OutPolysSetForVariyingMetadata());
 }
 
-unique_deleter_ptr<RingZ2SimpleBase::InPolysSetWithOrigMetadata> RingZ2SimpleBase::PrepareForReconstructionImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input)
+unique_deleter_ptr<RingZ2SimpleDegrevlexBase::InPolysSetWithOrigMetadata> RingZ2SimpleDegrevlexBase::PrepareForReconstructionImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input)
 {
 	auto result = as_deleter_ptr(new InPolysSetWithOrigMetadata());
 	for (auto poly: input) {

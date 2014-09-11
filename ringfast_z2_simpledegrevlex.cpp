@@ -1,24 +1,20 @@
-#include "ringfast_z2_simple.h"
+#include "ringfast_z2_simpledegrevlex.h"
 #include "simple_mon.h"
 #include "simple_sig.h"
-#include "sparse_matrix.h"
-#include <algorithm>
-#include <deque>
 #include <cassert>
-#include <unordered_set>
 #include <list>
+#include <deque>
 
-typedef RingFastZ2SimpleBase::FastMonomial FastMonomial;
 typedef std::uint64_t SigIdx;
 
 struct Signature {
 	SigIdx index;
-	FastMonomial mon;
+	SimpleMon mon;
 };
 
-struct FastPolynomial : std::vector<FastMonomial> {};
+struct FastPolynomial : std::vector<SimpleMon> {};
 
-struct RingFastZ2SimpleBase::LPolyImpl {
+struct RingFastZ2SimpleDegrevlexBase::LPolyImpl {
 	FastPolynomial value;
 	std::vector<FastPolynomial> reconstruction_info;
 	Signature sig;
@@ -27,36 +23,35 @@ struct RingFastZ2SimpleBase::LPolyImpl {
 
 struct MultLPoly
 {
-	MultLPoly(const RingFastZ2SimpleBase::LPoly& a_poly):
+	MultLPoly(const RingFastZ2SimpleDegrevlexBase::LPoly& a_poly):
 		poly(a_poly)
 	{}
-	const RingFastZ2SimpleBase::LPoly& poly;
-	FastMonomial mul_by;
+	const RingFastZ2SimpleDegrevlexBase::LPoly& poly;
+	SimpleMon mul_by;
 };
 
-struct RingFastZ2SimpleBase::MultLPolysQueueImpl : std::list<MultLPoly>
+struct RingFastZ2SimpleDegrevlexBase::MultLPolysQueueImpl : std::list<MultLPoly>
 {};
 
-struct RingFastZ2SimpleBase::LPolysResultImpl : std::deque<RingFastZ2SimpleBase::LPoly>
+struct RingFastZ2SimpleDegrevlexBase::LPolysResultImpl : std::deque<RingFastZ2SimpleDegrevlexBase::LPoly>
 {};
 
-struct RingFastZ2SimpleBase::Impl
+struct RingFastZ2SimpleDegrevlexBase::Impl
 {
 	std::set<SigIdx> all_indices;
 	std::list<LPoly> initial_polys;
 };
 
-RingFastZ2SimpleBase::RingFastZ2SimpleBase(){}
+RingFastZ2SimpleDegrevlexBase::RingFastZ2SimpleDegrevlexBase(){}
 
 struct LessComparer
 {
-	typedef bool (RingFastZ2SimpleBase::*CompareMethod)(const FastMonomial& m1, const FastMonomial& m2) const;
+	typedef bool (&CompareMethod)(const SimpleMon& m1, const SimpleMon& m2);
 	const CompareMethod compare_method;
-	const RingFastZ2SimpleBase& ring_object;
 
-	bool operator()(const FastMonomial& m1, const FastMonomial& m2)const
+	bool operator()(const SimpleMon& m1, const SimpleMon& m2)const
 	{
-		return (ring_object.*compare_method)(m1, m2);
+		return compare_method(m1, m2);
 	}
 
 	bool operator()(const MultLPoly& p1, const MultLPoly& p2)const
@@ -65,12 +60,12 @@ struct LessComparer
 	}
 
 };
-void RingFastZ2SimpleBase::AddLabeledPolyBeforeImpl(int new_var_index, int new_poly_index_in_rec_basis, Enumerator<CrossRingInfo::PerVariableData> monomial, LPolysResult& reducers, const LPoly& poly_before)
+void RingFastZ2SimpleDegrevlexBase::AddLabeledPolyBeforeImpl(int new_var_index, int new_poly_index_in_rec_basis, Enumerator<CrossRingInfo::PerVariableData> monomial, LPolysResult& reducers, const LPoly& poly_before)
 {
 	//a new polynomial that would allow reducing monomial would be added
 	LPoly& new_poly = emplaced_back(*reducers);
-	FastMonomial old_mons;
-	FastMonomial new_mon;
+	SimpleMon old_mons;
+	SimpleMon new_mon;
 	for (auto var: monomial) {
 		old_mons[var.index] = var.degree;
 	}
@@ -97,9 +92,9 @@ void RingFastZ2SimpleBase::AddLabeledPolyBeforeImpl(int new_var_index, int new_p
 	impl_->all_indices.insert(new_poly->sig.index);
 }
 
-RingFastZ2SimpleBase::LPoly RingFastZ2SimpleBase::DequeueSigSmallest(MultLPolysQueue& queue)
+RingFastZ2SimpleDegrevlexBase::LPoly RingFastZ2SimpleDegrevlexBase::DequeueSigSmallest(MultLPolysQueue& queue)
 {
-	LessComparer ms_less{&RingFastZ2SimpleBase::MonomialLess, *this};
+	LessComparer ms_less{MDegRevLexless<SimpleMon>};
 	auto& queue_impl = *(queue);
 	assert(!queue_impl.empty());
 	auto min_it = std::min_element(queue_impl.begin(), queue_impl.end(), ms_less);
@@ -116,9 +111,9 @@ RingFastZ2SimpleBase::LPoly RingFastZ2SimpleBase::DequeueSigSmallest(MultLPolysQ
 	return result;
 }
 
-void RingFastZ2SimpleBase::ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
+void RingFastZ2SimpleDegrevlexBase::ExtendQueueBySpairPartsAndFilterUnneeded(const LPolysResult& left_parts, const LPoly& right_part, MultLPolysQueue& queue)
 {
-	LessComparer ms_less{&RingFastZ2SimpleBase::MonomialLess, *this};
+	LessComparer ms_less{MDegRevLexless<SimpleMon>};
 	assert(!IsZero(right_part));
 	for (const auto& left_part:*left_parts) {
 		if (IsZero(left_part)) {
@@ -151,7 +146,7 @@ CrossRingInfo::PerVariableData VarDataFromMapItem(const std::pair<const int, int
 }
 
 
-Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> RingFastZ2SimpleBase::FieldAgnosticReconstructionInfoPolysImpl(const LPoly& poly)
+Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> RingFastZ2SimpleDegrevlexBase::FieldAgnosticReconstructionInfoPolysImpl(const LPoly& poly)
 {
 	auto poly_enumerator = FullRangeEnumerator(poly->reconstruction_info);
 	typedef decltype(poly_enumerator.GetAndMove()) PolynomialAsRange;
@@ -177,15 +172,15 @@ Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> RingFastZ2Sim
 			))>(poly_with_mon_with_varpairs_enumerator);
 }
 
-Enumerator<CrossRingInfo::PerVariableData> RingFastZ2SimpleBase::FieldAgnosticReconstructionInfoTopImpl(const LPoly& poly)
+Enumerator<CrossRingInfo::PerVariableData> RingFastZ2SimpleDegrevlexBase::FieldAgnosticReconstructionInfoTopImpl(const LPoly& poly)
 {
 	return ConverterEnumeratorCFunc<STATIC_WITHTYPE_AS_TEMPLATE_PARAM(VarDataFromMapItem)>(FullRangeEnumerator(HM(poly->value)));
 }
 
-RingFastZ2SimpleBase::LPolysResult RingFastZ2SimpleBase::FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue)
+RingFastZ2SimpleDegrevlexBase::LPolysResult RingFastZ2SimpleDegrevlexBase::FillWithTrivialSyzygiesOfNonMultElements(const MultLPolysQueue& queue)
 {
 	LPolysResult result;
-	LessComparer ms_less{&RingFastZ2SimpleBase::MonomialLess, *this};
+	LessComparer ms_less{MDegRevLexless<SimpleMon>};
 	const auto& queue_impl = *queue;
 	for(auto i0 = queue_impl.begin(); i0 != queue_impl.end(); ++i0) {
 		assert(MDeg(i0->mul_by)  == 0 && MDeg(i0->poly->sig.mon) == 0) ;
@@ -205,22 +200,22 @@ RingFastZ2SimpleBase::LPolysResult RingFastZ2SimpleBase::FillWithTrivialSyzygies
 	return result;
 }
 
-void RingFastZ2SimpleBase::InsertInResult(LPoly&& poly, LPolysResult& result)
+void RingFastZ2SimpleDegrevlexBase::InsertInResult(LPoly&& poly, LPolysResult& result)
 {
 	result->emplace_back(std::move(poly));
 }
 
-bool RingFastZ2SimpleBase::IsZero(const LPoly& poly)
+bool RingFastZ2SimpleDegrevlexBase::IsZero(const LPoly& poly)
 {
 	return poly->value.empty();
 }
 
-void RingFastZ2SimpleBase::Normalize(LPoly& poly)
+void RingFastZ2SimpleDegrevlexBase::Normalize(LPoly& poly)
 {
 	IgnoreIfUnused(poly);
 }
 
-RingFastZ2SimpleBase::MultLPolysQueue RingFastZ2SimpleBase::PutInQueueExtendLabeledPolysImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input)
+RingFastZ2SimpleDegrevlexBase::MultLPolysQueue RingFastZ2SimpleDegrevlexBase::PutInQueueExtendLabeledPolysImpl(Enumerator<Enumerator<Enumerator<CrossRingInfo::PerVariableData>>> input)
 {
 	const SigIdx polys_count = input.size();
 	static const SigIdx kMaxIdx = std::numeric_limits<SigIdx>::max();
@@ -232,7 +227,7 @@ RingFastZ2SimpleBase::MultLPolysQueue RingFastZ2SimpleBase::PutInQueueExtendLabe
 		++cur_poly_index;
 		LPoly& labeled_poly = emplaced_back(impl_->initial_polys);
 		for (auto vars_colection : poly){
-			FastMonomial mon;
+			SimpleMon mon;
 			for(auto var: vars_colection)
 			{
 				mon[var.index] = var.degree;
@@ -248,14 +243,14 @@ RingFastZ2SimpleBase::MultLPolysQueue RingFastZ2SimpleBase::PutInQueueExtendLabe
 	return result;
 }
 
-bool RingFastZ2SimpleBase::QueueEmpty(const MultLPolysQueue& queue)
+bool RingFastZ2SimpleDegrevlexBase::QueueEmpty(const MultLPolysQueue& queue)
 {
 	return queue->empty();
 }
 
-void RingFastZ2SimpleBase::ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
+void RingFastZ2SimpleDegrevlexBase::ReduceCheckingSignatures(LPoly& poly, LPolysResult& reducers)
 {
-	LessComparer ms_less{&RingFastZ2SimpleBase::MonomialLess, *this};
+	LessComparer ms_less{MDegRevLexless<SimpleMon>};
 	bool failed_to_find_reducer = false;
 	while(!poly->value.empty() && !failed_to_find_reducer) {
 		failed_to_find_reducer = true;
