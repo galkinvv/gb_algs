@@ -216,7 +216,7 @@ struct optionalof
 			has_value_ = false;
 		}
 	}
-	char data_[sizeof(T)];
+	alignas(T) char data_[sizeof(T)];
 	bool has_value_;
 };
 
