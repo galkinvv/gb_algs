@@ -84,7 +84,10 @@ void CMatrix::fastReduceRangeByRange(MatrixIterator mfrom, MatrixIterator mto, M
 
 template <bool willNotOverflow> 
 void CMatrix::fastReduceRangeByRangeConstOverflow(MatrixIterator mfrom, MatrixIterator mto, MatrixIterator byfrom, MatrixIterator byto){
-	
+	struct alignas(typename Row::value_type) aligned_rowvaluebuf{
+  	 char data[sizeof(typename Row::value_type)];
+  };
+
 	const int bysz=byto-byfrom;
 	const int msz=mto-mfrom;
 	int maxresrowsize=0;//оценка на длину результирующих строк
@@ -100,8 +103,8 @@ void CMatrix::fastReduceRangeByRangeConstOverflow(MatrixIterator mfrom, MatrixIt
 	//(возможно сумма размеров byfrom..byto и максимального из mfrom..mto будет лучше)
 
 	const int res1size=maxresrowsize+1;
-	//матрица для записи результатов
-	char *const resultsmem=new char[msz*res1size*sizeof(typename Row::value_type)];
+	//матрица для записи результатовy
+	const auto resultsmem=new aligned_rowvaluebuf[msz*res1size];
 	typename Row::value_type *const results=reinterpret_cast<typename Row::value_type *const>(resultsmem);
 	
 	vector<typename Row::value_type*> res(msz);//итераторы, соответствующие текущему элементу в результатах
@@ -118,7 +121,13 @@ void CMatrix::fastReduceRangeByRangeConstOverflow(MatrixIterator mfrom, MatrixIt
 
 	vector<bool> reducerUsed(bysz);
 	//хранится в линейном виде чтоб эффективней использовать кеш
-	char* const cmem=new char[bysz*(msz+1)*sizeof(RowCoeff)];//матрица коэффициентов
+	
+	struct alignas(RowCoeff) aligned_rowcoef{
+  	 char data[sizeof(RowCoeff)];
+  };
+
+	
+	const auto cmem=new aligned_rowcoef[bysz*(msz+1)];//матрица коэффициентов
 	RowCoeff* const c=reinterpret_cast<RowCoeff* const>(cmem);//матрица коэффициентов
 	//для каждой строки byto..byfrom представлена набором пар (коэффициент,указатель на результат)
 	//завершается парой с нулевым коэффициентом

@@ -202,11 +202,11 @@ struct optionalof
   private:
 	T* TypedPtr()
 	{
-		return reinterpret_cast<T*>(data_);
+		return reinterpret_cast<T*>(&data_);
 	}
 	const T* TypedPtr()const
 	{
-		return reinterpret_cast<const T*>(data_);
+		return reinterpret_cast<const T*>(&data_);
 	}
 	void DestructIfNeeded()
 	{
@@ -216,7 +216,7 @@ struct optionalof
 			has_value_ = false;
 		}
 	}
-	alignas(T) char data_[sizeof(T)];
+    typename std::aligned_storage<sizeof(T), alignof(T)>::type data_;
 	bool has_value_;
 };
 
@@ -518,8 +518,8 @@ struct unique_deleter_ptr: std::unique_ptr<T, void(*)(T*)>
 		BasePtr(ptr, deleter)
 	{}
 
-	unique_deleter_ptr(unique_deleter_ptr&& other) = default;
-	unique_deleter_ptr& operator=(unique_deleter_ptr&& other) = default;
+	unique_deleter_ptr(unique_deleter_ptr&&) = default;
+	unique_deleter_ptr& operator=(unique_deleter_ptr&&) = default;
 
 	static void Delete(T* ptr)
 	{

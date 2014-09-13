@@ -26,10 +26,13 @@ template <typename T> class PODvector{
 	typedef const_pointer const_iterator;
 	typedef T value_type;
   private:
-	pointer first,last,memlast;
+  struct alignas(T) aligned_buf{
+  	 char data[sizeof(T)];
+  };
+  pointer first,last,memlast;
 	
-	char* charfirst(){
-		return reinterpret_cast<char*>(first);
+	aligned_buf* charfirst(){
+		return reinterpret_cast<aligned_buf*>(first);
 	}
 
 	void del(){
@@ -37,7 +40,7 @@ template <typename T> class PODvector{
 	}
 
 	void doreserve(size_t n){
-		char *newc=new char[n*sizeof(T)];
+		aligned_buf *newc=new aligned_buf[n];
 		if (!empty()) memcpy(newc,charfirst(),size()*sizeof(T));
 		del();
 		first=reinterpret_cast<pointer>(newc);
@@ -50,7 +53,7 @@ template <typename T> class PODvector{
 		if (v.empty()) first=last=0;
 		else{
 			size_t n=v.size();
-			first=reinterpret_cast<pointer>(new char[n*sizeof(T)]);
+			first=reinterpret_cast<pointer>(new aligned_buf[n]);
 			//Выполнение этой строчки следует считать ошибкой, поскольку копирование лишнее
 			memcpy(first,v.first,n*sizeof(T));
 			last=memlast=first+n;
