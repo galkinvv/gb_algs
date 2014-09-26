@@ -3,5 +3,5 @@ gb_algs
 
 Plan
 UT for ring_z2_slow.
-	Simplify to make more clear what is ring API.
-		Split ring and fastring.
+	Add deserialization support for cross_ring_info entitied used for input data for ring
+	Add serialization support for cross_ring_info entitied used for output data for ring

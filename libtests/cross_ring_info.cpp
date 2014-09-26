@@ -1,5 +1,6 @@
 #include "test_base.h"
 #include <functional>
+#include <sstream>
 #include "cross_ring_info.h"
 
 typedef CrossRingInfo::MonomialMetadata<CrossRingInfo::MonomialOrder::DegRevLex> DegRevLex;
@@ -241,5 +242,22 @@ TEST_F(CrossRingInfoTest, SimpleAdditionWithCoef)
 	strange_field_basis_info_.MonomialAdditionDone(StrangeFieldValueInitializer());
 	int_field_basis_info_.BeginPolynomialConstruction(1);
 	int_field_basis_info_.MonomialAdditionDone(42);
+}
+
+TEST_F(CrossRingInfoTest, Serialization)
+{
+	int_field_basis_info_.BeginPolynomialConstruction(1);
+	int_field_basis_info_.MonomialAdditionDone(42);
+	int_field_basis_info_.BeginPolynomialConstruction(0);
+	int_field_basis_info_.BeginPolynomialConstruction(3);
+	int_field_basis_info_.AddVariable(V(2,4));
+	int_field_basis_info_.AddVariable(V(3,1));
+	int_field_basis_info_.MonomialAdditionDone(-2);
+	int_field_basis_info_.MonomialAdditionDone(-2);
+	int_field_basis_info_.AddVariable(V(1,3));
+	int_field_basis_info_.MonomialAdditionDone(333);
+	std::ostringstream out;
+	out << int_field_basis_info_;
+	EXPECT_EQ(out.str(), "{((42)), (), ((-2 * x_1^3*x_4^2)+(-2)+(333 * x_3^1))}");
 }
 

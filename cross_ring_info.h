@@ -91,7 +91,12 @@ namespace CrossRingInfo
 	template <class ContainerIterator, class Coef>
 	std::ostream& operator << (std::ostream& s, const MonomialDataWithCoef<ContainerIterator, Coef>& data)
 	{
-		return s << "(" << data.coef() << " * " << OutputContainer(data, "*") << ")";
+		s << "(" << data.coef();
+		if (data.end() != data.begin())
+		{
+			s << " * " << OutputContainer(data, "*");
+		}
+		return s << ")";
 	}
 
 	typedef std::vector<int> DegreesContainer;
