@@ -94,7 +94,7 @@ namespace CrossRingInfo
 		s << "(" << data.coef();
 		if (data.end() != data.begin())
 		{
-			s << " * " << OutputContainer(data, "*");
+			s << " " << OutputContainer(data, "*");
 		}
 		return s << ")";
 	}
@@ -334,7 +334,7 @@ namespace CrossRingInfo
 	};
 		
 	template <class Coef>
-	inline std::ostream& operator << (std::ostream& s, const MonomialCollectionWithCoef<Coef>& data)
+	std::ostream& operator << (std::ostream& s, const MonomialCollectionWithCoef<Coef>& data)
 	{
 		return s << '(' << OutputContainer(data, "+") << ')';
 	}
@@ -527,4 +527,21 @@ namespace CrossRingInfo
 	{
 		return s << "{data:{" << OutputContainer(data, ", ") << "}, top:" << OutputContainer(data.TopInfo(), ", ") << "}";
 	}
+
+	template <class MonomialMetadata, class Coef>
+	std::istream& operator >> (std::istream& s, MonomialListListWithCoef<MonomialMetadata, Coef>& data)
+	{
+		struct
+		{
+			MonomialListListWithCoef<MonomialMetadata, Coef>& data_;
+			bool TryReadPoly(std::istream& s)
+			{
+				//data_.BeginPolynomialConstruction(.. read from stteam first..);
+				//TODO
+				return false;
+			}
+		} reader = {data};
+		return s >> FrontCharReader<MonomialListListWithCoef<MonomialMetadata, Coef>, '{'>() >> InputContainer(MEM_BIND(reader, TryReadPoly, _1), ',') >> CharReader<'}'>();
+	}
+
 }

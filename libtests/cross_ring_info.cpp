@@ -244,7 +244,7 @@ TEST_F(CrossRingInfoTest, SimpleAdditionWithCoef)
 	int_field_basis_info_.MonomialAdditionDone(42);
 }
 
-TEST_F(CrossRingInfoTest, Serialization)
+TEST_F(CrossRingInfoTest, IOForMonomialListListWithCoef)
 {
 	int_field_basis_info_.BeginPolynomialConstruction(1);
 	int_field_basis_info_.MonomialAdditionDone(42);
@@ -258,6 +258,21 @@ TEST_F(CrossRingInfoTest, Serialization)
 	int_field_basis_info_.MonomialAdditionDone(333);
 	std::ostringstream out;
 	out << int_field_basis_info_;
-	EXPECT_EQ(out.str(), "{((42)), (), ((-2 * x_1^3*x_4^2)+(-2)+(333 * x_3^1))}");
+	EXPECT_EQ(out.str(), "{((42)), (), ((-2 x_1^3*x_4^2)+(-2)+(333 x_3^1))}");
+
+	CrossRingInfo::MonomialListListWithCoef<DegRevLex, IntField> local_int_field_basis_info{order_, int_field_};
+
+	std::istringstream in("{((42)), (), ((-2 x_1^3*x_4^2)+(-2)+(333 x_3^1))}");
+	in >> local_int_field_basis_info;
+	//TODO: add expects
 }
 
+TEST_F(CrossRingInfoTest, IOForMonomialListListWithTopInfo)
+{
+	//TODO
+}
+
+TEST_F(CrossRingInfoTest, IOForAddedVarInfo)
+{
+	//TODO
+}

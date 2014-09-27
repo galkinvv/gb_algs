@@ -5,11 +5,14 @@
 #include <utility>
 #include <initializer_list>
 #include <ostream>
+#include <istream>
 #include <functional>
 #include <memory>
 #include <random>
 #include <cassert>
 #include <iostream>
+#include <sstream>
+#include <stdexcept>
 
 
 class NoCopy
@@ -34,6 +37,9 @@ constexpr int countof( T ( & /*arr*/ )[ N ] )
 
 #define DECLARE_FORWARDING_METHOD(return_type, method, forward_to_expr)\
 		template <class... TA> return_type method(TA&&... args){ return (forward_to_expr).method(std::forward<TA>(args)...); }
+
+//#define MEM_BIND(instance, Method, ...) (std::bind(std::mem_fn(&decltype(instance)::Method), (instance),   __VA_ARGS__))
+#define MEM_BIND(instance, Method, ...) ([&](){using namespace std::placeholders; return std::bind(std::mem_fn(&decltype(instance)::Method), (instance),  __VA_ARGS__);}())
 
 #define DECLARE_FUNCTOR_TEMPLATE_T(ResultType, Name, ...)\
 static struct Name##StructHelper{\
@@ -82,6 +88,61 @@ DECLARE_FUNCTOR_TEMPLATE_T1_T2(bool, ReferenceEqualTo, T1&& v1, T2&& v2){
 	return std::addressof(v1) == std::addressof(v2);
 }
 
+template <class NarrowInteger, class WideInteger> NarrowInteger narrow_cast(const WideInteger& i)
+{
+	static_assert(
+		(std::is_unsigned<NarrowInteger>::value && std::is_unsigned<WideInteger>::value) ||
+		(std::is_signed<NarrowInteger>::value && std::is_signed<WideInteger>::value)
+		, "Integers must be both unsigned or signed");
+	NarrowInteger result = i;
+	assert(WideInteger(result) == i);
+	return result;
+}
+
+template <class  WideInteger, class NarrowInteger> WideInteger wide_cast(const NarrowInteger& i)
+{
+	static_assert(
+		(std::is_unsigned<NarrowInteger>::value && std::is_unsigned<WideInteger>::value) ||
+		(std::is_signed<NarrowInteger>::value && std::is_signed<WideInteger>::value)
+		, "Integers must be both unsigned or signed");
+	static_assert(sizeof(NarrowInteger) <= sizeof(WideInteger), "wide_cast can't cast to smaller size"); //can add support for casting to wider signed type
+	return WideInteger(i);
+}
+
+template <class ValueContainer, decltype(ValueContainer::value) expected_value>
+struct StaticAsserter{
+	static bool const value = ValueContainer::value == expected_value;
+	static_assert(value, "StaticAsserter reports that it's type arguments is bad, see below for other assertion explaining why");
+};
+
+//need a macro to be able to cast to non-publicly visible bases
+#define TO_BASE_CAST(TBase, child) \
+	([](decltype(child)&& child_in_lambda)->TBase{ \
+		static_assert(StaticAsserter<std::is_base_of<typename std::remove_reference<TBase>::type, typename std::remove_reference<decltype(child)>::type>, true>::value, "TO_BASE_CAST can cast only to base");\
+		return static_cast<TBase>(child_in_lambda); \
+	}(child))
+
+template <class NarrowInteger, class WideInteger> NarrowInteger truncate_cast(const WideInteger& i)
+{
+	return i;
+}
+
+template <class Signed> typename std::make_unsigned<Signed>::type unsigned_cast(const Signed& i)
+{
+	typedef typename std::make_unsigned<Signed>::type Unsigned;
+	assert(i >= Signed(0));
+	return Unsigned(i);
+}
+
+template <class Unsigned> typename std::make_signed<Unsigned>::type signed_cast(const Unsigned& i)
+{
+	typedef typename std::make_unsigned<Unsigned>::type Signed;
+	assert(i <= Unsigned(std::numeric_limits<Signed>::max()));
+	auto result = Signed(i);
+	assert(result >=0);
+	return result;
+}
+
 template <class T>
 class PseudoPointer
 {
@@ -109,6 +170,49 @@ typename std::remove_reference<T>::type CopyValue(T value)
 	return value;
 }
 
+template <class T>
+struct NoSuchObjectInStream : std::exception {};
+
+inline bool TryInputFirstNonSpaceChar(std::istream &input, char expected_char)
+{
+	input >> std::ws;
+	if (input.peek() != expected_char)
+	{
+		return false;
+	}
+	input.get();
+	return true;
+}
+
+template <class T, char t_expected_char>
+struct FrontCharReader
+{
+	friend std::istream& operator >> (std::istream &input, const FrontCharReader &)
+	{
+		if (!TryInputFirstNonSpaceChar(input, t_expected_char))
+		{
+			throw NoSuchObjectInStream<T>();
+		}
+		return input;
+	}
+};
+
+template <char t_expected_char>
+struct CharReader
+{
+	friend std::istream& operator >> (std::istream &input, const CharReader &)
+	{
+		if (!TryInputFirstNonSpaceChar(input, t_expected_char))
+		{
+			std::ostringstream error_message;
+			auto peeked  = input.peek();
+			error_message << "unexpected char 0x" << std::hex << peeked << " (" << truncate_cast<char>(peeked) << ") instead of (" << t_expected_char <<").";
+			throw std::runtime_error(error_message.str());
+		}
+		return input;
+	}
+};
+
 template <class Container, class Separator>
 struct  ContainerWriterStruct
 {
@@ -124,6 +228,30 @@ struct  ContainerWriterStruct
 			output << *i;
 		}
 		return output;
+	}
+};
+
+template <class ContainerItemTryReader>
+struct  ContainerReaderStruct
+{
+	ContainerItemTryReader item_try_reader;
+	const char separator;
+
+	//this function reuires that end-of-container symbol is different from both separator and possible first characters of inner value
+	friend std::istream& operator >> (std::istream &input, ContainerReaderStruct&& x)
+	{
+		if (!x.item_try_reader(input))
+		{
+			return input;
+		}
+		while (TryInputFirstNonSpaceChar(input, x.separator))
+		{
+			if (!x.item_try_reader(input))
+			{
+				throw std::runtime_error(std::string("not found item expectd after separator ") + x.separator);
+			}
+		}
+		return input;
 	}
 };
 
@@ -150,6 +278,12 @@ template <class Container>
 ContainerWriterStructWithSize<Container, const char*> OutputContainerWithSize(const Container& data, const char* name)
 {
 	return {{data, ", "}, name, "{", "}"};
+}
+
+template <class ContainerItemTryReader>
+ContainerReaderStruct<ContainerItemTryReader> InputContainer(ContainerItemTryReader item_try_reader, char separator)
+{
+	return {item_try_reader, separator};
 }
 
 template <class T>
@@ -633,56 +767,6 @@ class RandomGenerator
 	std::mt19937 gen{std::random_device()()};
 	std::uniform_int_distribution<> dis;
 };
-
-template <class NarrowInteger, class WideInteger> NarrowInteger narrow_cast(const WideInteger& i)
-{
-	static_assert(
-		(std::is_unsigned<NarrowInteger>::value && std::is_unsigned<WideInteger>::value) ||
-		(std::is_signed<NarrowInteger>::value && std::is_signed<WideInteger>::value)
-		, "Integers must be both unsigned or signed");
-	NarrowInteger result = i;
-	assert(WideInteger(result) == i);
-	return result;
-}
-
-template <class  WideInteger, class NarrowInteger> WideInteger wide_cast(const NarrowInteger& i)
-{
-	static_assert(
-		(std::is_unsigned<NarrowInteger>::value && std::is_unsigned<WideInteger>::value) ||
-		(std::is_signed<NarrowInteger>::value && std::is_signed<WideInteger>::value)
-		, "Integers must be both unsigned or signed");
-	static_assert(sizeof(NarrowInteger) <= sizeof(WideInteger), "wide_cast can't cast to smaller size"); //can add support for casting to wider signed type
-	return WideInteger(i);
-}
-
-template <class ValueContainer, decltype(ValueContainer::value) expected_value>
-struct StaticAsserter{
-	static bool const value = ValueContainer::value == expected_value;
-	static_assert(value, "StaticAsserter reports that it's type arguments is bad, see below for other assertion explaining why");
-};
-
-//need a macro to be able to cast to non-publicly visible bases
-#define TO_BASE_CAST(TBase, child) \
-	([](decltype(child)&& child_in_lambda)->TBase{ \
-		static_assert(StaticAsserter<std::is_base_of<typename std::remove_reference<TBase>::type, typename std::remove_reference<decltype(child)>::type>, true>::value, "TO_BASE_CAST can cast only to base");\
-		return static_cast<TBase>(child_in_lambda); \
-	}(child))
-
-template <class Signed> typename std::make_unsigned<Signed>::type unsigned_cast(const Signed& i)
-{
-	typedef typename std::make_unsigned<Signed>::type Unsigned;
-	assert(i >= Signed(0));
-	return Unsigned(i);
-}
-
-template <class Unsigned> typename std::make_signed<Unsigned>::type signed_cast(const Unsigned& i)
-{
-	typedef typename std::make_unsigned<Unsigned>::type Signed;
-	assert(i <= Unsigned(std::numeric_limits<Signed>::max()));
-	auto result = Signed(i);
-	assert(result >=0);
-	return result;
-}
 
 #define BIT_SIZEOF(type_or_value) (sizeof(type_or_value) * CHAR_BIT)
 

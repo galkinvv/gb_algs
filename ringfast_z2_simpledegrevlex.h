@@ -75,7 +75,6 @@ struct RingFastZ2SimpleDegrevlex final: public RingFastZ2SimpleDegrevlexBase
 		return PutInQueueExtendLabeledPolysImpl(var_enumerator);
 	}
 
-
 	std::unique_ptr<const CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>> FieldAgnosticReconstructionInfo(const LPoly& poly)
 	{
 		auto result = as_unique_ptr(new CrossRingInfo::MonomialListListWithTopInfo<MonomialMetadata>(metadata_));
