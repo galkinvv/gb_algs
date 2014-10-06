@@ -175,7 +175,10 @@ struct NoSuchObjectInStream : std::exception {};
 
 inline bool TryInputFirstNonSpaceChar(std::istream &input, char expected_char)
 {
-	input >> std::ws;
+	if (!isspace(expected_char))
+	{
+		input >> std::ws;
+	}
 	if (input.peek() != expected_char)
 	{
 		return false;
@@ -736,6 +739,13 @@ template <class Container, class... Args>
 auto emplaced_back(Container& container, Args... args) -> decltype(std::declval<Container>().back())
 {
 	container.emplace_back(std::forward<Args>(args)...);
+	return container.back();
+}
+
+template <class Container, class... Args>
+auto emplaced(Container& container, Args... args) -> decltype(std::declval<Container>().back())
+{
+	container.emplace(std::forward<Args>(args)...);
 	return container.back();
 }
 

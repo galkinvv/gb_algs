@@ -2,6 +2,7 @@
 #include <vector>
 #include <algorithm>
 #include <cassert>
+#include <queue>
 #include <ostream>
 #include "zero_skipping_indexed_iterator.h"
 #include "utils.h"
@@ -533,12 +534,56 @@ namespace CrossRingInfo
 	{
 		struct
 		{
+			struct ReadMonomial
+			{
+				std::queue<PerVariableData> mons;
+				Coef coef;
+			};
+			std::queue<ReadMonomial> polynomial_;
+
 			MonomialListListWithCoef<MonomialMetadata, Coef>& data_;
+
+			bool TryReadVar(std::istream& s)
+			{
+				if (!TryInputFirstNonSpaceChar(s, 'x'))
+				{
+					return false;
+				}
+				auto& lastvar = emplaced(polynomial_.back().mons);
+				int var_index = 0;
+				int var_degree = 0;
+				s >> CharReader<'_'>() >> var_index;
+				if (TryInputFirstNonSpaceChar(s, '^'))
+				{
+					s >> var_degree;
+				}
+				polynomial_.back().mons.emplace(PerVariableData::FromDI(var_degree, var_index));
+				return true;
+			}
+
+			bool TryReadMon(std::istream& s)
+			{
+				if (!TryInputFirstNonSpaceChar(s, '('))
+				{
+					return false;
+				}
+				auto& lastmon = emplaced(polynomial_);
+				s >> lastmon.coef;
+				s >> InputContainer(MEM_BIND(*this, TryReadMon, _1), ' ')  >> CharReader<')'>();
+				return true;
+			}
 			bool TryReadPoly(std::istream& s)
 			{
+				assert(polynomial_.empty());
+				if (!TryInputFirstNonSpaceChar(s, '('))
+				{
+					return false;
+				}
+				s >> InputContainer(MEM_BIND(*this, TryReadMon, _1), '+')  >> CharReader<')'>();
+				//TODO add from polynomial_
+				//data_.MonomialAdditionDone
 				//data_.BeginPolynomialConstruction(.. read from stteam first..);
-				//TODO
-				return false;
+				return true;
 			}
 		} reader = {data};
 		return s >> FrontCharReader<MonomialListListWithCoef<MonomialMetadata, Coef>, '{'>() >> InputContainer(MEM_BIND(reader, TryReadPoly, _1), ',') >> CharReader<'}'>();
